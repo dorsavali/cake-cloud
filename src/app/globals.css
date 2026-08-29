@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Kalnia";
+  src: url("/fonts/kalnia/Kalnia-VariableFont_wdth%2Cwght.ttf")
+    format("truetype");
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Signika";
+  src: url("/fonts/signika/Signika-VariableFont_GRAD%2Cwght.ttf")
+    format("truetype");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -8,6 +26,12 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: #718d7f;
+  --color-accent: #faf7f0;
+  --color-accent-dark: #464248;
+  --color-luxury-accent: #b9a47a;
+  --font-kalnia: "Kalnia", serif;
+  --font-signika: "Signika", sans-serif;
 }
 
 * {
