@@ -8,7 +8,7 @@ export function DesktopHeader() {
   return (
     <header
       dir="ltr"
-      className={`${styles.background} hidden h-16 w-full grid-cols-[1fr_auto_1fr] items-center px-8 md:grid`}
+      className={`${styles.background} sticky top-0 z-40 hidden h-16 w-full grid-cols-[1fr_auto_1fr] items-center px-8 md:grid`}
     >
       <Link
         href="/"

@@ -1,7 +1,6 @@
 .background {
-  background-color: #faf7f0;
-  background-image:
-    radial-gradient(circle at 9% 20%, rgb(185 164 122 / 14%), transparent 17%),
-    radial-gradient(circle at 70% 85%, rgb(185 164 122 / 10%), transparent 22%),
-    radial-gradient(circle at 95% 10%, rgb(113 141 127 / 7%), transparent 16%);
+  background: rgb(255 255 255 / 0%);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4.3px);
+  box-shadow: 0 4px 30px rgb(0 0 0 / 10%);
 }

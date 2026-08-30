@@ -8,7 +8,7 @@ export function Hero() {
     <section
       dir="ltr"
       aria-labelledby="hero-heading"
-      className={`${styles.background} flex h-[404px] w-full flex-col items-center overflow-hidden px-5 pt-[22px] text-center md:h-[calc(100dvh-4rem)] md:min-h-[538px] md:max-h-[760px] md:justify-center md:px-0 md:pt-0`}
+      className={`${styles.background} -mt-16 flex h-[468px] w-full flex-col items-center overflow-hidden px-5 pt-[86px] text-center md:h-dvh md:min-h-[602px] md:max-h-[824px] md:justify-center md:px-0 md:pt-16`}
     >
       <Image
         src="/images/logo/main.svg"

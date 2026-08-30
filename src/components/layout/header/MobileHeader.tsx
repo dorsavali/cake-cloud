@@ -17,7 +17,7 @@ export function MobileHeader() {
     <>
       <header
         dir="ltr"
-        className={`${styles.background} grid h-16 grid-cols-[1fr_auto_1fr] items-center px-5 md:hidden`}
+        className={`${styles.background} sticky top-0 z-40 grid h-16 grid-cols-[1fr_auto_1fr] items-center px-5 md:hidden`}
       >
         <IconButton
           aria-label="Open menu"
