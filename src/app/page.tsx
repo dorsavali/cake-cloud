@@ -1,4 +1,4 @@
-import { DesktopHero } from "@/components/home/hero";
+import { Hero } from "@/components/home/hero";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
 
 export default function Home() {
@@ -7,7 +7,7 @@ export default function Home() {
       <DesktopHeader />
       <MobileHeader />
       <main>
-        <DesktopHero />
+        <Hero />
       </main>
     </>
   );
