@@ -2,13 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { desktopNavigation } from "./navigation";
-import styles from "./DesktopHeader.module.css";
+import styles from "./Header.module.css";
 
 export function DesktopHeader() {
   return (
     <header
       dir="ltr"
-      className={`${styles.header} hidden h-16 w-full grid-cols-[1fr_auto_1fr] items-center px-8 md:grid`}
+      className={`${styles.background} hidden h-16 w-full grid-cols-[1fr_auto_1fr] items-center px-8 md:grid`}
     >
       <Link
         href="/"
@@ -46,7 +46,7 @@ export function DesktopHeader() {
         className="justify-self-end rounded-sm outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary"
       >
         <Image
-          src="/images/icons/cart.svg"
+          src="/icons/cart.svg"
           alt=""
           width={38}
           height={38}
