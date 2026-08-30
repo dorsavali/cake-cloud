@@ -94,6 +94,7 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
               <li key={href}>
                 <Link
                   href={href}
+                  prefetch={false}
                   onClick={onClose}
                   className="font-signika text-[17px] font-medium leading-6 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
                 >

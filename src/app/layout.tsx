@@ -16,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body>
-        <div className="mx-auto min-h-dvh w-full max-w-[1440px]">{children}</div>
+        <div className="mx-auto min-h-dvh w-full max-w-[1536px]">{children}</div>
       </body>
     </html>
   );

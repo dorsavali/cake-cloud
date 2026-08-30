@@ -41,6 +41,7 @@ export function MobileHeader() {
 
         <Link
           href="/cart"
+          prefetch={false}
           aria-label="Shopping cart"
           className="justify-self-end rounded-sm outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
         >

@@ -31,6 +31,7 @@ export function DesktopHeader() {
             <li key={href}>
               <Link
                 href={href}
+                prefetch={false}
                 className="font-signika text-base font-medium text-accent-dark transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
               >
                 {label}
@@ -42,6 +43,7 @@ export function DesktopHeader() {
 
       <Link
         href="/cart"
+        prefetch={false}
         aria-label="Shopping cart"
         className="justify-self-end rounded-sm outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary"
       >
