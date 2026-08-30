@@ -1,3 +1,4 @@
+import { DesktopHero } from "@/components/home/hero";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
 
 export default function Home() {
@@ -5,7 +6,9 @@ export default function Home() {
     <>
       <DesktopHeader />
       <MobileHeader />
-      <main className="min-h-[calc(100dvh-4rem)] bg-background" />
+      <main>
+        <DesktopHero />
+      </main>
     </>
   );
 }

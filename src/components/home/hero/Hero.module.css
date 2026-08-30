@@ -1,0 +1,28 @@
+.background {
+  background-color: #faf7f0;
+  background-image: url("/images/pattern/background.webp");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.cta {
+  transition:
+    color 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.cta:hover,
+.cta:active {
+  border-color: #718d7f;
+  background-color: #718d7f;
+  color: #faf7f0;
+}
+
+@media (hover: hover) {
+  .cta {
+    transition-duration: 500ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
