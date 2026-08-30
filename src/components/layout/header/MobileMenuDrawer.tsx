@@ -2,8 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
+import { CloseIcon, IconButton } from "@/components/ui";
+
 import {
-  CloseIcon,
   LocationIcon,
   MessageIcon,
 } from "./HeaderIcons";
@@ -77,15 +78,13 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
             />
           </Link>
 
-          <button
+          <IconButton
             ref={closeButtonRef}
-            type="button"
             aria-label="Close menu"
             onClick={onClose}
-            className="grid size-10 place-items-center rounded-sm text-accent-dark outline-offset-2 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
           >
             <CloseIcon className="size-6" />
-          </button>
+          </IconButton>
         </div>
 
         <nav aria-label="Mobile navigation" className="px-9 pt-7">

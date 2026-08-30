@@ -4,8 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
+import { IconButton, MenuIcon } from "@/components/ui";
+
 import styles from "./Header.module.css";
-import { MenuIcon } from "./HeaderIcons";
 import { MobileMenuDrawer } from "./MobileMenuDrawer";
 
 export function MobileHeader() {
@@ -18,15 +19,15 @@ export function MobileHeader() {
         dir="ltr"
         className={`${styles.background} grid h-16 grid-cols-[1fr_auto_1fr] items-center px-5 md:hidden`}
       >
-        <button
-          type="button"
+        <IconButton
           aria-label="Open menu"
           aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen(true)}
-          className="grid size-10 place-items-center justify-self-start rounded-sm text-primary outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+          variant="primary"
+          className="justify-self-start"
         >
           <MenuIcon className="h-[22px] w-7" />
-        </button>
+        </IconButton>
 
         <Link href="/" aria-label="Cake Cloud home">
           <Image
