@@ -10,6 +10,9 @@
     "lint": "npm run lint -w @cake-cloud/api && npm run lint -w @cake-cloud/website",
     "start:website": "npm run start -w @cake-cloud/website",
     "start:api": "npm run start -w @cake-cloud/api",
-    "deploy": "npm run deploy -w @cake-cloud/website"
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.128.0"
   }
 }

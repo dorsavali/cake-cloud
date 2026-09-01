@@ -1,18 +1,33 @@
-import { createServer } from "node:http";
+interface Env {
+  ASSETS: {
+    fetch(request: Request): Promise<Response>;
+  };
+}
 
-const port = Number(process.env.PORT ?? 3001);
+const json = (body: unknown, status = 200) =>
+  Response.json(body, {
+    status,
+    headers: {
+      "cache-control": "no-store",
+    },
+  });
 
-const server = createServer((request, response) => {
-  if (request.method === "GET" && request.url === "/health") {
-    response.writeHead(200, { "content-type": "application/json" });
-    response.end(JSON.stringify({ status: "ok" }));
-    return;
-  }
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
 
-  response.writeHead(404, { "content-type": "application/json" });
-  response.end(JSON.stringify({ error: "Not found" }));
-});
+    if (url.pathname === "/api/health") {
+      if (request.method !== "GET") {
+        return json({ error: "Method not allowed" }, 405);
+      }
 
-server.listen(port, () => {
-  console.log(`API listening on http://localhost:${port}`);
-});
+      return json({ status: "ok" });
+    }
+
+    if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
+      return json({ error: "Not found" }, 404);
+    }
+
+    return env.ASSETS.fetch(request);
+  },
+};

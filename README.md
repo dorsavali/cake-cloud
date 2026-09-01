@@ -20,10 +20,16 @@ npm run dev:website
 npm run dev:api
 ```
 
-The website runs on [http://localhost:3000](http://localhost:3000). The API runs on [http://localhost:3001](http://localhost:3001), with a health check at `GET /health`.
+The website and API run together in Cloudflare Workers. API routes live under `/api/*`, with a health check at `GET /api/health`.
 
 Build both workspaces from the repository root:
 
 ```bash
 npm run build
+```
+
+Deploy the static website to Cloudflare Workers:
+
+```bash
+npm run deploy
 ```
