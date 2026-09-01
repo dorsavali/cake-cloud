@@ -80,20 +80,31 @@ export function DesktopHeader() {
         </ul>
       </nav>
 
-      <Link
-        href="/cart"
-        prefetch={false}
-        aria-label="Shopping cart"
-        className="justify-self-end rounded-sm outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary"
-      >
-        <Image
-          src="/icons/cart.svg"
-          alt=""
-          width={38}
-          height={38}
-          unoptimized
-        />
-      </Link>
+      <div className="flex items-center gap-6 justify-self-end">
+        <Link
+          href="/club"
+          prefetch={false}
+          aria-label="Cake Cloud Club"
+          className="inline-flex h-11 min-w-[5.25rem] items-center justify-center rounded-full border-2 border-[#d8c49c] font-signika text-base font-semibold leading-none text-accent-dark transition-colors duration-200 [&:hover]:border-accent-dark [&:hover]:bg-luxury-accent focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-primary"
+        >
+          CCC
+        </Link>
+
+        <Link
+          href="/cart"
+          prefetch={false}
+          aria-label="Shopping cart"
+          className="rounded-sm outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <Image
+            src="/icons/cart.svg"
+            alt=""
+            width={38}
+            height={38}
+            unoptimized
+          />
+        </Link>
+      </div>
     </header>
   );
 }

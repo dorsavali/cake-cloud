@@ -15,7 +15,7 @@ export const desktopNavigation: NavigationItem[] = [
   { href: "/", label: "Home" },
   { href: "/menu", label: "Daily Menu", children: dailyMenuChildren },
   { href: "/custom-cakes", label: "Custom Cakes" },
-  { href: "/events", label: "Events" },
+  { href: "/events", label: "Events and Celebration" },
   { href: "/about", label: "About" },
 ];
 
@@ -23,6 +23,6 @@ export const mobileNavigation: NavigationItem[] = [
   { href: "/", label: "Home" },
   { href: "/menu", label: "Daily Menu", children: dailyMenuChildren },
   { href: "/custom-cakes", label: "Custom Cakes" },
-  { href: "/events", label: "Events" },
+  { href: "/events", label: "Events and Celebration" },
   { href: "/about", label: "About" },
 ];

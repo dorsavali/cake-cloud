@@ -66,7 +66,7 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-luxury-accent/20 px-5">
+        <div className="flex h-[74px] shrink-0 items-center justify-between border-b border-luxury-accent/20 px-5">
           <Link href="/" aria-label="Cake Cloud home" onClick={onClose}>
             <Image
               src="/images/logo/hangSignCC.svg"
@@ -87,7 +87,10 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
           </IconButton>
         </div>
 
-        <nav aria-label="Mobile navigation" className="px-9 pt-7">
+        <nav
+          aria-label="Mobile navigation"
+          className="min-h-0 flex-1 overflow-y-auto px-9 py-7"
+        >
           <ul className="space-y-8">
             {mobileNavigation.map(({ href, label, children }) => (
               <li key={href}>
@@ -138,9 +141,18 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
               </li>
             ))}
           </ul>
+
+          <Link
+            href="/club"
+            prefetch={false}
+            onClick={onClose}
+            className="mt-8 flex h-14 w-full items-center rounded-xl border border-[#d8c49c] px-[18px] font-signika text-[17px] font-medium text-accent-dark transition-colors duration-200 active:bg-luxury-accent/20 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-primary"
+          >
+            Cake Cloud Club
+          </Link>
         </nav>
 
-        <div className="mt-auto border-t border-luxury-accent/20 px-5 py-5 font-signika text-[13px] text-accent-dark/65">
+        <div className="mt-auto shrink-0 border-t border-luxury-accent/20 px-5 py-5 font-signika text-[13px] text-accent-dark/65">
           <div className="flex items-center gap-2">
             <LocationIcon className="size-4 shrink-0" />
             <span>1/180 Royal St, East Perth WA 6004</span>
