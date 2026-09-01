@@ -3,6 +3,10 @@
   "name": "cake-cloud",
   "main": "./api/src/index.ts",
   "compatibility_date": "2026-09-01",
+  "keep_vars": true,
+  "secrets": {
+    "required": ["SQUARE_ACCESS_TOKEN", "SQUARE_APPLICATION_ID"]
+  },
   "assets": {
     "directory": "./website/out",
     "binding": "ASSETS",
