@@ -4,3 +4,53 @@
   backdrop-filter: blur(4.3px);
   box-shadow: 0 4px 30px rgb(0 0 0 / 10%);
 }
+
+.navLink {
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.navLink:hover,
+.menuItem:hover .navLink {
+  background: rgb(185 164 122 / 18%);
+  color: var(--color-primary);
+}
+
+.dropdownPanel {
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(-50%, 0.25rem);
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease,
+    visibility 200ms ease;
+}
+
+.dropdownMenu {
+  overflow: hidden;
+  border: 1px solid #e8deca;
+  border-radius: 1.25rem;
+  background: #fbf9f4;
+  box-shadow: 0 12px 32px rgb(70 66 72 / 12%);
+}
+
+.dropdownLink {
+  border-radius: 0.75rem;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.dropdownLink:hover {
+  background: rgb(185 164 122 / 18%);
+  color: var(--color-primary);
+}
+
+.menuItem:hover .dropdownPanel {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

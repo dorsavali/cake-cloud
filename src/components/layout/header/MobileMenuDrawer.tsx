@@ -89,16 +89,52 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
 
         <nav aria-label="Mobile navigation" className="px-9 pt-7">
           <ul className="space-y-8">
-            {mobileNavigation.map(({ href, label }) => (
+            {mobileNavigation.map(({ href, label, children }) => (
               <li key={href}>
-                <Link
-                  href={href}
-                  prefetch={false}
-                  onClick={onClose}
-                  className="font-signika text-[17px] font-medium leading-6 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-                >
-                  {label}
-                </Link>
+                {children ? (
+                  <details className="group/menu">
+                    <summary className="flex cursor-pointer list-none items-center justify-between whitespace-nowrap font-signika text-[17px] font-medium leading-6 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+                      {label}
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 12 8"
+                        className="h-2 w-3 shrink-0 text-primary"
+                      >
+                        <path
+                          d="m1 1.25 5 5 5-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                        />
+                      </svg>
+                    </summary>
+                    <ul className="mt-4 space-y-4 border-l border-luxury-accent/30 pl-4">
+                      {children.map((child) => (
+                        <li key={child.href}>
+                          <Link
+                            href={child.href}
+                            prefetch={false}
+                            onClick={onClose}
+                            className="font-signika text-[15px] font-medium text-accent-dark/70 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+                          >
+                            {child.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : (
+                  <Link
+                    href={href}
+                    prefetch={false}
+                    onClick={onClose}
+                    className="font-signika text-[17px] font-medium leading-6 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+                  >
+                    {label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
