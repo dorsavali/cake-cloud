@@ -1,56 +1,95 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import styles from "./SpecialDemand.module.css";
 
 const layers = [
-  { file: "1exploded.webp", width: 310, closedY: 444, openY: 434 },
-  { file: "2exploded.webp", width: 218, closedY: 360, openY: 284 },
-  { file: "3exploded.webp", width: 145, closedY: 330, openY: 227 },
-  { file: "4exploded.webp", width: 145, closedY: 300, openY: 169 },
-  { file: "5exploded.webp", width: 145, closedY: 270, openY: 124 },
-  { file: "6exploded.webp", width: 145, closedY: 220, openY: 27 },
+  { file: "1exploded.webp", desktopWidth: 310, desktopClosedY: 444, desktopOpenY: 434, mobileWidth: 145, mobileClosedY: 215, mobileOpenY: 215 },
+  { file: "2exploded.webp", desktopWidth: 218, desktopClosedY: 360, desktopOpenY: 284, mobileWidth: 102, mobileClosedY: 185, mobileOpenY: 144 },
+  { file: "3exploded.webp", desktopWidth: 145, desktopClosedY: 330, desktopOpenY: 227, mobileWidth: 68, mobileClosedY: 165, mobileOpenY: 116 },
+  { file: "4exploded.webp", desktopWidth: 145, desktopClosedY: 300, desktopOpenY: 169, mobileWidth: 68, mobileClosedY: 145, mobileOpenY: 88 },
+  { file: "5exploded.webp", desktopWidth: 145, desktopClosedY: 270, desktopOpenY: 124, mobileWidth: 68, mobileClosedY: 125, mobileOpenY: 66 },
+  { file: "6exploded.webp", desktopWidth: 145, desktopClosedY: 220, desktopOpenY: 27, mobileWidth: 68, mobileClosedY: 95, mobileOpenY: 20 },
 ] as const;
 
 type LayerStyle = CSSProperties & {
-  "--width": string;
-  "--closed-y": string;
-  "--open-y": string;
+  "--desktop-width": string;
+  "--desktop-closed-y": string;
+  "--desktop-open-y": string;
+  "--mobile-width": string;
+  "--mobile-closed-y": string;
+  "--mobile-open-y": string;
   "--delay": string;
   "--close-delay": string;
 };
 
 export function SpecialDemand() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const hasTriggeredRef = useRef(false);
+  const [isExploded, setIsExploded] = useState(false);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    let closeTimer: number | undefined;
+    const observer = new IntersectionObserver(([entry]) => {
+      const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+
+      if (isMobile && entry.isIntersecting && !hasTriggeredRef.current) {
+        hasTriggeredRef.current = true;
+        setIsExploded(true);
+        closeTimer = window.setTimeout(() => setIsExploded(false), 1400);
+      }
+
+      if (!entry.isIntersecting) {
+        if (closeTimer) window.clearTimeout(closeTimer);
+        closeTimer = undefined;
+        hasTriggeredRef.current = false;
+        setIsExploded(false);
+      }
+    }, { threshold: 0.55 });
+
+    observer.observe(section);
+    return () => {
+      observer.disconnect();
+      if (closeTimer) window.clearTimeout(closeTimer);
+    };
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       dir="ltr"
       aria-labelledby="special-demand-heading"
-      className="relative z-10 hidden overflow-visible py-10 lg:block"
+      className="relative z-10 overflow-visible lg:py-10"
     >
-      <div className="mx-auto grid min-h-[500px] w-full max-w-[1100px] grid-cols-[minmax(0,1fr)_460px] items-center gap-20 px-8">
-        <div>
+      <div className="relative mx-auto min-h-[410px] w-full max-w-[1100px] px-4 lg:grid lg:min-h-[500px] lg:grid-cols-[minmax(0,1fr)_460px] lg:items-center lg:gap-20 lg:px-8">
+        <div className="pt-10 lg:pt-0">
           <h2
             id="special-demand-heading"
-            className="font-kalnia text-[32px] font-medium leading-[1.15] text-accent-dark"
+            className="font-kalnia text-[18px] font-medium leading-[1.15] text-accent-dark lg:text-[32px]"
           >
             Need an Special Demand?
           </h2>
-          <p className="mt-2 font-signika text-base text-accent-dark">
+          <p className="mt-2 font-signika text-xs text-accent-dark lg:text-base">
             Custom Cakes the way you want them.
           </p>
 
-          <div className="mt-16 flex gap-8">
+          <div className="mt-16 flex flex-col gap-4 lg:flex-row lg:gap-8">
             <Link
               href="/custom-cakes"
-              className="flex h-[68px] w-[264px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-base text-accent-dark transition-colors hover:bg-accent/70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+              className="flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors hover:bg-accent/70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:h-[68px] lg:w-[264px] lg:text-base"
             >
               <span aria-hidden="true" className="text-2xl font-light">+</span>
               Customizables
             </Link>
             <Link
               href="/custom-cakes"
-              className="flex h-[68px] w-[264px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-base text-accent-dark transition-colors hover:bg-accent/70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+              className="flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors hover:bg-accent/70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:h-[68px] lg:w-[264px] lg:text-base"
             >
               <span aria-hidden="true" className="text-2xl font-light">+</span>
               From Scratch
@@ -59,7 +98,7 @@ export function SpecialDemand() {
         </div>
 
         <div
-          className={styles.cakeStage}
+          className={`${styles.cakeStage} ${isExploded ? styles.isExploded : ""}`}
           tabIndex={0}
           aria-label="Hover to reveal the cake layers"
         >
@@ -84,9 +123,12 @@ export function SpecialDemand() {
               className={styles.layer}
               style={
                 {
-                  "--width": `${layer.width}px`,
-                  "--closed-y": `${layer.closedY}px`,
-                  "--open-y": `${layer.openY}px`,
+                  "--desktop-width": `${layer.desktopWidth}px`,
+                  "--desktop-closed-y": `${layer.desktopClosedY}px`,
+                  "--desktop-open-y": `${layer.desktopOpenY}px`,
+                  "--mobile-width": `${layer.mobileWidth}px`,
+                  "--mobile-closed-y": `${layer.mobileClosedY}px`,
+                  "--mobile-open-y": `${layer.mobileOpenY}px`,
                   "--delay": `${index * 55}ms`,
                   "--close-delay": `${(layers.length - 1 - index) * 45}ms`,
                   zIndex: index + 1,

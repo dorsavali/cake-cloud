@@ -1,9 +1,10 @@
 .cakeStage {
-  position: relative;
-  width: 460px;
-  height: 520px;
+  position: absolute;
+  top: 35px;
+  right: 0;
+  width: 240px;
+  height: 280px;
   isolation: isolate;
-  transform: translateY(-85px);
 }
 
 .closedCake,
@@ -17,8 +18,8 @@
 }
 
 .closedCake {
-  top: 261px;
-  width: 340px;
+  top: 129px;
+  width: 160px;
   transition:
     opacity 280ms ease,
     transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -27,15 +28,16 @@
 
 .layer {
   top: 0;
-  width: var(--width);
+  width: var(--mobile-width);
   opacity: 0;
-  transform: translate(-50%, var(--closed-y)) scale(0.985);
+  transform: translate(-50%, var(--mobile-closed-y)) scale(0.985);
   transition:
     opacity 180ms ease,
     transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: var(--close-delay), var(--close-delay);
 }
 
+.cakeStage.isExploded .closedCake,
 .cakeStage:hover .closedCake,
 .cakeStage:focus-visible .closedCake {
   opacity: 0;
@@ -43,11 +45,39 @@
   transition-delay: 0ms, 0ms;
 }
 
+.cakeStage.isExploded .layer,
 .cakeStage:hover .layer,
 .cakeStage:focus-visible .layer {
   opacity: 1;
-  transform: translate(-50%, var(--open-y)) scale(1);
+  transform: translate(-50%, var(--mobile-open-y)) scale(1);
   transition-delay: var(--delay), var(--delay);
+}
+
+@media (min-width: 1024px) {
+  .cakeStage {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 460px;
+    height: 520px;
+    transform: translateY(-85px);
+  }
+
+  .closedCake {
+    top: 261px;
+    width: 340px;
+  }
+
+  .layer {
+    width: var(--desktop-width);
+    transform: translate(-50%, var(--desktop-closed-y)) scale(0.985);
+  }
+
+  .cakeStage.isExploded .layer,
+  .cakeStage:hover .layer,
+  .cakeStage:focus-visible .layer {
+    transform: translate(-50%, var(--desktop-open-y)) scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

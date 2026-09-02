@@ -60,7 +60,7 @@ export function ProductRecommendations() {
         <div className="flex items-center justify-between">
           <h2
             id="recommendations-heading"
-            className="font-kalnia text-[24px] font-medium leading-8 text-accent-dark"
+            className="font-kalnia text-[18px] font-medium leading-6 text-accent-dark lg:text-[24px] lg:leading-8"
           >
             Today&apos;s Recommends
           </h2>

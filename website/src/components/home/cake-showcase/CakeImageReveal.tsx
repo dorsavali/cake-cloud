@@ -23,15 +23,8 @@ export function CakeImageReveal({
 
     const desktopQuery = window.matchMedia("(min-width: 1024px)");
     let observer: IntersectionObserver | undefined;
-    let revealTimer: ReturnType<typeof setTimeout> | undefined;
-
-    const clearRevealTimer = () => {
-      if (revealTimer) clearTimeout(revealTimer);
-      revealTimer = undefined;
-    };
 
     const configureAnimation = () => {
-      clearRevealTimer();
       observer?.disconnect();
       observer = undefined;
       setIsRevealed(false);
@@ -40,14 +33,7 @@ export function CakeImageReveal({
 
       observer = new IntersectionObserver(
         ([entry]) => {
-          clearRevealTimer();
-
-          if (!entry.isIntersecting) {
-            setIsRevealed(false);
-            return;
-          }
-
-          revealTimer = setTimeout(() => setIsRevealed(true), 2000);
+          setIsRevealed(entry.isIntersecting);
         },
         { threshold: 0.65 },
       );
@@ -58,7 +44,6 @@ export function CakeImageReveal({
     desktopQuery.addEventListener("change", configureAnimation);
 
     return () => {
-      clearRevealTimer();
       observer?.disconnect();
       desktopQuery.removeEventListener("change", configureAnimation);
     };
