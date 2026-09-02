@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ProductCard } from "./ProductCard";
-import type { RecommendedProduct } from "./data";
+import { recommendedProducts, type RecommendedProduct } from "./data";
 
 type ProductsResponse = {
   items?: Array<{
@@ -36,7 +36,12 @@ export function ProductRecommendations() {
         );
         setError(false);
       } catch {
-        setError(true);
+        if (process.env.NODE_ENV === "development") {
+          setProducts(recommendedProducts);
+          setError(false);
+        } else {
+          setError(true);
+        }
       }
     };
 
@@ -49,7 +54,7 @@ export function ProductRecommendations() {
     <section
       dir="ltr"
       aria-labelledby="recommendations-heading"
-      className="hidden overflow-hidden py-7 lg:block"
+      className="overflow-hidden py-8 lg:py-7"
     >
       <div className="mx-auto w-full max-w-[1100px] px-4 lg:px-8">
         <div className="flex items-center justify-between">
@@ -62,7 +67,7 @@ export function ProductRecommendations() {
           <Link
             href="/menu"
             prefetch={false}
-            className="font-signika text-base font-medium text-accent-dark transition-colors [&:hover]:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+            className="font-signika text-sm font-medium text-accent-dark transition-colors [&:hover]:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:text-base"
           >
             See All
           </Link>
@@ -80,8 +85,8 @@ export function ProductRecommendations() {
           </p>
         )}
 
-        <div className="mt-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <ul className="flex w-max gap-4">
+        <div className="mt-5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mt-4">
+          <ul className="flex w-max gap-2.5 lg:gap-4">
             {products.map((product) => (
               <li key={product.id}>
                 <ProductCard product={product} />

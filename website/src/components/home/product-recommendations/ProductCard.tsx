@@ -16,16 +16,16 @@ export function ProductCard({ product }: ProductCardProps) {
     <Link
       href={product.href}
       prefetch={false}
-      className="group/product block w-[260px] shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      className="group/product block w-[168px] shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:w-[260px]"
     >
       <div className="relative aspect-[334/280] overflow-hidden rounded-lg border border-luxury-accent bg-accent">
         <Image
           src={product.image}
           alt={product.imageAlt}
           fill
-          sizes="260px"
+          sizes="(min-width: 1024px) 260px, 168px"
           unoptimized
-          className="object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/product:scale-[1.035]"
+          className="object-contain p-3 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/product:scale-[1.035] lg:object-cover lg:p-0"
         />
       </div>
 
