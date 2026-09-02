@@ -1,6 +1,7 @@
 import { CakeShowcase } from "@/components/home/cake-showcase";
 import { Hero } from "@/components/home/hero";
 import { ProductRecommendations } from "@/components/home/product-recommendations";
+import { SpecialDemand } from "@/components/home/special-demand";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
 
 export default function Home() {
@@ -12,6 +13,7 @@ export default function Home() {
         <Hero />
         <CakeShowcase />
         <ProductRecommendations />
+        <SpecialDemand />
       </main>
     </>
   );

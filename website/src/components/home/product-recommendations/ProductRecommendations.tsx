@@ -29,7 +29,7 @@ export function ProductRecommendations() {
         setProducts(
           (data.items ?? []).map((item) => ({
             ...item,
-            image: item.image ?? "/images/homeCakes/1.png",
+            image: item.image ?? "/images/homeCakes/1.webp",
             imageAlt: item.name,
             href: `/menu#${item.id}`,
           })),
