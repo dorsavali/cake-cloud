@@ -1,6 +1,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
-import { handleApiRequest, type ApiEnv } from "./handler.js";
+import { handleApiRequest } from "./handler.js";
+import { notFound } from "./http/json.js";
+import type { ApiEnv } from "./types/env.js";
 
 const port = Number.parseInt(process.env.PORT ?? "3001", 10);
 const hostname = process.env.HOST ?? "127.0.0.1";
@@ -78,7 +80,7 @@ const server = createServer(async (incoming, outgoing) => {
             },
           })
         : ((await handleApiRequest(request, env)) ??
-          Response.json({ error: "Not found" }, { status: 404 }));
+          notFound());
 
     await sendResponse(withCors(request, response), outgoing);
   } catch (error) {
