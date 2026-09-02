@@ -1,0 +1,28 @@
+.button {
+  border: 1px solid rgb(185 164 122 / 45%);
+  background: rgb(250 247 240 / 72%);
+  color: #464248;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.button:not(:disabled):hover {
+  border-color: #718d7f;
+  background: #718d7f;
+  color: #faf7f0;
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.active {
+  border-color: #718d7f;
+  background: #718d7f;
+  color: #faf7f0;
+}

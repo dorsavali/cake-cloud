@@ -1,0 +1,23 @@
+.actionButton {
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.actionButton:hover {
+  border-color: #718d7f;
+  background: #718d7f;
+  color: #faf7f0;
+}
+
+.thumbnail {
+  transition:
+    border-color 180ms ease,
+    opacity 180ms ease;
+}
+
+.thumbnail:hover {
+  border-color: #718d7f;
+  opacity: 1;
+}

@@ -1,0 +1,1 @@
+export { DailyMenuCatalog } from "./DailyMenuCatalog";

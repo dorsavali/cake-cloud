@@ -1,0 +1,33 @@
+.layout {
+  display: grid;
+  min-width: 0;
+  grid-template-areas:
+    "toolbar"
+    "filters"
+    "products";
+}
+
+.filters {
+  grid-area: filters;
+  min-width: 0;
+}
+
+.toolbar {
+  grid-area: toolbar;
+  min-width: 0;
+}
+
+.products {
+  grid-area: products;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: 276px minmax(0, 1fr);
+    grid-template-areas:
+      "filters toolbar"
+      "filters products";
+    column-gap: 32px;
+  }
+}

@@ -1,0 +1,30 @@
+.tab {
+  border-color: rgb(185 164 122 / 45%);
+  background-color: rgb(250 247 240 / 18%);
+  color: #464248;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.tab:not(.active):hover {
+  border-color: #718d7f;
+  background-color: rgb(113 141 127 / 12%);
+  color: #718d7f;
+}
+
+.active {
+  border-color: #718d7f;
+  background-color: #718d7f;
+  color: #faf7f0;
+}
+
+.scroller {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroller::-webkit-scrollbar {
+  display: none;
+}

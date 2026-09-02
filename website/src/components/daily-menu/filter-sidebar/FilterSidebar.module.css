@@ -1,0 +1,270 @@
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #b9a47a;
+}
+
+.mobileFilterScroller {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mobileFilterScroller::-webkit-scrollbar {
+  display: none;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.summary {
+  display: flex;
+  width: 100%;
+  height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgb(185 164 122 / 45%);
+  border-radius: 18px;
+  padding: 0 16px;
+  background: rgb(250 247 240 / 15%);
+  font-size: 16px;
+  text-align: left;
+  transition: border-color 180ms ease;
+}
+
+@media (max-width: 1023px) {
+  .dropdown {
+    margin-top: 0;
+  }
+
+  .summary {
+    height: 40px;
+    border-radius: 999px;
+    padding: 0 16px;
+    font-size: 13px;
+  }
+
+  .menuShell {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 2px);
+    left: 0;
+    width: 276px;
+  }
+
+  .menuShellOpen {
+    margin-top: 0;
+  }
+
+  .allergenDropdown .menuShell {
+    right: 0;
+    left: auto;
+    max-width: calc(100vw - 32px);
+  }
+
+  .filterRow {
+    min-height: 40px;
+    border-radius: 999px;
+    gap: 8px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+
+  .mobileFilterScroller .filterRow {
+    flex: 0 0 auto;
+    min-height: 40px;
+    border-radius: 999px;
+    gap: 8px;
+    padding: 0 11px;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .checkbox {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.summary:hover,
+.summary[aria-expanded="true"] {
+  border-color: #718d7f;
+}
+
+.chevron {
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.menuShell {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    max-height 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin-top 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.menuShellOpen {
+  max-height: 430px;
+  margin-top: 10px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.menu {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid rgb(185 164 122 / 28%);
+  border-radius: 24px;
+  background: #faf7f0;
+  box-shadow: 0 12px 30px rgb(70 66 72 / 12%);
+}
+
+.option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  text-align: left;
+  font-size: 16px;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.option:hover {
+  background: rgb(113 141 127 / 10%);
+  color: #718d7f;
+}
+
+.selectedOption {
+  color: #718d7f;
+  font-weight: 500;
+}
+
+.checkmark {
+  width: 18px;
+  color: #718d7f;
+}
+
+.filterRow {
+  display: flex;
+  min-height: 44px;
+  cursor: pointer;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgb(185 164 122 / 28%);
+  border-radius: 16px;
+  padding: 0 14px;
+  color: rgb(70 66 72 / 62%);
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.filterRow:hover {
+  border-color: #718d7f;
+}
+
+.checkedRow {
+  border-color: #718d7f;
+  background: rgb(250 247 240 / 18%);
+  color: #718d7f;
+  font-weight: 500;
+}
+
+.checkbox,
+.allergenBox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgb(185 164 122 / 55%);
+  color: #faf7f0;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.allergenBox {
+  width: 25px;
+  height: 25px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+
+.checkedBox {
+  border-color: #718d7f;
+  background: #718d7f;
+}
+
+.rangeControl {
+  position: relative;
+  height: 20px;
+}
+
+.rangeTrack,
+.rangeFill {
+  position: absolute;
+  top: 9px;
+  right: 8px;
+  left: 8px;
+  height: 3px;
+  border-radius: 999px;
+}
+
+.rangeTrack {
+  background: rgb(185 164 122 / 35%);
+}
+
+.rangeFill {
+  background: #718d7f;
+}
+
+.rangeInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  appearance: none;
+  pointer-events: none;
+  background: transparent;
+}
+
+.rangeInput::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  appearance: none;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 2px solid #718d7f;
+  border-radius: 50%;
+  background: #faf7f0;
+  box-shadow: 0 1px 3px rgb(70 66 72 / 18%);
+}
+
+.rangeInput::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 2px solid #718d7f;
+  border-radius: 50%;
+  background: #faf7f0;
+}

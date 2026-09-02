@@ -1,0 +1,10 @@
+.viewLink {
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.viewLink:hover {
+  color: #464248;
+  transform: translateX(2px);
+}

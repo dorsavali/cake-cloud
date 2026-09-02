@@ -32,22 +32,7 @@ type CartContextValue = {
   removeItem: (id: string) => void;
 };
 
-const initialItems: CartItem[] = [
-  {
-    id: "demo-almond-croissant",
-    name: "Almond Croissant",
-    unitPrice: 950,
-    currency: "AUD",
-    quantity: 1,
-  },
-  {
-    id: "demo-fudge-brownie",
-    name: "Fudge Brownie",
-    unitPrice: 690,
-    currency: "AUD",
-    quantity: 1,
-  },
-];
+const initialItems: CartItem[] = [];
 
 const CartContext = createContext<CartContextValue | null>(null);
 

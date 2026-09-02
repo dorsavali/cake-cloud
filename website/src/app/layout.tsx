@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl">
+    <html lang="en" dir="ltr">
       <body>
         <CartProvider>
           <div className="mx-auto min-h-dvh w-full max-w-[1536px]">{children}</div>
