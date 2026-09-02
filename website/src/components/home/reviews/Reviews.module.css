@@ -1,0 +1,25 @@
+.review {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateX(48px);
+  transition:
+    opacity 750ms ease,
+    transform 750ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.active {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.previous {
+  opacity: 0;
+  transform: translateX(-48px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review {
+    transition: none;
+  }
+}
