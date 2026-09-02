@@ -1,6 +1,6 @@
 export type ProductMoney = {
   amount: number;
-  currency: "AUD";
+  currency: string;
 };
 
 export type RecommendedProduct = {

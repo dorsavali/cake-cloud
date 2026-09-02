@@ -8,7 +8,7 @@ export default function Home() {
     <>
       <DesktopHeader />
       <MobileHeader />
-      <main>
+      <main className="bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y">
         <Hero />
         <CakeShowcase />
         <ProductRecommendations />
