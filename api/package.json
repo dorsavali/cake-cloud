@@ -2,10 +2,17 @@
   "name": "@cake-cloud/api",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "wrangler dev --config ../wrangler.jsonc",
+    "dev": "tsx watch src/node.ts",
+    "dev:worker": "wrangler dev --config ../wrangler.jsonc",
     "build": "tsc -p tsconfig.json",
-    "start": "wrangler dev --config ../wrangler.jsonc",
+    "start": "node dist/node.js",
     "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
   }
 }

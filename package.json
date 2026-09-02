@@ -4,6 +4,7 @@
   "private": true,
   "workspaces": ["website", "api"],
   "scripts": {
+    "dev": "wrangler dev --config wrangler.jsonc",
     "dev:website": "npm run dev -w @cake-cloud/website",
     "dev:api": "npm run dev -w @cake-cloud/api",
     "build": "npm run build -w @cake-cloud/api && npm run build -w @cake-cloud/website",
