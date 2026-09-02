@@ -1,8 +1,16 @@
+import { existsSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { loadEnvFile } from "node:process";
+import { fileURLToPath } from "node:url";
 
 import { handleApiRequest } from "./handler.js";
 import { notFound } from "./http/json.js";
 import type { ApiEnv } from "./types/env.js";
+
+const envFile = fileURLToPath(new URL("../../.env", import.meta.url));
+if (existsSync(envFile)) {
+  loadEnvFile(envFile);
+}
 
 const port = Number.parseInt(process.env.PORT ?? "3001", 10);
 const hostname = process.env.HOST ?? "127.0.0.1";

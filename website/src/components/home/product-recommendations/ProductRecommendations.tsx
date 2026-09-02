@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { apiUrl } from "@/lib/api";
+
 import { ProductCard } from "./ProductCard";
 import { recommendedProducts, type RecommendedProduct } from "./data";
 
@@ -22,8 +24,10 @@ export function ProductRecommendations() {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const response = await fetch("/api/products", { cache: "no-store" });
-        if (!response.ok) throw new Error("Products request failed");
+        const response = await fetch(apiUrl("/api/products"), {
+          cache: "no-store",
+        });
+api        if (!response.ok) throw new Error("Products request failed");
 
         const data = (await response.json()) as ProductsResponse;
         setProducts(
