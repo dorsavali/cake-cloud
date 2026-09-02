@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { CartTrigger } from "@/components/cart";
+
 import { desktopNavigation } from "./navigation";
 import styles from "./Header.module.css";
 
@@ -90,20 +92,7 @@ export function DesktopHeader() {
           CC Club
         </Link>
 
-        <Link
-          href="/cart"
-          prefetch={false}
-          aria-label="Shopping cart"
-          className="rounded-sm outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary"
-        >
-          <Image
-            src="/icons/cart.svg"
-            alt=""
-            width={38}
-            height={38}
-            unoptimized
-          />
-        </Link>
+        <CartTrigger />
       </div>
     </header>
   );

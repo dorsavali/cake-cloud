@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 
 import { IconButton, MenuIcon } from "@/components/ui";
+import { CartTrigger } from "@/components/cart";
 
 import styles from "./Header.module.css";
 import { MobileMenuDrawer } from "./MobileMenuDrawer";
@@ -40,20 +41,7 @@ export function MobileHeader() {
           />
         </Link>
 
-        <Link
-          href="/cart"
-          prefetch={false}
-          aria-label="Shopping cart"
-          className="justify-self-end rounded-sm outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
-        >
-          <Image
-            src="/icons/cart.svg"
-            alt=""
-            width={38}
-            height={38}
-            unoptimized
-          />
-        </Link>
+        <CartTrigger className="justify-self-end" />
       </header>
 
       <MobileMenuDrawer isOpen={isMenuOpen} onClose={closeMenu} />
