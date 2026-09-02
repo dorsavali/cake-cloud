@@ -5,15 +5,15 @@ export type NavigationItem = {
 };
 
 const dailyMenuChildren: NavigationItem[] = [
-  { href: "/menu#cakes-and-pastries", label: "Cakes & Pastries" },
-  { href: "/menu#drinks", label: "Drinks" },
-  { href: "/menu#packages", label: "Packages" },
-  { href: "/menu#pet-treats", label: "Treats (Pet Treats)" },
+  { href: "/DailyMenu#cakes-and-pastries", label: "Cakes & Pastries" },
+  { href: "/DailyMenu#drinks", label: "Drinks" },
+  { href: "/DailyMenu#packages", label: "Packages" },
+  { href: "/DailyMenu#pet-treats", label: "Treats (Pet Treats)" },
 ];
 
 export const desktopNavigation: NavigationItem[] = [
   { href: "/", label: "Home" },
-  { href: "/menu", label: "Daily Menu", children: dailyMenuChildren },
+  { href: "/DailyMenu", label: "Daily Menu", children: dailyMenuChildren },
   { href: "/custom-cakes", label: "Custom Cakes" },
   { href: "/events", label: "Events and Celebration" },
   { href: "/about", label: "About" },
@@ -21,7 +21,7 @@ export const desktopNavigation: NavigationItem[] = [
 
 export const mobileNavigation: NavigationItem[] = [
   { href: "/", label: "Home" },
-  { href: "/menu", label: "Daily Menu", children: dailyMenuChildren },
+  { href: "/DailyMenu", label: "Daily Menu", children: dailyMenuChildren },
   { href: "/custom-cakes", label: "Custom Cakes" },
   { href: "/events", label: "Events and Celebration" },
   { href: "/about", label: "About" },

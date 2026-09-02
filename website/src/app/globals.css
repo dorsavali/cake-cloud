@@ -59,6 +59,17 @@ textarea,
   user-select: text;
 }
 
+button:not(:disabled),
+a[href],
+[role="button"]:not([aria-disabled="true"]),
+summary {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 @layer utilities {
   .type-display {
     font-family: var(--font-kalnia);

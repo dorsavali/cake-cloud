@@ -35,7 +35,7 @@ export function ProductRecommendations() {
             ...item,
             image: item.image ?? "/images/homeCakes/1-720.webp",
             imageAlt: item.name,
-            href: `/menu#${item.id}`,
+            href: `/DailyMenu#${item.id}`,
           })),
         );
         setError(false);
@@ -69,7 +69,7 @@ export function ProductRecommendations() {
             Today&apos;s Recommends
           </h2>
           <Link
-            href="/menu"
+            href="/DailyMenu"
             prefetch={false}
             className="font-signika text-sm font-medium text-accent-dark transition-colors [&:hover]:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:text-base"
           >
@@ -90,9 +90,9 @@ export function ProductRecommendations() {
         )}
 
         <div className="mt-5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mt-4">
-          <ul className="flex w-max gap-2.5 lg:gap-4">
-            {products.map((product) => (
-              <li key={product.id}>
+          <ul className="flex w-max gap-2.5 lg:grid lg:w-full lg:grid-cols-4 lg:gap-4">
+            {products.slice(0, 4).map((product) => (
+              <li key={product.id} className="lg:min-w-0">
                 <ProductCard product={product} />
               </li>
             ))}

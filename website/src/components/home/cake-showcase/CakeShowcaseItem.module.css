@@ -1,0 +1,12 @@
+.exploreButton:hover {
+  border-color: #718d7f;
+  background-color: #718d7f;
+  color: #faf7f0;
+}
+
+.exploreButton:active {
+  border-color: #464248;
+  background-color: #464248;
+  color: #faf7f0;
+  transform: scale(0.99);
+}

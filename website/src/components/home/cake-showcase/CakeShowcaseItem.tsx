@@ -1,7 +1,10 @@
+import Link from "next/link";
+
 import { Button } from "@/components/ui";
 
 import type { CakeShowcaseItem as CakeShowcaseItemData } from "./data";
 import { CakeImageReveal } from "./CakeImageReveal";
+import styles from "./CakeShowcaseItem.module.css";
 
 type CakeShowcaseItemProps = {
   item: CakeShowcaseItemData;
@@ -17,14 +20,24 @@ export function CakeShowcaseItem({ item }: CakeShowcaseItemProps) {
         <p className="mt-5 max-w-[550px] font-signika text-[14px] leading-[1.3] text-accent-dark lg:mt-3 lg:text-[24px] lg:leading-[1.25]">
           {item.description}
         </p>
-        <Button
-          variant="outline"
-          size="lg"
-          font="display"
-          className="mt-6 h-10! min-w-0! rounded-[20px]! px-8! py-2! text-[18px]! gap-2! lg:h-[60px]! lg:min-w-[238px]! lg:rounded-full! lg:px-10! lg:text-[32px]! [&:hover]:border-primary [&:hover]:bg-primary [&:hover]:text-accent"
-        >
-          {item.ctaLabel}
-        </Button>
+        {item.ctaHref ? (
+          <Link
+            href={item.ctaHref}
+            prefetch={false}
+            className={`${styles.exploreButton} mt-6 inline-flex h-10 min-w-0 items-center justify-center rounded-[20px] border border-luxury-accent px-8 py-2 font-kalnia text-[18px] leading-none text-accent-dark transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:h-[60px] lg:min-w-[238px] lg:rounded-full lg:px-10 lg:text-[32px]`}
+          >
+            {item.ctaLabel}
+          </Link>
+        ) : (
+          <Button
+            variant="outline"
+            size="lg"
+            font="display"
+            className={`${styles.exploreButton} mt-6 h-10! min-w-0! rounded-[20px]! px-8! py-2! text-[18px]! gap-2! lg:h-[60px]! lg:min-w-[238px]! lg:rounded-full! lg:px-10! lg:text-[32px]!`}
+          >
+            {item.ctaLabel}
+          </Button>
+        )}
       </div>
 
       <div className="flex justify-end lg:justify-center">

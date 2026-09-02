@@ -1,3 +1,14 @@
+.actionButton:hover {
+  border-color: #464248;
+  background-color: #464248;
+  color: #faf7f0;
+}
+
+.actionButton:active {
+  border-color: #718d7f;
+  background-color: #718d7f;
+}
+
 .cakeStage {
   position: absolute;
   top: 35px;

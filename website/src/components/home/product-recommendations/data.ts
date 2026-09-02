@@ -20,7 +20,7 @@ export const recommendedProducts: RecommendedProduct[] = [
     price: { amount: 999, currency: "AUD" },
     image: "/images/homeCakes/1-720.webp",
     imageAlt: "Strawberry celebration cake",
-    href: "/menu#cake-01",
+    href: "/DailyMenu#cake-01",
   },
   {
     id: "cake-02",
@@ -28,7 +28,7 @@ export const recommendedProducts: RecommendedProduct[] = [
     price: { amount: 999, currency: "AUD" },
     image: "/images/homeCakes/2-720.webp",
     imageAlt: "Mango celebration cake",
-    href: "/menu#cake-02",
+    href: "/DailyMenu#cake-02",
   },
   {
     id: "cake-03",
@@ -36,7 +36,7 @@ export const recommendedProducts: RecommendedProduct[] = [
     price: { amount: 999, currency: "AUD" },
     image: "/images/homeCakes/3-720.webp",
     imageAlt: "White floral celebration cake",
-    href: "/menu#cake-03",
+    href: "/DailyMenu#cake-03",
   },
   {
     id: "cake-04",
@@ -44,6 +44,6 @@ export const recommendedProducts: RecommendedProduct[] = [
     price: { amount: 999, currency: "AUD" },
     image: "/images/homeCakes/1in-720.webp",
     imageAlt: "Cake Cloud layered cake",
-    href: "/menu#cake-04",
+    href: "/DailyMenu#cake-04",
   },
 ];

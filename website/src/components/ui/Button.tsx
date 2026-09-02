@@ -13,10 +13,10 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   outline:
-    "border border-luxury-accent bg-transparent text-accent-dark hover:bg-luxury-accent/10",
-  dark: "border border-accent-dark bg-accent-dark text-accent hover:bg-accent-dark/90",
+    "border border-luxury-accent bg-transparent text-accent-dark hover:border-accent-dark hover:bg-accent-dark hover:text-accent active:border-primary active:bg-primary",
+  dark: "border border-accent-dark bg-accent-dark text-accent hover:border-primary hover:bg-primary active:border-accent-dark active:bg-accent-dark",
   primary:
-    "border border-accent-dark bg-primary text-accent-dark hover:bg-primary/90",
+    "border border-primary bg-primary text-accent hover:border-accent-dark hover:bg-accent-dark active:border-primary active:bg-primary",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

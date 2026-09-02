@@ -1,0 +1,17 @@
+.deliveryButton {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.deliveryButton:hover {
+  border-color: #464248;
+  background-color: #464248;
+  color: #faf7f0;
+}
+
+.deliveryButton:active {
+  border-color: #718d7f;
+  background-color: #718d7f;
+}

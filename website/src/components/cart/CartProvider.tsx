@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 
+import styles from "./Cart.module.css";
+
 export type CartItem = {
   id: string;
   name: string;
@@ -196,7 +198,7 @@ function CartDrawer({
           <button
             type="button"
             disabled={items.length === 0}
-            className="mt-4 flex h-[52px] w-full items-center justify-center rounded-[18px] bg-primary font-kalnia text-lg font-medium text-accent transition-colors hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-45"
+            className={`${styles.checkoutButton} mt-4 flex h-[52px] w-full items-center justify-center rounded-[18px] border border-primary bg-primary font-kalnia text-lg font-medium text-accent transition-[color,background-color,border-color,transform] duration-200 disabled:cursor-not-allowed disabled:border-primary disabled:bg-primary disabled:opacity-45`}
           >
             Checkout
           </button>

@@ -5,6 +5,7 @@ export type CakeShowcaseItem = {
   imageAfter: string;
   imageAlt: string;
   ctaLabel: string;
+  ctaHref?: string;
 };
 
 export const cakeShowcaseItems: CakeShowcaseItem[] = [
@@ -16,6 +17,7 @@ export const cakeShowcaseItems: CakeShowcaseItem[] = [
     imageAfter: "/images/homeCakes/1in-720.webp",
     imageAlt: "Ready-to-eat artisan pastry",
     ctaLabel: "Explore",
+    ctaHref: "/DailyMenu",
   },
   {
     title: "Custom Cakes",

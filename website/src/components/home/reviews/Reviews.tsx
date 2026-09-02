@@ -46,7 +46,10 @@ export function Reviews() {
 
   useEffect(() => {
     const interval = window.setInterval(
-      () => setActiveIndex((current) => current + 1),
+      () =>
+        setActiveIndex((current) =>
+          current < reviews.length ? current + 1 : current,
+        ),
       5000,
     );
 
@@ -55,7 +58,10 @@ export function Reviews() {
 
   const slides = [...reviews, reviews[0]];
 
-  const handleTransitionEnd = () => {
+  const handleTransitionEnd = (
+    event: React.TransitionEvent<HTMLDivElement>,
+  ) => {
+    if (event.propertyName !== "transform") return;
     if (activeIndex !== reviews.length) return;
 
     setTransitionEnabled(false);
