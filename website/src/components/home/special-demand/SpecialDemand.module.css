@@ -53,6 +53,18 @@
   transition-delay: var(--delay), var(--delay);
 }
 
+@media (max-width: 479px) {
+  .cakeStage {
+    position: absolute;
+    top: 35px;
+    right: -12px;
+    width: 240px;
+    height: 280px;
+    transform: scale(0.75);
+    transform-origin: right center;
+  }
+}
+
 @media (min-width: 1024px) {
   .cakeStage {
     position: relative;

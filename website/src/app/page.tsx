@@ -5,6 +5,7 @@ import { ProductRecommendations } from "@/components/home/product-recommendation
 import { Reviews } from "@/components/home/reviews";
 import { SpecialDemand } from "@/components/home/special-demand";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 
 export default function Home() {
   return (
@@ -19,6 +20,7 @@ export default function Home() {
         <Reviews />
         <Partners />
       </main>
+      <Footer />
     </>
   );
 }

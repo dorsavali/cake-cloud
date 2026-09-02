@@ -27,13 +27,13 @@ export function ProductRecommendations() {
         const response = await fetch(apiUrl("/api/products"), {
           cache: "no-store",
         });
-api        if (!response.ok) throw new Error("Products request failed");
+       if (!response.ok) throw new Error("Products request failed");
 
         const data = (await response.json()) as ProductsResponse;
         setProducts(
           (data.items ?? []).map((item) => ({
             ...item,
-            image: item.image ?? "/images/homeCakes/1.webp",
+            image: item.image ?? "/images/homeCakes/1-720.webp",
             imageAlt: item.name,
             href: `/menu#${item.id}`,
           })),

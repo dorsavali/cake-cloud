@@ -7,12 +7,11 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import styles from "./SpecialDemand.module.css";
 
 const layers = [
-  { file: "1exploded.webp", desktopWidth: 310, desktopClosedY: 444, desktopOpenY: 434, mobileWidth: 145, mobileClosedY: 215, mobileOpenY: 215 },
-  { file: "2exploded.webp", desktopWidth: 218, desktopClosedY: 360, desktopOpenY: 284, mobileWidth: 102, mobileClosedY: 185, mobileOpenY: 144 },
-  { file: "3exploded.webp", desktopWidth: 145, desktopClosedY: 330, desktopOpenY: 227, mobileWidth: 68, mobileClosedY: 165, mobileOpenY: 116 },
-  { file: "4exploded.webp", desktopWidth: 145, desktopClosedY: 300, desktopOpenY: 169, mobileWidth: 68, mobileClosedY: 145, mobileOpenY: 88 },
-  { file: "5exploded.webp", desktopWidth: 145, desktopClosedY: 270, desktopOpenY: 124, mobileWidth: 68, mobileClosedY: 125, mobileOpenY: 66 },
-  { file: "6exploded.webp", desktopWidth: 145, desktopClosedY: 220, desktopOpenY: 27, mobileWidth: 68, mobileClosedY: 95, mobileOpenY: 20 },
+  { file: "1&2exploded.webp", sourceWidth: 604, sourceHeight: 293, desktopWidth: 310, desktopClosedY: 360, desktopOpenY: 360, mobileWidth: 145, mobileClosedY: 176, mobileOpenY: 176 },
+  { file: "3exploded.webp", sourceWidth: 464, sourceHeight: 174, desktopWidth: 145, desktopClosedY: 330, desktopOpenY: 303, mobileWidth: 68, mobileClosedY: 165, mobileOpenY: 149 },
+  { file: "4exploded.webp", sourceWidth: 422, sourceHeight: 161, desktopWidth: 145, desktopClosedY: 300, desktopOpenY: 244, mobileWidth: 68, mobileClosedY: 145, mobileOpenY: 121 },
+  { file: "5exploded.webp", sourceWidth: 432, sourceHeight: 125, desktopWidth: 145, desktopClosedY: 270, desktopOpenY: 199, mobileWidth: 68, mobileClosedY: 125, mobileOpenY: 99 },
+  { file: "6exploded.webp", sourceWidth: 481, sourceHeight: 311, desktopWidth: 145, desktopClosedY: 220, desktopOpenY: 102, mobileWidth: 68, mobileClosedY: 95, mobileOpenY: 53 },
 ] as const;
 
 type LayerStyle = CSSProperties & {
@@ -82,14 +81,14 @@ export function SpecialDemand() {
           <div className="mt-16 flex flex-col gap-4 lg:flex-row lg:gap-8">
             <Link
               href="/custom-cakes"
-              className="flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors hover:bg-accent/70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:h-[68px] lg:w-[264px] lg:text-base"
+              className="flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors hover:bg-accent/70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary max-[479px]:h-11 max-[479px]:w-[180px] lg:h-[68px] lg:w-[264px] lg:text-base"
             >
               <span aria-hidden="true" className="text-2xl font-light">+</span>
               Customizables
             </Link>
             <Link
               href="/custom-cakes"
-              className="flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors hover:bg-accent/70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:h-[68px] lg:w-[264px] lg:text-base"
+              className="flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors hover:bg-accent/70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary max-[479px]:h-11 max-[479px]:w-[180px] lg:h-[68px] lg:w-[264px] lg:text-base"
             >
               <span aria-hidden="true" className="text-2xl font-light">+</span>
               From Scratch
@@ -117,8 +116,8 @@ export function SpecialDemand() {
               src={`/images/heroExplode/${layer.file}`}
               alt=""
               aria-hidden="true"
-              width={index === 0 ? 995 : index === 1 ? 700 : index === 2 ? 464 : index === 3 ? 422 : index === 4 ? 432 : 481}
-              height={index === 0 ? 212 : index === 1 ? 472 : index === 2 ? 174 : index === 3 ? 161 : index === 4 ? 125 : 311}
+              width={layer.sourceWidth}
+              height={layer.sourceHeight}
               unoptimized
               className={styles.layer}
               style={

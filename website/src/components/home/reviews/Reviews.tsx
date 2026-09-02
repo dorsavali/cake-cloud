@@ -42,22 +42,28 @@ const reviews = [
 
 export function Reviews() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [previousIndex, setPreviousIndex] = useState<number | null>(null);
+  const [transitionEnabled, setTransitionEnabled] = useState(true);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
     const interval = window.setInterval(
-      () =>
-        setActiveIndex((current) => {
-          setPreviousIndex(current);
-          return (current + 1) % reviews.length;
-        }),
+      () => setActiveIndex((current) => current + 1),
       5000,
     );
 
     return () => window.clearInterval(interval);
   }, []);
+
+  const slides = [...reviews, reviews[0]];
+
+  const handleTransitionEnd = () => {
+    if (activeIndex !== reviews.length) return;
+
+    setTransitionEnabled(false);
+    setActiveIndex(0);
+    window.requestAnimationFrame(() =>
+      window.requestAnimationFrame(() => setTransitionEnabled(true)),
+    );
+  };
 
   return (
     <section
@@ -81,49 +87,51 @@ export function Reviews() {
           View on Google Reviews
         </a>
 
-        <div className="relative mt-7 min-h-[210px] lg:min-h-[220px]">
-          {reviews.map((review, index) => (
-            <article
-              key={review.name}
-              aria-hidden={index !== activeIndex}
-              className={`${styles.review} ${
-                index === activeIndex
-                  ? styles.active
-                  : index === previousIndex
-                    ? styles.previous
-                    : ""
-              }`}
-            >
-              <div className="flex items-center justify-center gap-4">
-                <div
-                  aria-hidden="true"
-                  className="flex size-14 shrink-0 items-center justify-center rounded-full font-signika text-sm font-medium text-white lg:size-[68px] lg:text-base"
-                  style={{ backgroundColor: review.color }}
-                >
-                  {review.initials}
-                </div>
+        <div className="mt-7 min-h-[210px] overflow-hidden lg:min-h-[220px]">
+          <div
+            className={`${styles.track} ${
+              transitionEnabled ? "" : styles.withoutTransition
+            }`}
+            style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+            onTransitionEnd={handleTransitionEnd}
+          >
+            {slides.map((review, index) => (
+              <article
+                key={`${review.name}-${index}`}
+                aria-hidden={index !== activeIndex}
+                className={styles.slide}
+              >
+                <div className="flex items-center justify-center gap-4">
+                  <div
+                    aria-hidden="true"
+                    className="flex size-14 shrink-0 items-center justify-center rounded-full font-signika text-sm font-medium text-white lg:size-[68px] lg:text-base"
+                    style={{ backgroundColor: review.color }}
+                  >
+                    {review.initials}
+                  </div>
 
-                <div className="text-left">
-                  <p className="font-signika text-xl font-normal lg:text-[28px]">
-                    {review.name}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span
-                      aria-label="5 out of 5 stars"
-                      className="tracking-[3px] text-luxury-accent"
-                    >
-                      ★★★★★
-                    </span>
-                    <span className="font-signika text-sm font-normal">5</span>
+                  <div className="text-left">
+                    <p className="font-signika text-xl font-normal lg:text-[28px]">
+                      {review.name}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span
+                        aria-label="5 out of 5 stars"
+                        className="tracking-[3px] text-luxury-accent"
+                      >
+                        ★★★★★
+                      </span>
+                      <span className="font-signika text-sm font-normal">5</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <p className="mx-auto mt-5 max-w-[540px] font-signika text-lg font-light leading-[1.5] lg:max-w-[680px] lg:text-xl lg:leading-[1.6]">
-                {review.text}
-              </p>
-            </article>
-          ))}
+                <p className="mx-auto mt-5 max-w-[540px] font-signika text-lg font-light leading-[1.5] lg:max-w-[680px] lg:text-xl lg:leading-[1.6]">
+                  {review.text}
+                </p>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>

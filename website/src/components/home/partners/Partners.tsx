@@ -42,7 +42,7 @@ export function Partners() {
       aria-labelledby="partners-heading"
       className="py-16 lg:flex lg:min-h-[430px] lg:items-center lg:py-0"
     >
-      <div className="mx-auto w-full max-w-[1100px] px-4 text-center text-accent-dark lg:px-8 lg:py-10">
+      <div className="mx-auto w-full max-w-[2056px] px-4 text-center text-accent-dark lg:px-8 lg:py-10">
         <p className="font-signika text-sm font-light uppercase tracking-[0.2em] lg:text-xs">
           Our Partners
         </p>
@@ -57,7 +57,7 @@ export function Partners() {
           finest ingredients — our trusted local partners.
         </p>
 
-        <ul className="mt-10 grid grid-cols-2 gap-4 lg:mt-9 lg:grid-cols-4">
+        <ul className="mt-10 grid grid-cols-2 gap-4 lg:mx-auto lg:mt-9 lg:max-w-[1100px] lg:grid-cols-4">
           {partners.map((partner) => (
             <li
               key={partner.name}

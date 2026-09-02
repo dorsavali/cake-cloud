@@ -85,9 +85,9 @@ export function DesktopHeader() {
           href="/club"
           prefetch={false}
           aria-label="Cake Cloud Club"
-          className="inline-flex h-11 min-w-[5.25rem] items-center justify-center rounded-full border-2 border-[#d8c49c] font-signika text-base font-semibold leading-none text-accent-dark transition-colors duration-200 [&:hover]:border-accent-dark [&:hover]:bg-luxury-accent focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-primary"
+          className="inline-flex h-11 min-w-[6.5rem] items-center justify-center rounded-full border-2 border-luxury-accent bg-luxury-accent px-5 font-signika text-base font-semibold leading-none text-accent-dark transition-colors duration-200 [&:hover]:border-accent-dark [&:hover]:bg-accent-dark [&:hover]:text-luxury-accent focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-primary"
         >
-          CCC
+          CC Club
         </Link>
 
         <Link
