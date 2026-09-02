@@ -1,5 +1,6 @@
 import { CakeShowcase } from "@/components/home/cake-showcase";
 import { Hero } from "@/components/home/hero";
+import { Partners } from "@/components/home/partners";
 import { ProductRecommendations } from "@/components/home/product-recommendations";
 import { Reviews } from "@/components/home/reviews";
 import { SpecialDemand } from "@/components/home/special-demand";
@@ -16,6 +17,7 @@ export default function Home() {
         <ProductRecommendations />
         <SpecialDemand />
         <Reviews />
+        <Partners />
       </main>
     </>
   );
