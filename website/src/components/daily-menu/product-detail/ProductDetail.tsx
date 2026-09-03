@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
-import { apiUrl } from "@/lib/api";
+import { getProductCatalog } from "@/lib/productCatalog";
 
 import type { DailyMenuProduct } from "../types";
 import styles from "./ProductDetail.module.css";
@@ -42,10 +42,10 @@ function formatDietaryPreference(value: string) {
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="border-t border-luxury-accent/20 py-3.5 first:border-t-0">
-      <h2 className="font-signika text-[11px] font-normal uppercase tracking-[0.16em] text-accent-dark/55">
+      <h2 className="font-signika text-[9px] font-normal uppercase tracking-[0.16em] text-accent-dark/55 lg:text-[11px]">
         {label}
       </h2>
-      <div className="mt-2 font-signika text-sm font-light leading-5 text-accent-dark">
+      <div className="mt-2 font-signika text-xs font-normal leading-5 text-accent-dark lg:text-sm">
         {children}
       </div>
     </div>
@@ -63,7 +63,6 @@ export function ProductDetail() {
   const [quantity, setQuantity] = useState(0);
 
   useEffect(() => {
-    const controller = new AbortController();
     let isActive = true;
 
     const loadProduct = async () => {
@@ -72,25 +71,17 @@ export function ProductDetail() {
       setResolvedProductId(null);
 
       try {
-        if (process.env.NODE_ENV === "development") {
-          await new Promise((resolve) => window.setTimeout(resolve, 1000));
-        }
-        const response = await fetch(apiUrl("/api/products"), {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        if (!response.ok) throw new Error("Product request failed");
-        const data = (await response.json()) as { items?: DailyMenuProduct[] };
+        const items = await getProductCatalog();
         if (isActive) {
-          const fetchedProduct = (data.items ?? []).find(
+          const fetchedProduct = items.find(
             (item) => item.id === productId,
           );
           setProduct(fetchedProduct ?? null);
           setResolvedProductId(productId);
           setLoadState(fetchedProduct ? "success" : "error");
         }
-      } catch (requestError) {
-        if (isActive && (requestError as Error).name !== "AbortError") {
+      } catch {
+        if (isActive) {
           setResolvedProductId(productId);
           setLoadState("error");
         }
@@ -99,7 +90,6 @@ export function ProductDetail() {
     void loadProduct();
     return () => {
       isActive = false;
-      controller.abort();
     };
   }, [productId]);
 
@@ -162,14 +152,14 @@ export function ProductDetail() {
   };
 
   return (
-    <div dir="ltr" className="mx-auto w-full max-w-[1220px] px-8 pb-18 pt-2 text-accent-dark">
-      <Link href="/DailyMenu" className="inline-flex items-center gap-2 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary">
+    <div dir="ltr" className="mx-auto w-full max-w-[1220px] px-4 pb-20 pt-2 text-accent-dark lg:px-8 lg:pb-18">
+      <Link href="/DailyMenu" className="inline-flex items-center gap-2 font-signika text-xs text-accent-dark/60 transition-colors hover:text-primary lg:text-sm">
         <span aria-hidden="true">←</span> Back to Daily Products
       </Link>
 
-      <div className="mt-2 grid grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] items-start gap-6">
+      <div className="mt-3 grid grid-cols-1 items-start gap-4 lg:mt-2 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-6">
         <section aria-label="Product images" className="min-w-0">
-          <div className="relative aspect-square overflow-hidden rounded-2xl border border-luxury-accent/55 bg-[#eee8dc]">
+          <div className="relative aspect-square overflow-hidden rounded-xl border border-luxury-accent/55 bg-[#eee8dc] lg:rounded-2xl">
             {selectedImage ? (
               <Image src={selectedImage} alt={product.name} fill priority unoptimized className="object-cover" />
             ) : (
@@ -183,9 +173,9 @@ export function ProductDetail() {
             )}
           </div>
           {images.length > 0 && (
-            <div className="mt-3 flex gap-2.5 overflow-x-auto px-1 pb-1">
+            <div className="mt-1 flex justify-center gap-2 overflow-x-auto px-1 pb-1 lg:mt-3 lg:justify-start lg:gap-2.5">
               {images.map((image, index) => (
-                <button key={`${image}-${index}`} type="button" onClick={() => setActiveImage(index)} aria-label={`Show image ${index + 1}`} className={`${styles.thumbnail} relative size-16 shrink-0 overflow-hidden rounded-xl border-2 ${index === activeImage ? "border-primary opacity-100" : "border-transparent opacity-70"}`}>
+                <button key={`${image}-${index}`} type="button" onClick={() => setActiveImage(index)} aria-label={`Show image ${index + 1}`} className={`${styles.thumbnail} relative size-11 shrink-0 overflow-hidden rounded-lg border-2 lg:size-16 lg:rounded-xl ${index === activeImage ? "border-primary opacity-100" : "border-transparent opacity-70"}`}>
                   <Image src={image} alt="" fill unoptimized className="object-cover" />
                 </button>
               ))}
@@ -193,16 +183,16 @@ export function ProductDetail() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-luxury-accent/55 bg-accent px-6 py-4">
+        <section className="rounded-xl border border-luxury-accent/55 bg-accent px-4 py-4 lg:rounded-2xl lg:px-6">
           <div className="flex items-start justify-between gap-6">
             <div>
-              <h1 className="font-kalnia text-[26px] font-medium leading-tight">{product.name}</h1>
+              <h1 className="font-kalnia text-xl font-medium leading-tight lg:text-[26px]">{product.name}</h1>
               {product.variationName && <p className="mt-1 font-signika text-sm font-light text-accent-dark/60">{product.variationName}</p>}
             </div>
-            <p className="shrink-0 font-kalnia text-2xl font-normal text-primary">{formatPrice(product)}</p>
+            <p className="shrink-0 font-kalnia text-lg font-normal text-primary lg:text-2xl">{formatPrice(product)}</p>
           </div>
 
-          {categoryTags.length > 0 && <div className="mt-3 flex flex-wrap gap-x-7 gap-y-1.5 font-signika text-xs text-accent-dark/60">{categoryTags.map((category) => <span key={category}>{category}</span>)}</div>}
+          {categoryTags.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5 font-signika text-[10px] text-accent-dark/60 lg:gap-x-7 lg:gap-y-1.5 lg:text-xs">{categoryTags.map((category) => <span key={category} className="rounded-full bg-[#eee8da] px-2 py-1 lg:bg-transparent lg:px-0 lg:py-0">{category}</span>)}</div>}
 
           <div className="mt-3">
             <DetailRow label="About this item">{product.description || "No description available."}</DetailRow>
@@ -224,9 +214,9 @@ export function ProductDetail() {
         </section>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-luxury-accent/25 bg-accent/95 px-8 py-2.5 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1390px] gap-4">
-          <div className="flex h-12 w-[150px] shrink-0 items-center justify-around rounded-2xl bg-primary font-signika text-accent">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-luxury-accent/25 bg-accent/95 px-3 py-2.5 backdrop-blur-md lg:px-8">
+        <div className="mx-auto flex max-w-[1390px] gap-2 lg:gap-4">
+          <div className="flex h-12 w-[90px] shrink-0 items-center justify-around rounded-2xl bg-primary font-signika text-accent lg:w-[150px]">
             <button type="button" aria-label="Decrease quantity" onClick={() => setQuantity((current) => Math.max(0, current - 1))} className="size-10 text-xl">−</button>
             <span>{quantity}</span>
             <button

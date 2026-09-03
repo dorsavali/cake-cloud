@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { apiUrl } from "@/lib/api";
+import { getProductCatalog } from "@/lib/productCatalog";
 
 import {
   CategoryTabs,
@@ -60,36 +60,25 @@ export function DailyMenuCatalog() {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
     let isActive = true;
 
     const loadProducts = async () => {
       setLoadState("loading");
 
       try {
-        const response = await fetch(apiUrl("/api/products"), {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        if (!response.ok) throw new Error("Products request failed");
-        const data = (await response.json()) as {
-          items?: DailyMenuProduct[];
-        };
+        const items = await getProductCatalog();
         if (isActive) {
-          setProducts(data.items ?? []);
+          setProducts(items);
           setLoadState("success");
         }
-      } catch (requestError) {
-        if (isActive && (requestError as Error).name !== "AbortError") {
-          setLoadState("error");
-        }
+      } catch {
+        if (isActive) setLoadState("error");
       }
     };
 
     void loadProducts();
     return () => {
       isActive = false;
-      controller.abort();
     };
   }, []);
 
