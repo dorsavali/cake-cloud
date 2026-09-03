@@ -21,6 +21,11 @@ const env: ApiEnv = {
   SQUARE_APPLICATION_ID: process.env.SQUARE_APPLICATION_ID ?? "",
   SQUARE_ENVIRONMENT:
     process.env.SQUARE_ENVIRONMENT === "production" ? "production" : "sandbox",
+  SQUARE_WEBHOOK_SIGNATURE_KEY:
+    process.env.SQUARE_WEBHOOK_SIGNATURE_KEY ?? "",
+  SQUARE_WEBHOOK_NOTIFICATION_URL:
+    process.env.SQUARE_WEBHOOK_NOTIFICATION_URL ??
+    `http://${hostname}:${port}/api/webhooks/square`,
 };
 
 async function toRequest(request: IncomingMessage): Promise<Request> {
