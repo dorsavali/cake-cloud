@@ -1,4 +1,5 @@
 import { notFound } from "./http/json.js";
+import { applyPublicApiRateLimit } from "./http/rate-limit.js";
 import { handleCatalogItems } from "./routes/catalog.js";
 import { handleHealth } from "./routes/health.js";
 import { handleSquareWebhook } from "./routes/square-webhook.js";
@@ -14,6 +15,15 @@ export async function handleApiRequest(
   env: ApiEnv,
 ): Promise<Response | null> {
   const url = new URL(request.url);
+  const isRateLimitedRoute =
+    url.pathname === "/api/categories" ||
+    url.pathname === "/api/products" ||
+    url.pathname.startsWith("/api/products/");
+
+  if (isRateLimitedRoute) {
+    const rateLimitResponse = applyPublicApiRateLimit(request);
+    if (rateLimitResponse) return rateLimitResponse;
+  }
 
   if (url.pathname === "/api/health") {
     return handleHealth(request);
