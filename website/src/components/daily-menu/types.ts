@@ -1,5 +1,6 @@
 export type DailyMenuProduct = {
   id: string;
+  variationId: string | null;
   name: string;
   description: string;
   variationName: string;
@@ -13,5 +14,6 @@ export type DailyMenuProduct = {
   ingredients: string;
   dietaryPreferences: string[];
   allergens: string[];
+  stock: number | null;
   popularityScore: number;
 };

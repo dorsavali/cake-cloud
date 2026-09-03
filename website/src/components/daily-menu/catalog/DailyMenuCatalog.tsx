@@ -45,8 +45,7 @@ export function DailyMenuCatalog() {
   const [products, setProducts] = useState<DailyMenuProduct[]>([]);
   const [filters, setFilters] = useState<MenuFilters>(defaultFilters);
   const [sortBy, setSortBy] = useState<SortOption>("Most Popular");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [loadState, setLoadState] = useState<"loading" | "success" | "error">("loading");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
   const productsStartRef = useRef<HTMLDivElement>(null);
@@ -62,8 +61,11 @@ export function DailyMenuCatalog() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let isActive = true;
 
     const loadProducts = async () => {
+      setLoadState("loading");
+
       try {
         const response = await fetch(apiUrl("/api/products"), {
           cache: "no-store",
@@ -73,17 +75,22 @@ export function DailyMenuCatalog() {
         const data = (await response.json()) as {
           items?: DailyMenuProduct[];
         };
-        setProducts(data.items ?? []);
-        setError(false);
+        if (isActive) {
+          setProducts(data.items ?? []);
+          setLoadState("success");
+        }
       } catch (requestError) {
-        if ((requestError as Error).name !== "AbortError") setError(true);
-      } finally {
-        setIsLoading(false);
+        if (isActive && (requestError as Error).name !== "AbortError") {
+          setLoadState("error");
+        }
       }
     };
 
     void loadProducts();
-    return () => controller.abort();
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
   }, []);
 
   const handleCategoryChange = (category: DailyMenuCategory) => {
@@ -191,11 +198,11 @@ export function DailyMenuCatalog() {
         </div>
         <div className={styles.products}>
           <div ref={productsStartRef} className="scroll-mt-24 lg:mt-5">
-            {isLoading ? (
+            {loadState === "loading" ? (
               <p className="py-20 text-center font-signika text-base text-accent-dark/65">
                 Loading products...
               </p>
-            ) : error ? (
+            ) : loadState === "error" ? (
               <p className="py-20 text-center font-signika text-base text-accent-dark">
                 Products are temporarily unavailable.
               </p>

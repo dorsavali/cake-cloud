@@ -14,10 +14,12 @@ import styles from "./Cart.module.css";
 
 export type CartItem = {
   id: string;
+  variationId: string | null;
   name: string;
   unitPrice: number;
   currency: string;
   quantity: number;
+  maxQuantity: number | null;
 };
 
 type AddCartItem = Omit<CartItem, "quantity"> & { quantity?: number };
@@ -156,7 +158,8 @@ function CartDrawer({
                       type="button"
                       aria-label={`Increase ${item.name} quantity`}
                       onClick={() => setItemQuantity(item.id, item.quantity + 1)}
-                      className="flex size-6 items-center justify-center rounded-full border border-luxury-accent/55 font-signika text-sm font-light text-primary transition-colors hover:bg-primary hover:text-accent"
+                      disabled={item.maxQuantity !== null && item.quantity >= item.maxQuantity}
+                      className="flex size-6 items-center justify-center rounded-full border border-luxury-accent/55 font-signika text-sm font-light text-primary transition-colors hover:bg-primary hover:text-accent disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-primary"
                     >
                       +
                     </button>
@@ -206,11 +209,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (existing) {
         return currentItems.map((item) =>
           item.id === newItem.id
-            ? { ...item, quantity: item.quantity + (newItem.quantity ?? 1) }
+            ? {
+                ...item,
+                variationId: newItem.variationId,
+                maxQuantity: newItem.maxQuantity,
+                quantity:
+                  newItem.maxQuantity === null
+                    ? item.quantity + (newItem.quantity ?? 1)
+                    : Math.min(
+                        newItem.maxQuantity,
+                        item.quantity + (newItem.quantity ?? 1),
+                      ),
+              }
             : item,
         );
       }
-      return [...currentItems, { ...newItem, quantity: newItem.quantity ?? 1 }];
+      const requestedQuantity = newItem.quantity ?? 1;
+      const quantity =
+        newItem.maxQuantity === null
+          ? requestedQuantity
+          : Math.min(newItem.maxQuantity, requestedQuantity);
+      return quantity > 0
+        ? [...currentItems, { ...newItem, quantity }]
+        : currentItems;
     });
     setIsOpen(true);
   }, []);
@@ -220,7 +241,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       quantity <= 0
         ? currentItems.filter((item) => item.id !== id)
         : currentItems.map((item) =>
-            item.id === id ? { ...item, quantity } : item,
+            item.id === id
+              ? {
+                  ...item,
+                  quantity:
+                    item.maxQuantity === null
+                      ? quantity
+                      : Math.min(quantity, item.maxQuantity),
+                }
+              : item,
           ),
     );
   }, []);

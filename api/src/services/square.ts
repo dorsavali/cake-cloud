@@ -31,6 +31,7 @@ type SquareCatalogObject = {
         name?: string;
         price_money?: SquareMoney;
         image_ids?: string[];
+        track_inventory?: boolean;
       };
     }>;
   };
@@ -45,6 +46,7 @@ type SquareCatalogListResponse = {
 
 type StorefrontProduct = {
   id: string;
+  variationId: string | null;
   name: string;
   description: string;
   variationName: string;
@@ -55,7 +57,19 @@ type StorefrontProduct = {
   ingredients: string;
   dietaryPreferences: string[];
   allergens: string[];
+  stock: number | null;
   popularityScore: number;
+};
+
+type InventoryCount = {
+  catalog_object_id?: string;
+  state?: string;
+  quantity?: string;
+};
+
+type BatchRetrieveInventoryCountsResponse = {
+  counts?: InventoryCount[];
+  cursor?: string;
 };
 
 type SquareOrder = {
@@ -84,6 +98,55 @@ const popularityCache = new Map<
   string,
   { expiresAt: number; quantities: Map<string, number> }
 >();
+
+async function getInventoryByVariation(
+  env: ApiEnv,
+  variationIds: string[],
+): Promise<Map<string, number> | null> {
+  if (variationIds.length === 0) return new Map();
+
+  const quantities = new Map<string, number>();
+  let cursor: string | undefined;
+
+  try {
+    do {
+      const response = await fetch(
+        `${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/inventory/counts/batch-retrieve`,
+        {
+          method: "POST",
+          headers: {
+            ...squareHeaders(env),
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            catalog_object_ids: variationIds,
+            states: ["IN_STOCK"],
+            limit: 1000,
+            cursor,
+          }),
+        },
+      );
+
+      if (!response.ok) return null;
+
+      const page = (await response.json()) as BatchRetrieveInventoryCountsResponse;
+      for (const count of page.counts ?? []) {
+        if (!count.catalog_object_id || count.state !== "IN_STOCK") continue;
+        const quantity = Number.parseFloat(count.quantity ?? "0");
+        if (!Number.isFinite(quantity)) continue;
+        quantities.set(
+          count.catalog_object_id,
+          (quantities.get(count.catalog_object_id) ?? 0) + quantity,
+        );
+      }
+      cursor = page.cursor;
+    } while (cursor);
+
+    return quantities;
+  } catch {
+    return null;
+  }
+}
 
 async function getPopularityByVariation(env: ApiEnv): Promise<Map<string, number>> {
   const cacheKey = `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}`;
@@ -218,6 +281,12 @@ export async function getCatalogItems(
     // Catalog browsing must stay available if Orders or Locations permissions
     // are missing. Popularity safely falls back to zero in that case.
   }
+  const variationIds = objects
+    .filter((object) => object.type === "ITEM")
+    .flatMap((item) => item.item_data?.variations ?? [])
+    .map((variation) => variation.id)
+    .filter((id): id is string => Boolean(id));
+  const inventoryByVariation = await getInventoryByVariation(env, variationIds);
 
   return objects
     .filter((object) => object.type === "ITEM" && object.id)
@@ -243,6 +312,7 @@ export async function getCatalogItems(
 
       return {
         id: item.id as string,
+        variationId: variation?.id ?? null,
         name: item.item_data?.name ?? "Untitled product",
         description:
           item.item_data?.description_plaintext ??
@@ -269,6 +339,10 @@ export async function getCatalogItems(
         allergens: (foodDetails?.ingredients ?? [])
           .map((ingredient) => ingredient.standard_name ?? ingredient.custom_name)
           .filter((name): name is string => Boolean(name)),
+        stock:
+          variation?.item_variation_data?.track_inventory && inventoryByVariation
+            ? (inventoryByVariation.get(variation.id as string) ?? 0)
+            : null,
         popularityScore: (item.item_data?.variations ?? []).reduce(
           (total, itemVariation) =>
             total +
