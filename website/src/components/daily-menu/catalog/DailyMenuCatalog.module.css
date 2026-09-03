@@ -1,19 +1,22 @@
 .layout {
   display: grid;
   min-width: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
-    "toolbar"
-    "filters"
-    "products";
+    "allergens sort"
+    "dietary dietary"
+    "count clear"
+    "products products";
+  column-gap: 12px;
 }
 
 .filters {
-  grid-area: filters;
+  display: contents;
   min-width: 0;
 }
 
 .toolbar {
-  grid-area: toolbar;
+  display: contents;
   min-width: 0;
 }
 
@@ -29,5 +32,18 @@
       "filters toolbar"
       "filters products";
     column-gap: 32px;
+  }
+
+  .filters,
+  .toolbar {
+    display: block;
+  }
+
+  .filters {
+    grid-area: filters;
+  }
+
+  .toolbar {
+    grid-area: toolbar;
   }
 }

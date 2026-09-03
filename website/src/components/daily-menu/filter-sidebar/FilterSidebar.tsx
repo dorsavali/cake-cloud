@@ -146,8 +146,8 @@ export function FilterSidebar({
   };
 
   return (
-    <aside dir="ltr" aria-label="Filter daily menu" className="flex w-full min-w-0 flex-wrap items-start gap-x-2 gap-y-2 font-signika text-accent-dark lg:block lg:w-[276px] lg:shrink-0">
-      <div className="order-1 w-[104px] min-[380px]:w-[112px] lg:w-auto">
+    <aside dir="ltr" aria-label="Filter daily menu" className="contents font-signika text-accent-dark lg:block lg:w-[276px] lg:shrink-0">
+      <div className="hidden lg:block lg:w-auto">
         <p className={`${styles.label} hidden lg:block`}>{options.typeLabel}</p>
         <div ref={productTypeDropdownRef} className={`${styles.dropdown} mt-0 lg:mt-3`}>
           <button
@@ -192,7 +192,7 @@ export function FilterSidebar({
         </div>
       </div>
 
-      <fieldset className="order-3 w-full min-w-0 overflow-hidden lg:mt-8 lg:block lg:overflow-visible">
+      <fieldset className="[grid-area:dietary] w-full min-w-0 overflow-hidden lg:mt-8 lg:block lg:overflow-visible">
         <legend className={`${styles.label} hidden lg:block`}>Dietary</legend>
         <div className={`${styles.mobileFilterScroller} flex flex-nowrap gap-2 overflow-x-auto lg:mt-3 lg:block lg:space-y-2 lg:overflow-visible`}>
           {options.dietary.map((option) => {
@@ -215,7 +215,7 @@ export function FilterSidebar({
         </div>
       </fieldset>
 
-      <div className="order-2 ml-auto w-[180px] min-w-0 lg:ml-0 lg:mt-8 lg:w-auto">
+      <div className="[grid-area:allergens] w-full min-w-0 lg:mt-8 lg:w-auto">
         <p className={`${styles.label} hidden lg:block`}>Free From</p>
         <div ref={allergensDropdownRef} className={`${styles.dropdown} ${styles.allergenDropdown} mt-0 lg:mt-3`}>
           <button
@@ -300,7 +300,7 @@ export function FilterSidebar({
       <button
         type="button"
         onClick={clearFilters}
-        className="order-4 ml-auto self-center px-2 text-[13px] text-accent-dark/65 underline decoration-accent-dark/35 underline-offset-4 transition-colors hover:text-primary lg:ml-0 lg:mt-9 lg:px-0 lg:text-sm"
+        className="[grid-area:clear] justify-self-end self-center px-2 text-[13px] text-accent-dark/65 underline decoration-accent-dark/35 underline-offset-4 transition-colors hover:text-primary lg:mt-9 lg:justify-self-auto lg:px-0 lg:text-sm"
       >
         Clear all filters
       </button>

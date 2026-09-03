@@ -61,12 +61,12 @@ export function ResultsToolbar({
   }, []);
 
   return (
-    <div dir="ltr" className="relative flex min-h-12 w-full min-w-0 items-center justify-between gap-2 font-signika text-accent-dark sm:gap-3">
-      <p className="shrink-0 text-sm text-accent-dark/65 sm:text-base">
+    <div dir="ltr" className="contents font-signika text-accent-dark lg:relative lg:flex lg:min-h-12 lg:w-full lg:min-w-0 lg:items-center lg:justify-between lg:gap-3">
+      <p className="[grid-area:count] self-center pl-5 text-sm text-accent-dark/65 sm:text-base lg:pl-0">
         {resultCount} {resultCount === 1 ? "result" : "results"}
       </p>
 
-      <div ref={dropdownRef} className="relative w-[180px] min-w-0 shrink-0 sm:w-[207px]">
+      <div ref={dropdownRef} className="relative [grid-area:sort] w-full min-w-0 lg:w-[207px] lg:shrink-0">
         <button
           type="button"
           aria-expanded={isOpen}
