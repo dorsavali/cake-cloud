@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import type { DailyMenuProduct } from "../types";
+import type { DailyMenuProductCard } from "../types";
 import styles from "./ProductGrid.module.css";
 
-function formatPrice(product: DailyMenuProduct) {
+function formatPrice(product: DailyMenuProductCard) {
   return new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: product.price.currency,
@@ -12,7 +12,7 @@ function formatPrice(product: DailyMenuProduct) {
   }).format(product.price.amount / 100);
 }
 
-export function ProductGrid({ products }: { products: DailyMenuProduct[] }) {
+export function ProductGrid({ products }: { products: DailyMenuProductCard[] }) {
   if (products.length === 0) {
     return (
       <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-luxury-accent/20 bg-accent/20 px-6 text-center font-signika text-base text-accent-dark/65">

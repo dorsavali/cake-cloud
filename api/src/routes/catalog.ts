@@ -11,7 +11,7 @@ const catalogCache = new Map<
 const catalogRequests = new Map<string, Promise<CatalogItems>>();
 const catalogCacheDurationMs = 24 * 60 * 60 * 1000;
 
-async function getCachedCatalogItems(env: ApiEnv): Promise<CatalogItems> {
+export async function getCachedCatalogItems(env: ApiEnv): Promise<CatalogItems> {
   const cacheKey = `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}`;
   const cached = catalogCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.items;

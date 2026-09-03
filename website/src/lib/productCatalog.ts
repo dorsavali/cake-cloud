@@ -2,81 +2,92 @@ import type { DailyMenuProduct } from "@/components/daily-menu/types";
 
 import { apiUrl } from "./api";
 
-const storageKey = "cake-cloud:product-catalog:v1";
 const browserCacheDurationMs = 60_000;
+const productCache = new Map<
+  string,
+  { expiresAt: number; product: DailyMenuProduct }
+>();
+const productRequests = new Map<string, Promise<DailyMenuProduct>>();
 
-let memoryCache: { expiresAt: number; items: DailyMenuProduct[] } | null = null;
-let pendingRequest: Promise<DailyMenuProduct[]> | null = null;
+function storageKey(productId: string) {
+  return `cake-cloud:product:${productId}:v1`;
+}
 
-function readSessionCache() {
+function readSessionCache(productId: string) {
   if (typeof window === "undefined") return null;
 
   try {
-    const stored = window.sessionStorage.getItem(storageKey);
+    const stored = window.sessionStorage.getItem(storageKey(productId));
     if (!stored) return null;
     const parsed = JSON.parse(stored) as {
       expiresAt?: number;
-      items?: DailyMenuProduct[];
+      product?: DailyMenuProduct;
     };
     if (
       typeof parsed.expiresAt !== "number" ||
       parsed.expiresAt <= Date.now() ||
-      !Array.isArray(parsed.items)
+      !parsed.product
     ) {
-      window.sessionStorage.removeItem(storageKey);
+      window.sessionStorage.removeItem(storageKey(productId));
       return null;
     }
-    return { expiresAt: parsed.expiresAt, items: parsed.items };
+    return { expiresAt: parsed.expiresAt, product: parsed.product };
   } catch {
     return null;
   }
 }
 
-function saveCache(items: DailyMenuProduct[]) {
+function saveProduct(productId: string, product: DailyMenuProduct) {
   const cached = {
     expiresAt: Date.now() + browserCacheDurationMs,
-    items,
+    product,
   };
-  memoryCache = cached;
-
+  productCache.set(productId, cached);
   try {
-    window.sessionStorage.setItem(storageKey, JSON.stringify(cached));
+    window.sessionStorage.setItem(storageKey(productId), JSON.stringify(cached));
   } catch {
     // Memory caching still works when browser storage is unavailable.
   }
 }
 
-export async function getProductCatalog(): Promise<DailyMenuProduct[]> {
-  if (memoryCache && memoryCache.expiresAt > Date.now()) {
-    return memoryCache.items;
+export async function getProductById(
+  productId: string,
+): Promise<DailyMenuProduct> {
+  const memory = productCache.get(productId);
+  if (memory && memory.expiresAt > Date.now()) return memory.product;
+
+  const session = readSessionCache(productId);
+  if (session) {
+    productCache.set(productId, session);
+    return session.product;
   }
 
-  const sessionCache = readSessionCache();
-  if (sessionCache) {
-    memoryCache = sessionCache;
-    return sessionCache.items;
-  }
+  const pending = productRequests.get(productId);
+  if (pending) return pending;
 
-  if (pendingRequest) return pendingRequest;
-
-  pendingRequest = fetch(apiUrl("/api/products"))
+  const request = fetch(
+    apiUrl(`/api/products/${encodeURIComponent(productId)}`),
+  )
     .then(async (response) => {
-      if (!response.ok) throw new Error("Products request failed");
-      const data = (await response.json()) as { items?: DailyMenuProduct[] };
-      const items = data.items ?? [];
-      saveCache(items);
-      return items;
+      if (!response.ok) throw new Error("Product request failed");
+      const data = (await response.json()) as { product?: DailyMenuProduct };
+      if (!data.product) throw new Error("Product not found");
+      saveProduct(productId, data.product);
+      return data.product;
     })
-    .finally(() => {
-      pendingRequest = null;
-    });
+    .finally(() => productRequests.delete(productId));
 
-  return pendingRequest;
+  productRequests.set(productId, request);
+  return request;
 }
 
 export function clearProductCatalogCache() {
-  memoryCache = null;
-  if (typeof window !== "undefined") {
-    window.sessionStorage.removeItem(storageKey);
+  productCache.clear();
+  if (typeof window === "undefined") return;
+  for (let index = window.sessionStorage.length - 1; index >= 0; index -= 1) {
+    const key = window.sessionStorage.key(index);
+    if (key?.startsWith("cake-cloud:product:")) {
+      window.sessionStorage.removeItem(key);
+    }
   }
 }

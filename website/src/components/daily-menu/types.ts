@@ -17,3 +17,14 @@ export type DailyMenuProduct = {
   stock: number | null;
   popularityScore: number;
 };
+
+export type DailyMenuProductCard = Pick<
+  DailyMenuProduct,
+  | "id"
+  | "name"
+  | "description"
+  | "variationName"
+  | "price"
+  | "image"
+  | "stock"
+>;

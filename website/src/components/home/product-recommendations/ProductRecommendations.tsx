@@ -24,9 +24,7 @@ export function ProductRecommendations() {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const response = await fetch(apiUrl("/api/products"), {
-          cache: "no-store",
-        });
+        const response = await fetch(apiUrl("/api/products?view=cards&limit=4"));
        if (!response.ok) throw new Error("Products request failed");
 
         const data = (await response.json()) as ProductsResponse;

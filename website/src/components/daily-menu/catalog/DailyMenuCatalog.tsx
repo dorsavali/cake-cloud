@@ -1,24 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { getProductCatalog } from "@/lib/productCatalog";
+import { apiUrl } from "@/lib/api";
 
-import {
-  CategoryTabs,
-  type DailyMenuCategory,
-} from "../category-tabs";
-import {
-  FilterSidebar,
-  type MenuFilters,
-} from "../filter-sidebar";
-import { ProductGrid } from "../product-grid";
+import { CategoryTabs, type DailyMenuCategory } from "../category-tabs";
+import { FilterSidebar, type MenuFilters } from "../filter-sidebar";
 import { Pagination } from "../pagination";
-import {
-  ResultsToolbar,
-  type SortOption,
-} from "../results-toolbar";
-import type { DailyMenuProduct } from "../types";
+import { ProductGrid } from "../product-grid";
+import { ResultsToolbar, type SortOption } from "../results-toolbar";
+import type { DailyMenuProductCard } from "../types";
 import styles from "./DailyMenuCatalog.module.css";
 
 const categoryNames: Record<DailyMenuCategory, string> = {
@@ -36,18 +27,33 @@ const defaultFilters: MenuFilters = {
   maxPrice: Number.POSITIVE_INFINITY,
 };
 
-const normalize = (value: string) =>
-  value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+const sortValues: Record<SortOption, string> = {
+  "Most Popular": "popular",
+  "Price: Low to High": "price-asc",
+  "Price: High to Low": "price-desc",
+  "A–Z": "az",
+};
+
+type ProductsResponse = {
+  items?: DailyMenuProductCard[];
+  total?: number;
+  totalPages?: number;
+  maxAvailablePrice?: number;
+};
 
 export function DailyMenuCatalog() {
   const [activeCategory, setActiveCategory] =
     useState<DailyMenuCategory>("cakes-and-pastries");
-  const [products, setProducts] = useState<DailyMenuProduct[]>([]);
+  const [products, setProducts] = useState<DailyMenuProductCard[]>([]);
   const [filters, setFilters] = useState<MenuFilters>(defaultFilters);
   const [sortBy, setSortBy] = useState<SortOption>("Most Popular");
-  const [loadState, setLoadState] = useState<"loading" | "success" | "error">("loading");
+  const [loadState, setLoadState] =
+    useState<"loading" | "success" | "error">("loading");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
+  const [totalResults, setTotalResults] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [maxAvailablePrice, setMaxAvailablePrice] = useState(20);
   const productsStartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,103 +66,69 @@ export function DailyMenuCatalog() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     let isActive = true;
 
     const loadProducts = async () => {
       setLoadState("loading");
+      const params = new URLSearchParams({
+        view: "cards",
+        category: categoryNames[activeCategory],
+        productType: filters.productType,
+        minPrice: String(filters.minPrice),
+        maxPrice: Number.isFinite(filters.maxPrice)
+          ? String(filters.maxPrice)
+          : String(Number.MAX_SAFE_INTEGER),
+        sort: sortValues[sortBy],
+        page: String(currentPage),
+        limit: String(pageSize),
+      });
+      filters.dietary.forEach((value) => params.append("dietary", value));
+      filters.allergens.forEach((value) => params.append("allergen", value));
 
       try {
-        const items = await getProductCatalog();
-        if (isActive) {
-          setProducts(items);
-          setLoadState("success");
+        const response = await fetch(apiUrl(`/api/products?${params}`), {
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Products request failed");
+        const data = (await response.json()) as ProductsResponse;
+        if (!isActive) return;
+
+        setProducts(data.items ?? []);
+        setTotalResults(data.total ?? 0);
+        setTotalPages(data.totalPages ?? 1);
+        setMaxAvailablePrice(data.maxAvailablePrice ?? 20);
+        setLoadState("success");
+      } catch (error) {
+        if (isActive && (error as Error).name !== "AbortError") {
+          setLoadState("error");
         }
-      } catch {
-        if (isActive) setLoadState("error");
       }
     };
 
     void loadProducts();
     return () => {
       isActive = false;
+      controller.abort();
     };
-  }, []);
+  }, [activeCategory, currentPage, filters, pageSize, sortBy]);
 
   const handleCategoryChange = (category: DailyMenuCategory) => {
+    setCurrentPage(1);
     setActiveCategory(category);
     setFilters(defaultFilters);
     setSortBy("Most Popular");
   };
 
   const handleFiltersChange = useCallback((nextFilters: MenuFilters) => {
+    setCurrentPage(1);
     setFilters(nextFilters);
   }, []);
 
-  const categoryProducts = useMemo(() => {
-    const mainCategory = normalize(categoryNames[activeCategory]);
-    return products.filter((product) =>
-      product.categories.map(normalize).includes(mainCategory),
-    );
-  }, [activeCategory, products]);
-
-  const maxAvailablePrice = useMemo(
-    () =>
-      categoryProducts.reduce(
-        (highest, product) =>
-          Math.max(highest, product.price.amount / 100),
-        20,
-      ),
-    [categoryProducts],
-  );
-
-  const visibleProducts = useMemo(() => {
-    const isAllProductTypes = normalize(filters.productType).startsWith("all ");
-
-    const filtered = categoryProducts.filter((product) => {
-      const categories = product.categories.map(normalize);
-      const dietary = product.dietaryPreferences.map(normalize);
-      const allergens = product.allergens.map(normalize);
-      const price = product.price.amount / 100;
-
-      return (
-        (isAllProductTypes ||
-          categories.includes(normalize(filters.productType))) &&
-        filters.dietary.every((value) => dietary.includes(normalize(value))) &&
-        filters.allergens.every(
-          (value) => !allergens.includes(normalize(value)),
-        ) &&
-        price >= filters.minPrice &&
-        price <= filters.maxPrice
-      );
-    });
-
-    return [...filtered].sort((left, right) => {
-      if (sortBy === "Price: Low to High") {
-        return left.price.amount - right.price.amount;
-      }
-      if (sortBy === "Price: High to Low") {
-        return right.price.amount - left.price.amount;
-      }
-      if (sortBy === "A–Z") {
-        return left.name.localeCompare(right.name);
-      }
-      return right.popularityScore - left.popularityScore;
-    });
-  }, [categoryProducts, filters, sortBy]);
-
-  const totalPages = Math.max(1, Math.ceil(visibleProducts.length / pageSize));
-  const paginatedProducts = useMemo(
-    () => visibleProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [currentPage, pageSize, visibleProducts],
-  );
-
-  useEffect(() => {
+  const handleSortChange = (nextSort: SortOption) => {
     setCurrentPage(1);
-  }, [activeCategory, filters, pageSize, sortBy]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
+    setSortBy(nextSort);
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -180,9 +152,9 @@ export function DailyMenuCatalog() {
         </div>
         <div className={styles.toolbar}>
           <ResultsToolbar
-            resultCount={visibleProducts.length}
+            resultCount={totalResults}
             sortBy={sortBy}
-            onSortChange={setSortBy}
+            onSortChange={handleSortChange}
           />
         </div>
         <div className={styles.products}>
@@ -197,7 +169,7 @@ export function DailyMenuCatalog() {
               </p>
             ) : (
               <>
-                <ProductGrid products={paginatedProducts} />
+                <ProductGrid products={products} />
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}

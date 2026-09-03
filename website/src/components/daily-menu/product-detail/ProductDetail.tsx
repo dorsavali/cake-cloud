@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
-import { getProductCatalog } from "@/lib/productCatalog";
+import { getProductById } from "@/lib/productCatalog";
 
 import type { DailyMenuProduct } from "../types";
 import styles from "./ProductDetail.module.css";
@@ -71,14 +71,12 @@ export function ProductDetail() {
       setResolvedProductId(null);
 
       try {
-        const items = await getProductCatalog();
+        if (!productId) throw new Error("Missing product id");
+        const fetchedProduct = await getProductById(productId);
         if (isActive) {
-          const fetchedProduct = items.find(
-            (item) => item.id === productId,
-          );
-          setProduct(fetchedProduct ?? null);
+          setProduct(fetchedProduct);
           setResolvedProductId(productId);
-          setLoadState(fetchedProduct ? "success" : "error");
+          setLoadState("success");
         }
       } catch {
         if (isActive) {
