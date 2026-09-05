@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import shared from "./CakeBaseSelector.module.css";
 import styles from "./CakeCustomiser.module.css";
 import { CakeSelect } from "./CakeSelect";
+import { CakePickup } from "./CakePickup";
 
 // Temporary prices in AUD cents; replace with the Square catalogue later.
 const sizes = [{ label: '6 servings (6″)', price: 0 }, { label: '12 servings (8″)', price: 2000 }, { label: '20 servings (10″)', price: 4000 }, { label: '30 servings (12″)', price: 7000 }];
@@ -30,10 +31,13 @@ export function CakeCustomiser({ base, onBack }: { base: { id: string; name: str
   const [message, setMessage] = useState("");
   const [activeImage, setActiveImage] = useState(0);
   const guide = useRef<HTMLDialogElement>(null);
-  const dateDialog = useRef<HTMLDialogElement>(null);
+  const [pickingDate, setPickingDate] = useState(false);
+  const [time, setTime] = useState("");
   const [date, setDate] = useState("");
   const images = [base.image, ...["/images/homeCakes/1-720.webp", "/images/homeCakes/2-720.webp", "/images/homeCakes/3-720.webp"].filter((image) => image !== base.image)];
   const total = 14500 + sizes[size].price + heights[height].price + fillings[filling].price + extras.length * 1200;
+
+  if (pickingDate) return <CakePickup subtotal={total} onBack={() => setPickingDate(false)} date={date} time={time} onDateChange={setDate} onTimeChange={setTime} summary={[{ label: "Design", value: base.name }, { label: "Size", value: sizes[size].label }, { label: "Height", value: heights[height].label }, { label: "Sponge", value: sponge }, { label: "Filling", value: fillings[filling].label }, { label: "Frosting", value: frosting }, { label: "Colour", value: colour }, { label: "Decorations", value: extras.join(", ") || "None" }, { label: "Message", value: message || "None" }, { label: "Total", value: money(total) }]} />;
 
   return <main className={`${shared.page} ${styles.page}`}><div className={styles.content}>
     <div className={shared.toolbar}><Link href="/" className={shared.home}>← <span>Home</span></Link><span className={`${shared.mode} ${styles.mode}`}>✨ From Scratch</span></div>
@@ -53,10 +57,9 @@ export function CakeCustomiser({ base, onBack }: { base: { id: string; name: str
         <fieldset className={`${styles.group} ${styles.small}`}><legend>Cake Color</legend><div className={styles.choices}>{colours.map((item) => <label key={item.label} className={styles.colour}><input type="radio" name="Cake Color" checked={colour === item.label} onChange={() => setColour(item.label)} /><span><i style={{ background: item.hex }} />{item.label}</span></label>)}</div></fieldset>
         <fieldset className={`${styles.group} ${styles.small}`}><legend>Decorations (+$12 each)</legend><div className={styles.choices}>{decorations.map((item) => <label key={item} className={styles.choice}><input type="checkbox" checked={extras.includes(item)} onChange={() => setExtras((current) => current.includes(item) ? current.filter((value) => value !== item) : [...current, item])} /><span>{item}</span></label>)}</div></fieldset>
         <label className={styles.select}>Message on Cake (optional)<input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Happy Birthday!" maxLength={80} /></label>
-        <div className={styles.footer}><output aria-live="polite" aria-label="Cake price">{money(total)}</output><button type="button" className={styles.continue} onClick={() => dateDialog.current?.showModal()}>Next: Pick a Date</button></div>
+        <div className={styles.footer}><output aria-live="polite" aria-label="Cake price">{money(total)}</output><button type="button" className={styles.continue} onClick={() => { setPickingDate(true); window.scrollTo(0, 0); }}>Next: Pick a Date</button></div>
       </section>
     </div>
     <dialog ref={guide} className={styles.dialog}><h2>Size Guide</h2><p>Approximate servings for each cake diameter.</p><ul>{sizes.map((item) => <li key={item.label}>{item.label}</li>)}</ul><form method="dialog"><button className={styles.continue}>Close</button></form></dialog>
-    <dialog ref={dateDialog} className={styles.dialog}><h2>Pick a Date</h2><label className={styles.select}>Preferred date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><p>Your selections are kept while you choose a date. Availability will be confirmed later.</p><form method="dialog"><button className={styles.continue}>Back to Customise</button></form></dialog>
   </div></main>;
 }
