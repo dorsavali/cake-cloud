@@ -1,0 +1,83 @@
+.page { padding-top: 96px; padding-bottom: 72px; }
+.content { max-width: 1120px; width: 84%; margin: 0 auto; }
+.mode { min-width: 175px; }
+.progress { margin-top: 24px; }
+.back { display: flex; align-items: center; gap: 5px; border: 0; padding: 0; background: none; color: inherit; }
+.complete { background: #718d7f; border-color: #718d7f; color: #faf7f0; }
+.title { margin: 30px 0 24px; font-size: 30px; }
+.layout { display: grid; grid-template-columns: minmax(0, .94fr) minmax(0, 2fr); gap: 30px; align-items: start; }
+.heroImage { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #eee8db; }
+.image { object-fit: contain; }
+.previous, .next { position: absolute; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 50%; border: 0; background: #faf7f0d9; color: #88857d; font-size: 24px; line-height: 1; }
+.previous { left: 8px; }.next { right: 8px; }
+.thumbnails { display: flex; gap: 10px; margin-top: 12px; }
+.thumbnails button { position: relative; width: 54px; height: 54px; border: 1px solid transparent; border-radius: 8px; background: #faf7f055; }
+.thumbnails button[aria-pressed='true'] { border-color: #718d7f; }
+.options { display: flex; flex-direction: column; gap: 24px; }
+.group { border: 0; padding: 0; margin: 0; min-width: 0; }
+.group legend { margin-bottom: 9px; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #88857d; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice, .colour { cursor: pointer; position: relative; }
+.choice input, .colour input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.choice span, .colour span { display: flex; align-items: center; gap: 7px; border: 1px solid #dacfb9; border-radius: 999px; padding: 8px 15px; font-size: 13px; transition: background 160ms ease, color 160ms ease; }
+.choice input:checked + span { background: #718d7f; color: #faf7f0; border-color: #718d7f; }
+.choice input:focus-visible + span, .colour input:focus-visible + span { outline: 2px solid #718d7f; outline-offset: 3px; }
+.choice:hover span { border-color: #718d7f; }
+.size { position: relative; }
+.guideLink { position: absolute; top: 0; right: 0; border: 0; padding: 0; background: none; text-decoration: underline; color: #718d7f; font-size: 11px; }
+.select { display: flex; flex-direction: column; gap: 5px; font-size: 14px; }
+.select select, .select input { width: 100%; min-width: 0; background: #f5f0e7; border: 1px solid #e3d7c2; border-radius: 7px; padding: 8px 12px; color: #464248; font: inherit; }
+.select input::placeholder { color: #99949a; }
+.small .choice span, .colour span { padding: 6px 11px; font-size: 11px; }
+.colour i { width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 1px #46424810; }
+.colour input:checked + span { background: #718d7f20; border-color: #718d7f; color: #718d7f; }
+.footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-top: 1px solid #e3d7c250; padding-top: 16px; }
+.footer output { font-family: var(--font-kalnia); font-size: 23px; color: #718d7f; }
+.continue { border: 1px solid #718d7f; border-radius: 999px; padding: 9px 30px; background: #718d7f; color: #faf7f0; font-family: var(--font-kalnia); font-size: 16px; font-weight: 500; }
+.continue:hover { background: #5e796c; }
+.dialog { margin: auto; max-width: min(420px, calc(100% - 40px)); padding: 28px; border: 1px solid #b9a47a; border-radius: 16px; background: #faf7f0; color: #464248; }
+.dialog::backdrop { background: #46424866; backdrop-filter: blur(4px); }
+.dialog h2 { font-family: var(--font-kalnia); font-size: 23px; margin-bottom: 16px; }
+.dialog p, .dialog ul { margin: 14px 0; font-size: 14px; line-height: 1.7; }
+.dialog ul { padding-left: 18px; }
+.mobileSelect { display: none; }
+.mobileSelect details { min-width: 0; }
+.mobileSelect summary { display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; border: 1px solid #e3d7c2; border-radius: 7px; background: #f5f0e7; list-style: none; cursor: pointer; }
+.mobileSelect summary::-webkit-details-marker { display: none; }
+.mobileSelect summary { align-items: center; }
+.selectChevron { flex-shrink: 0; color: #718d7f; transition: transform 160ms ease; }
+.mobileSelect details[open] .selectChevron { transform: rotate(180deg); }
+.mobileSelect summary:focus-visible { outline: 2px solid #718d7f; outline-offset: 2px; }
+.selectOptions { max-height: 220px; overflow-y: auto; overscroll-behavior: contain; margin-top: 4px; padding: 4px; border: 1px solid #e3d7c2; border-radius: 7px; background: #faf7f0; }
+.selectOptions label { display: block; position: relative; cursor: pointer; }
+.selectOptions input { position: absolute; opacity: 0; width: 1px; min-height: 0; height: 1px; padding: 0; }
+.selectOptions span { display: block; padding: 10px; border-radius: 4px; overflow-wrap: anywhere; }
+.selectOptions input:checked + span { background: #718d7f; color: #faf7f0; }
+.selectOptions input:focus-visible + span { outline: 2px solid #718d7f; outline-offset: -2px; }
+@media (max-width: 767px) {
+  .desktopSelect { display: none; }
+  .mobileSelect { display: flex; }
+  .page { padding: 94px 20px 28px; background-size: 100% auto; background-repeat: repeat-y; overflow-x: clip; }
+  .content { width: 100%; max-width: 540px; }
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .layout > section { min-width: 0; }
+  .title { font-size: clamp(25px, 7.5vw, 32px); margin: 28px 0 20px; }
+  .mode { min-width: 97px; }
+  .back { font-size: 0; gap: 0; }
+  .back span { font-size: 10px; }
+  .heroImage { border-radius: 10px; }
+  .thumbnails { gap: 10px; margin-top: 12px; overflow-x: auto; }
+  .thumbnails button { flex-shrink: 0; width: 50px; height: 50px; }
+  .options { gap: 24px; }
+  .choices { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 3px; margin: -3px; }
+  .choices::-webkit-scrollbar { display: none; }
+  .choice, .colour { flex: 0 0 auto; }
+  .choice span, .colour span { white-space: nowrap; }
+  .group legend { font-size: 9px; }
+  .select { font-size: 13px; }
+  .select select, .select input { min-height: 36px; }
+  .footer { flex-wrap: nowrap; gap: 12px; padding-top: 16px; }
+  .footer output { font-size: 19px; white-space: nowrap; }
+  .continue { font-size: 14px; padding: 10px 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .choice span, .colour span, .selectChevron { transition: none; } }

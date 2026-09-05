@@ -11,18 +11,19 @@ import { getProductById } from "@/lib/productCatalog";
 import type { DailyMenuProduct } from "../types";
 import styles from "./ProductDetail.module.css";
 import { ProductDetailLoading } from "./ProductDetailLoading";
+import { defaultDrinkSelection, DrinkOptions, type DrinkSelection } from "./DrinkOptions";
 
 const storageInstructions =
   "Best enjoyed fresh. Keep at room temperature and consume within 24 hours.";
 const preparationNotes =
   "Baked fresh daily; quantity subject to production capacity.";
 
-function formatPrice(product: DailyMenuProduct) {
+function formatPrice(product: DailyMenuProduct, amount = product.price.amount) {
   return new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: product.price.currency,
     minimumFractionDigits: 2,
-  }).format(product.price.amount / 100);
+  }).format(amount / 100);
 }
 
 function formatAllergen(value: string) {
@@ -61,6 +62,7 @@ export function ProductDetail() {
   const [resolvedProductId, setResolvedProductId] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(0);
+  const [drinkSelection, setDrinkSelection] = useState<DrinkSelection>(defaultDrinkSelection);
 
   useEffect(() => {
     let isActive = true;
@@ -69,6 +71,9 @@ export function ProductDetail() {
       setLoadState("loading");
       setProduct(null);
       setResolvedProductId(null);
+      setDrinkSelection(defaultDrinkSelection);
+      setQuantity(0);
+      setActiveImage(0);
 
       try {
         if (!productId) throw new Error("Missing product id");
@@ -115,6 +120,8 @@ export function ProductDetail() {
       : [];
   const selectedImage = images[activeImage] ?? null;
   const categoryTags = product.categories.slice(0, 3);
+  const isDrink = product.categories.some((category) => category.trim().toLowerCase() === "drinks");
+  const unitPrice = product.price.amount + (isDrink && drinkSelection.size === "Large (450ml)" ? 100 : 0);
   const ingredients = product.ingredients?.trim() ?? "";
   const allergens = product.allergens
     .map(formatAllergen)
@@ -139,9 +146,10 @@ export function ProductDetail() {
 
     addItem({
       id: product.id,
+      options: isDrink ? { ...drinkSelection } : undefined,
       variationId: product.variationId,
       name: product.name,
-      unitPrice: product.price.amount,
+      unitPrice,
       currency: product.price.currency,
       quantity,
       maxQuantity: product.stock === null ? null : maximumQuantity,
@@ -187,18 +195,28 @@ export function ProductDetail() {
               <h1 className="font-kalnia text-xl font-medium leading-tight lg:text-[26px]">{product.name}</h1>
               {product.variationName && <p className="mt-1 font-signika text-sm font-light text-accent-dark/60">{product.variationName}</p>}
             </div>
-            <p className="shrink-0 font-kalnia text-lg font-normal text-primary lg:text-2xl">{formatPrice(product)}</p>
+            <p aria-live="polite" className="shrink-0 font-kalnia text-lg font-normal text-primary lg:text-2xl">{formatPrice(product, unitPrice)}</p>
           </div>
 
           {categoryTags.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5 font-signika text-[10px] text-accent-dark/60 lg:gap-x-7 lg:gap-y-1.5 lg:text-xs">{categoryTags.map((category) => <span key={category} className="rounded-full bg-[#eee8da] px-2 py-1 lg:bg-transparent lg:px-0 lg:py-0">{category}</span>)}</div>}
 
+          {isDrink && <DrinkOptions value={drinkSelection} onChange={setDrinkSelection} largeSurcharge={formatPrice(product, 100)} />}
+
           <div className="mt-3">
-            <DetailRow label="About this item">{product.description || "No description available."}</DetailRow>
-            {ingredients && <DetailRow label="Ingredients">{ingredients}</DetailRow>}
+            {isDrink ? (
+              <DetailRow label="About & Ingredients">
+                {[product.description?.trim(), ingredients].filter(Boolean).join(" ") || "No description available."}
+              </DetailRow>
+            ) : (
+              <>
+                <DetailRow label="About this item">{product.description || "No description available."}</DetailRow>
+                {ingredients && <DetailRow label="Ingredients">{ingredients}</DetailRow>}
+              </>
+            )}
             <DetailRow label="Allergen information">{allergens}</DetailRow>
-            <DetailRow label="Dietary information">{dietary}</DetailRow>
-            <DetailRow label="Storage / serving instructions">{storageInstructions}</DetailRow>
-            <DetailRow label="Preparation notes">{preparationNotes}</DetailRow>
+            {!isDrink && <DetailRow label="Dietary information">{dietary}</DetailRow>}
+            {!isDrink && <DetailRow label="Storage / serving instructions">{storageInstructions}</DetailRow>}
+            {!isDrink && <DetailRow label="Preparation notes">{preparationNotes}</DetailRow>}
           </div>
 
           {product.stock !== null && product.stock < 10 && (

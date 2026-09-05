@@ -15,6 +15,7 @@ import styles from "./Cart.module.css";
 export type CartItem = {
   id: string;
   variationId: string | null;
+  options?: Record<string, string>;
   name: string;
   unitPrice: number;
   currency: string;
@@ -37,6 +38,16 @@ type CartContextValue = {
 const initialItems: CartItem[] = [];
 
 const CartContext = createContext<CartContextValue | null>(null);
+
+function cartLineId(item: Pick<CartItem, "id" | "variationId" | "options">) {
+  return JSON.stringify([item.id, item.variationId, Object.entries(item.options ?? {}).sort(([a], [b]) => a.localeCompare(b))]);
+}
+
+function availableQuantity(items: CartItem[], target: AddCartItem) {
+  if (target.maxQuantity === null) return Number.POSITIVE_INFINITY;
+  return Math.max(0, target.maxQuantity - items.reduce((sum, item) =>
+    item.id === target.id && cartLineId(item) !== cartLineId(target) ? sum + item.quantity : sum, 0));
+}
 
 function formatMoney(amountInCents: number, currency = "AUD") {
   return new Intl.NumberFormat("en-AU", {
@@ -134,9 +145,10 @@ function CartDrawer({
           ) : (
             <ul className="space-y-5">
               {items.map((item) => (
-                <li key={item.id} className="grid grid-cols-[1fr_auto] items-center gap-3">
+                <li key={cartLineId(item)} className="grid grid-cols-[1fr_auto] items-center gap-3">
                   <div>
                     <h3 className="font-signika text-sm font-medium">{item.name}</h3>
+                    {item.options && <p className="mt-1 font-signika text-xs leading-5 text-accent-dark/65">{Object.values(item.options).join(" · ")}</p>}
                     <p className="mt-1 font-signika text-xs font-light text-accent-dark/65 lg:text-sm">
                       {formatMoney(item.unitPrice, item.currency)} each
                     </p>
@@ -146,7 +158,7 @@ function CartDrawer({
                     <button
                       type="button"
                       aria-label={`Decrease ${item.name} quantity`}
-                      onClick={() => setItemQuantity(item.id, item.quantity - 1)}
+                      onClick={() => setItemQuantity(cartLineId(item), item.quantity - 1)}
                       className="flex size-6 items-center justify-center rounded-full border border-luxury-accent/55 font-signika text-sm font-light text-primary transition-colors hover:bg-primary hover:text-accent"
                     >
                       −
@@ -157,8 +169,8 @@ function CartDrawer({
                     <button
                       type="button"
                       aria-label={`Increase ${item.name} quantity`}
-                      onClick={() => setItemQuantity(item.id, item.quantity + 1)}
-                      disabled={item.maxQuantity !== null && item.quantity >= item.maxQuantity}
+                      onClick={() => setItemQuantity(cartLineId(item), item.quantity + 1)}
+                      disabled={item.quantity >= availableQuantity(items, item)}
                       className="flex size-6 items-center justify-center rounded-full border border-luxury-accent/55 font-signika text-sm font-light text-primary transition-colors hover:bg-primary hover:text-accent disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-primary"
                     >
                       +
@@ -166,7 +178,7 @@ function CartDrawer({
                     <button
                       type="button"
                       aria-label={`Remove ${item.name}`}
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeItem(cartLineId(item))}
                       className="ml-0.5 size-5 font-signika text-base font-light text-accent-dark/55 transition-colors hover:text-accent-dark"
                     >
                       ×
@@ -205,33 +217,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback((newItem: AddCartItem) => {
     setItems((currentItems) => {
-      const existing = currentItems.find((item) => item.id === newItem.id);
-      if (existing) {
-        return currentItems.map((item) =>
-          item.id === newItem.id
-            ? {
-                ...item,
-                variationId: newItem.variationId,
-                maxQuantity: newItem.maxQuantity,
-                quantity:
-                  newItem.maxQuantity === null
-                    ? item.quantity + (newItem.quantity ?? 1)
-                    : Math.min(
-                        newItem.maxQuantity,
-                        item.quantity + (newItem.quantity ?? 1),
-                      ),
-              }
-            : item,
-        );
-      }
-      const requestedQuantity = newItem.quantity ?? 1;
-      const quantity =
-        newItem.maxQuantity === null
-          ? requestedQuantity
-          : Math.min(newItem.maxQuantity, requestedQuantity);
-      return quantity > 0
-        ? [...currentItems, { ...newItem, quantity }]
-        : currentItems;
+      const lineId = cartLineId(newItem);
+      const existing = currentItems.find((item) => cartLineId(item) === lineId);
+      const quantity = Math.min(
+        availableQuantity(currentItems, newItem),
+        (existing?.quantity ?? 0) + (newItem.quantity ?? 1),
+      );
+      if (quantity <= 0) return currentItems;
+      return existing
+        ? currentItems.map((item) => cartLineId(item) === lineId ? { ...newItem, quantity } : item)
+        : [...currentItems, { ...newItem, quantity }];
     });
     setIsOpen(true);
   }, []);
@@ -239,15 +234,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const setItemQuantity = useCallback((id: string, quantity: number) => {
     setItems((currentItems) =>
       quantity <= 0
-        ? currentItems.filter((item) => item.id !== id)
+        ? currentItems.filter((item) => cartLineId(item) !== id)
         : currentItems.map((item) =>
-            item.id === id
+            cartLineId(item) === id
               ? {
                   ...item,
                   quantity:
                     item.maxQuantity === null
                       ? quantity
-                      : Math.min(quantity, item.maxQuantity),
+                      : Math.min(quantity, availableQuantity(currentItems, item)),
                 }
               : item,
           ),
@@ -255,7 +250,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const removeItem = useCallback((id: string) => {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== id));
+    setItems((currentItems) => currentItems.filter((item) => cartLineId(item) !== id));
   }, []);
 
   const value = useMemo(

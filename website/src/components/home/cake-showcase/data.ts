@@ -26,6 +26,7 @@ export const cakeShowcaseItems: CakeShowcaseItem[] = [
     imageAfter: "/images/homeCakes/2in-720.webp",
     imageAlt: "Custom berry celebration cake",
     ctaLabel: "Explore",
+    ctaHref: "/custom-cakes",
   },
   {
     title: "Pet Treats",
