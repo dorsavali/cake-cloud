@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import styles from "./CakeBaseSelector.module.css";
 import { CakeCustomiser } from "./CakeCustomiser";
+import { Footer } from "../layout/footer";
 
 const steps = ["Design", "Customise", "Date", "Summary", "Payment"];
 const bases = [
@@ -23,7 +24,8 @@ export function CakeBaseSelector() {
   }
 
   return (
-    <main className={styles.page}>
+ <section>
+      <main className={styles.page}>
       <div className={styles.content}>
         <div className={styles.toolbar}>
           <Link href="/" className={styles.home}>
@@ -63,5 +65,7 @@ export function CakeBaseSelector() {
         </p>
       </div>
     </main>
+  <Footer />
+ </section>
   );
 }
