@@ -1,4 +1,7 @@
 export interface ApiEnv {
+  WEBSITE_ORIGIN?: string;
+  SQUARE_LOCATION_ID?: string;
+  SQUARE_TIMEZONE?: string;
   SQUARE_ACCESS_TOKEN: string;
   SQUARE_APPLICATION_ID: string;
   SQUARE_ENVIRONMENT: "sandbox" | "production";

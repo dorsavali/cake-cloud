@@ -17,6 +17,9 @@ const hostname = process.env.HOST ?? "127.0.0.1";
 const websiteOrigin = process.env.WEBSITE_ORIGIN ?? "http://localhost:3000";
 
 const env: ApiEnv = {
+  WEBSITE_ORIGIN: websiteOrigin,
+  SQUARE_LOCATION_ID: process.env.SQUARE_LOCATION_ID ?? "",
+  SQUARE_TIMEZONE: process.env.SQUARE_TIMEZONE ?? "Australia/Perth",
   SQUARE_ACCESS_TOKEN: process.env.SQUARE_ACCESS_TOKEN ?? "",
   SQUARE_APPLICATION_ID: process.env.SQUARE_APPLICATION_ID ?? "",
   SQUARE_ENVIRONMENT:

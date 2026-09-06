@@ -27,10 +27,19 @@
 .calendarHeader button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: #718d7f15; color: #718d7f; font-size: 23px; }
 .calendar { --rdp-accent-color: #718d7f; --rdp-accent-background-color: #718d7f18; --rdp-today-color: #718d7f; --rdp-selected-border: 1px solid #718d7f; font-family: var(--font-signika); font-size: 14px; }
 .calendar :global(.rdp-selected) button { background: #718d7f; color: #faf7f0; }
-.summary dl { margin-bottom: 22px; }
-.summary dl > div { display: flex; justify-content: space-between; gap: 24px; padding: 10px 0; border-bottom: 1px solid #e3d7c2; font-size: 14px; }
+.summaryCard { padding: 20px 24px; border: 1px solid #eee4d3; border-radius: 11px; background: #faf7f0; }
+.summary dl { margin: 0; }
+.summary dl > div { display: flex; justify-content: space-between; gap: 24px; padding: 7px 0; font-size: 13px; }
 .summary dt { color: #88857d; }
-.summary dd { text-align: right; }
+.summary dd { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.fee { display: inline-block; margin-left: 12px; color: #718d7f; }
+.summary dl > .total { margin-top: 12px; padding-top: 14px; border-top: 1px solid #ece4d6; align-items: center; }
+.total dt { color: #464248; font-size: 15px; }
+.total dd { color: #718d7f; font-family: var(--font-kalnia); font-size: 21px; }
+.summaryActions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+.edit { border: 1px solid #b9a47a; border-radius: 999px; padding: 9px 16px; color: #464248; background: #faf7f0; font-family: var(--font-kalnia); font-size: 16px; }
+.edit:hover { background: #f0eadd; }
+.calendarDialog > p { max-width: 340px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; }
 @media (max-width: 767px) {
   .page { padding: 88px 18px 32px; background-size: 100% auto; background-repeat: repeat-y; }
   .back { gap: 7px; font-size: 12px; min-height: 24px; }
@@ -49,4 +58,19 @@
   .calendar { --rdp-day-width: clamp(30px, 10vw, 42px); --rdp-day-height: 42px; --rdp-day_button-width: clamp(28px, 9vw, 40px); --rdp-day_button-height: 40px; }
   .summary dl > div { gap: 16px; }
   .summary dd { min-width: 0; overflow-wrap: anywhere; }
+  .reviewPage { background-color: #faf7f0; background-size: 100% auto; background-repeat: repeat-y; }
+  .summaryCard { padding: 16px 18px; }
+  .summary dl > div { padding: 7px 0; font-size: 12px; gap: 12px; }
+  .summary dt { flex-shrink: 0; }
+  .summary dl > .total { margin-top: 10px; padding-top: 12px; }
+  .total dt { font-size: 14px; }
+  .total dd { font-size: 20px; }
+  .fee { margin-left: 8px; }
+  .summaryActions { margin-top: 18px; gap: 10px; }
+  .summaryActions button { min-height: 52px; border-radius: 17px; padding: 9px 12px; font-size: 14px; line-height: 1.4; }
 }
+
+.paymentTotal { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e3d7c2; padding-top: 12px; }
+.paymentTotal strong { color: #718d7f; font-family: var(--font-kalnia); font-size: 21px; font-weight: 400; }
+
+.checkoutHint { color: #88857d; font-size: 13px; line-height: 1.5; }
