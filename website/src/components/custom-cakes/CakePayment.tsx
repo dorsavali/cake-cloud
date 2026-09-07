@@ -45,7 +45,6 @@ export function CakePayment({quote,cake,pickup,onBack}:{quote:CakeQuote;cake:Cak
     <p className={styles.checkoutHint}>You’ll complete your payment securely on Square.</p>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     <button className={styles.submit} disabled={busy}>{busy?"Opening Square…":"Continue to Square"}</button>
-    {url&&<a className={styles.back} href={url}>Open Square checkout</a>}
     <button type="button" className={styles.back} disabled={busy} onClick={onBack}>← Back to Summary</button>
   </form>;
 }

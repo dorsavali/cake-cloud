@@ -3,6 +3,7 @@
 .mode { min-width: 175px; }
 .progress { margin-top: 24px; }
 .back { display: flex; align-items: center; gap: 5px; border: 0; padding: 0; background: none; color: inherit; }
+.toolbarBack { border: 0; padding: 0; background: none; }
 .complete { background: #718d7f; border-color: #718d7f; color: #faf7f0; }
 .title { margin: 30px 0 24px; font-size: 30px; }
 .layout { display: grid; grid-template-columns: minmax(0, .94fr) minmax(0, 2fr); gap: 30px; align-items: start; }

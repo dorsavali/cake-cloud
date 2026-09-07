@@ -4,9 +4,15 @@
   "main": "./api/src/index.ts",
   "compatibility_date": "2026-09-01",
   "keep_vars": true,
+  "vars": {
+    "SQUARE_ENVIRONMENT": "sandbox",
+    "SQUARE_TIMEZONE": "Australia/Perth",
+    "WEBSITE_ORIGIN": "https://cake-cloud.dorsavalli.com"
+  },
   "secrets": {
     "required": [
       "SQUARE_ACCESS_TOKEN",
+      "SQUARE_LOCATION_ID",
       "SQUARE_APPLICATION_ID",
       "SQUARE_WEBHOOK_SIGNATURE_KEY",
       "SQUARE_WEBHOOK_NOTIFICATION_URL"

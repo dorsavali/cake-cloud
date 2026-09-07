@@ -1,4 +1,4 @@
-.page { padding-top: 96px; }
+.page { min-height: 100dvh; padding-top: 96px; }
 .back { display: inline-flex; align-items: center; gap: 8px; border: 0; padding: 0; background: none; color: #88857d; font: inherit; font-size: 13px; }
 .complete { background: #718d7f; border-color: #718d7f; color: #faf7f0; }
 .form { display: grid; gap: 18px; }
@@ -13,13 +13,14 @@
 .submit { width: 100%; min-height: 40px; padding: 9px 20px; border: 0; border-radius: 999px; background: #718d7f; color: #faf7f0; font-family: var(--font-kalnia); font-size: 16px; }
 .submit:disabled { background: #718d7f66; }
 .submit:hover:not(:disabled) { background: #5e796c; }
-.page button:focus-visible, .page input:focus-visible { outline: 2px solid #718d7f; outline-offset: 3px; }
+.page button:focus-visible, .page input:focus-visible, .page select:focus-visible { outline: 2px solid #718d7f; outline-offset: 3px; }
 .error { color: #a0443c; font-size: 12px; margin-top: 5px; }
 .status { display: flex; align-items: flex-start; gap: 12px; padding: 15px 14px; border: 1px solid #e3d7c2; border-radius: 10px; background: #f0eadd; font-size: 14px; }
 .unavailable { background: #fff3f4; border-color: #ffc7ce; }
 .status p { margin: 4px 0 0; color: #e12727; font-size: 12px; }
 .form > div:empty { display: none; }
 .pickerTime { display: grid; gap: 6px; margin: 16px 0; font-size: 14px; }
+.timeFields { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
 .calendarDialog { margin: auto; max-width: calc(100vw - 32px); padding: 20px; border: 1px solid #e3d7c2; border-radius: 14px; background: #faf7f0; color: #464248; box-shadow: 0 18px 60px #46424826; }
 .calendarDialog::backdrop { background: #46424838; }
 .calendarHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }

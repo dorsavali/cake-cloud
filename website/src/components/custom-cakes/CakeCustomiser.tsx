@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRef, useState } from "react";
 import shared from "./CakeBaseSelector.module.css";
 import styles from "./CakeCustomiser.module.css";
@@ -43,7 +42,7 @@ export function CakeCustomiser({ base, onBack }: { base: { id: string; name: str
   if (pickingDate) return <CakePickup cake={cake} onBack={() => setPickingDate(false)} date={date} time={time} onDateChange={setDate} onTimeChange={setTime} summary={[{ label: "Design", value: base.name }, { label: "Size", value: sizes[size].label }, { label: "Height", value: heights[height].label }, { label: "Sponge", value: sponge }, { label: "Filling", value: fillings[filling].label }, { label: "Frosting", value: frosting }, { label: "Colour", value: colour }, { label: "Decorations", value: extras.join(", ") || "None" }, { label: "Message", value: message || "None" }, { label: "Total", value: total === undefined ? "…" : money(total) }]} />;
 
   return <main className={`${shared.page} ${styles.page}`}><div className={styles.content}>
-    <div className={shared.toolbar}><Link href="/" className={shared.home}>← <span>Home</span></Link><span className={`${shared.mode} ${styles.mode}`}>✨ From Scratch</span></div>
+    <div className={shared.toolbar}><button type="button" onClick={onBack} className={`${styles.toolbarBack} ${shared.home}`}>← <span>Back to Design</span></button><span className={`${shared.mode} ${styles.mode}`}>✨ From Scratch</span></div>
     <nav aria-label="Custom cake progress" className={`${shared.progress} ${styles.progress}`}><ol>{["Design", "Customise", "Date", "Summary", "Payment"].map((step, index) => <li key={step} aria-current={index === 1 ? "step" : undefined}>{index === 0 ? <button type="button" onClick={onBack} className={styles.back}><span className={`${shared.stepNumber} ${styles.complete}`}>✓</span>Design</button> : <><span className={shared.stepNumber}>{index + 1}</span><span className={shared.stepLabel}>{step}</span></>}</li>)}</ol></nav>
     <h1 className={`${shared.title} ${styles.title}`}>Customise Your Cake</h1>
     <div className={styles.layout}>

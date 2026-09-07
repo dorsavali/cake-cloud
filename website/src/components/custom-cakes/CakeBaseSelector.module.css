@@ -1,5 +1,6 @@
 .page {
-  min-height: 80dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   margin-top: -64px;
   background: #faf7f0 url('/images/pattern/background.webp') center top / 100% auto repeat-y;
   color: #464248;

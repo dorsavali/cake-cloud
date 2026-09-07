@@ -82,7 +82,20 @@ export function CakePickup({ onBack, date, time, onDateChange, onTimeChange, sum
     <dialog ref={calendar} className={styles.calendarDialog} aria-labelledby="calendar-title" onClick={(event) => { if (event.target === event.currentTarget) closeCalendar(); }}>
       <div className={styles.calendarHeader}><h2 id="calendar-title">Choose pickup date & time</h2><button type="button" aria-label="Close calendar" onClick={closeCalendar}>×</button></div>
       <DayPicker className={styles.calendar} mode="single" selected={selected} month={month} onMonthChange={setMonth} disabled={{ before: today }} autoFocus onSelect={(value) => { if (value) { onDateChange(`${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}`); setInput(`${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}${time ? ` ${time}` : ""}`); } }} />
-      <label className={styles.pickerTime} htmlFor="calendar-time">Pickup time<input id="calendar-time" className={styles.time} type="time" value={time} onChange={(event) => { onTimeChange(event.target.value); setInput([date, event.target.value].filter(Boolean).join(" ")); }} /></label>
+      <fieldset className={styles.pickerTime}>
+        <legend>Pickup time (24-hour)</legend>
+        <div className={styles.timeFields}>
+          <select aria-label="Pickup hour" className={styles.time} value={time ? time.slice(0, 2) : ""} onChange={(event) => { const value = `${event.target.value}:${time.slice(3) || "00"}`; onTimeChange(value); setInput([date, value].filter(Boolean).join(" ")); }}>
+            <option value="" disabled>Hour</option>
+            {Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0")).map((hour) => <option key={hour} value={hour}>{hour}</option>)}
+          </select>
+          <span aria-hidden="true">:</span>
+          <select aria-label="Pickup minute" className={styles.time} value={time ? time.slice(3) : ""} onChange={(event) => { const value = `${time.slice(0, 2) || "00"}:${event.target.value}`; onTimeChange(value); setInput([date, value].filter(Boolean).join(" ")); }}>
+            <option value="" disabled>Minute</option>
+            {Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0")).map((minute) => <option key={minute} value={minute}>{minute}</option>)}
+          </select>
+        </div>
+      </fieldset>
       <button type="button" className={styles.submit} disabled={!validDate || !time} onClick={() => { setTouched(true); closeCalendar(); }}>Done</button>
     </dialog>
   </div></main>;
