@@ -19,7 +19,13 @@ export function CakePayment({quote,cake,pickup,onBack}:{quote:CakeQuote;cake:Cak
     if(url){window.location.assign(url);return;}
     lock.current=true;setBusy(true);setError("");
     try {
-      attempt.current ??= JSON.stringify({cake,pickup,name:name.trim(),email:email.trim(),expectedTotal:quote.total,idempotencyKey:crypto.randomUUID()});
+      if (!attempt.current) {
+        const sessionResponse = await fetch(apiUrl("/api/cake/checkout-session"), { method: "POST" });
+        if (!sessionResponse.ok) throw new Error("Could not start checkout. Please try again.");
+        const session = await sessionResponse.json();
+        if (typeof session.idempotencyKey !== "string" || !/^[a-f0-9-]{36}$/i.test(session.idempotencyKey)) throw new Error("Could not start checkout. Please try again.");
+        attempt.current = JSON.stringify({cake,pickup,name:name.trim(),email:email.trim(),expectedTotal:quote.total,idempotencyKey:session.idempotencyKey});
+      }
       const response=await fetch(apiUrl("/api/cake/checkout"),{method:"POST",headers:{"Content-Type":"application/json"},body:attempt.current});
       const data=await response.json();
       if(!response.ok){if(response.status===400 || response.status===409)attempt.current=undefined;throw new Error(data.error||"Checkout is temporarily unavailable.");}

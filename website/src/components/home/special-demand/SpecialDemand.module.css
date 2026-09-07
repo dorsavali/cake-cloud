@@ -68,7 +68,7 @@
   .cakeStage {
     position: absolute;
     top: 35px;
-    right: -12px;
+    right: 0;
     width: 240px;
     height: 280px;
     transform: scale(0.75);
