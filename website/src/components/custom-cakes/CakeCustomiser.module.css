@@ -42,6 +42,8 @@
 .dialog p, .dialog ul { margin: 14px 0; font-size: 14px; line-height: 1.7; }
 .dialog ul { padding-left: 18px; }
 .mobileSelect { display: none; }
+.consistentSelect { display: flex; min-width: 0; }
+.consistentSelect details { width: 100%; }
 .mobileSelect details { min-width: 0; }
 .mobileSelect summary { display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; border: 1px solid #e3d7c2; border-radius: 7px; background: #f5f0e7; list-style: none; cursor: pointer; }
 .mobileSelect summary::-webkit-details-marker { display: none; }

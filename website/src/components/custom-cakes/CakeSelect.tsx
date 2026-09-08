@@ -3,11 +3,12 @@
 import { useEffect, useId, useRef } from "react";
 import styles from "./CakeCustomiser.module.css";
 
-export function CakeSelect({ label, value, options, onChange }: {
+export function CakeSelect({ label, value, options, onChange, consistent = false }: {
   label: string;
   value: string;
   options: string[];
   onChange: (value: string) => void;
+  consistent?: boolean;
 }) {
   const id = useId();
   const details = useRef<HTMLDetailsElement>(null);
@@ -23,10 +24,10 @@ export function CakeSelect({ label, value, options, onChange }: {
   }, []);
 
   return <>
-    <label className={`${styles.select} ${styles.desktopSelect}`}>{label}
+    {!consistent && <label className={`${styles.select} ${styles.desktopSelect}`}>{label}
       <select value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option}>{option}</option>)}</select>
-    </label>
-    <div className={`${styles.select} ${styles.mobileSelect}`}>
+    </label>}
+    <div className={`${styles.select} ${styles.mobileSelect} ${consistent ? styles.consistentSelect : ""}`}>
       <span id={id}>{label}</span>
       <details ref={details} onKeyDown={(event) => {
         if (event.key === "Escape" && details.current) {

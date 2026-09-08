@@ -53,7 +53,32 @@ Enter each value at the secret prompt; do not commit credentials to the reposito
 
 ## Payment receipts
 
+Form drafts (cake options, date/time, contact fields, and current step) are saved
+in per-tab sessionStorage and restored after refresh. A pending checkout request
+retains its idempotency key for retry. Prices and availability are fetched again
+from the backend; no paid status or receipt authorization is trusted from storage.
+Draft storage failures do not block the form. Verified payment clears the draft.
+There is no draft cookie or backend session store to configure.
+
+The backend saves a signed return URL on the Square payment link before allowing
+the buyer to open checkout. The result page passes its read-only signed link to
+the backend, which retrieves and verifies the persistent Square order and payment.
+No localStorage, cookies, or in-memory order mapping is required. The token lives
+in the URL fragment so it is not included in HTTP referrers. Keep the full return
+link private. Links created before this change cannot recover missing browser
+data; check those payments in Square rather than asking the buyer to pay again.
+No new Worker bindings or secrets are needed. Build and deploy both workspaces.
+Square API reference: https://developer.squareup.com/reference/square/checkout-api/update-payment-link
+
 Customer payment receipts are handled by Square's hosted Payment Links checkout.
 The customer's email is included in the Square order's pickup recipient details.
+The backend trims and validates the submitted email before sending it to Square.
+Square prepopulates the checkout contact details from `pickup_details.recipient`;
+the buyer can change their contact details on Square's hosted page.
 No separate email provider is required. The signed Square webhook verifies and
 records payment status; it does not send a second email.
+Square Sandbox does not generate receipts or send real emails. Delivery must be
+verified separately in production; the current integration remains Sandbox-only.
+References:
+https://developer.squareup.com/forums/t/checkouts-create-payment-link-pre-populated-data-fullfillments/19425
+https://developer.squareup.com/docs/devtools/sandbox/overview

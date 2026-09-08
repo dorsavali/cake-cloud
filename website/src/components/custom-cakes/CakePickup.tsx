@@ -7,6 +7,9 @@ import { CakePayment } from "./CakePayment";
 import { useCakeQuote, type CakeConfig, type CakeQuote } from "./useCakeQuote";
 import shared from "./CakeBaseSelector.module.css";
 import styles from "./CakePickup.module.css";
+import { useDraftState } from "./useDraftState";
+import { draftBoolean } from "./draft-storage";
+import { CakeSelect } from "./CakeSelect";
 
 function parseDate(value: string) {
   const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
@@ -24,9 +27,10 @@ export function CakePickup({ onBack, date, time, onDateChange, onTimeChange, sum
   const [quoteRevision,setQuoteRevision]=useState(0);
   const calendar = useRef<HTMLDialogElement>(null);
   const [paymentQuote, setPaymentQuote] = useState<CakeQuote | null>(null);
+  const [resumePayment, setResumePayment] = useDraftState("paymentStep", false, draftBoolean);
   const trigger = useRef<HTMLButtonElement>(null);
   const [month, setMonth] = useState(parseDate(date) ?? new Date());
-  const [review, setReview] = useState(false);
+  const [review, setReview] = useDraftState("review", false, draftBoolean);
   const [touched, setTouched] = useState(false);
   const [input, setInput] = useState([date, time].filter(Boolean).join(" "));
   const [now, setNow] = useState(() => Date.now());
@@ -54,13 +58,16 @@ export function CakePickup({ onBack, date, time, onDateChange, onTimeChange, sum
     if (next) setMonth(next);
   }
   const valid = !!pickup && quote?.available === true && !!quote.expires && quote.expires > now;
+  useEffect(() => {
+    if (resumePayment && valid && quote && !paymentQuote) setPaymentQuote(quote);
+  }, [resumePayment, valid, quote, paymentQuote]);
   const closeCalendar = () => { calendar.current?.close(); trigger.current?.focus(); };
 
   return <main className={`${shared.page} ${styles.page} ${review ? styles.reviewPage : ""}`}><div className={shared.content}>
     <button className={styles.back} type="button" disabled={!!paymentQuote} onClick={paymentQuote ? undefined : review ? () => setReview(false) : onBack}>← <span>{"Custom Cakes"}</span></button>
     <nav className={`${shared.progress} ${styles.progress}`} aria-label="Custom cake progress"><ol>{["Design", "Customise", "Date", "Summary", "Payment"].map((step, index) => <li key={step} aria-current={index === (paymentQuote ? 4 : review ? 3 : 2) ? "step" : undefined}><span className={`${shared.stepNumber} ${index < (paymentQuote ? 4 : review ? 3 : 2) ? styles.complete : ""}`}>{index < (paymentQuote ? 4 : review ? 3 : 2) ? "✓" : index + 1}</span><span className={shared.stepLabel}>{step}</span></li>)}</ol></nav>
     <h1 className={`${shared.title} ${styles.title}`}>{paymentQuote ? "Payment" : review ? "Order Summary" : "Pickup Date & Time"}</h1>
-    {paymentQuote ? <CakePayment cake={cake} pickup={pickupValue!} quote={paymentQuote} onBack={() => { setPaymentQuote(null); setQuoteRevision(v=>v+1); }} /> : review ? <section className={styles.summary} aria-label="Order summary">
+    {paymentQuote ? <CakePayment cake={cake} pickup={pickupValue!} quote={paymentQuote} onBack={() => { setPaymentQuote(null); setResumePayment(false); setQuoteRevision(v=>v+1); }} /> : review ? <section className={styles.summary} aria-label="Order summary">
       <div className={styles.summaryCard}><dl>
         {summary.filter((item) => !["Total", "Design", "Height", "Colour"].includes(item.label) || (item.label === "Height" && !item.value.startsWith("Standard")) || (item.label === "Colour" && item.value !== "Ivory")).map((item) => <div key={item.label}><dt>{item.label === "Sponge" ? "Flavour" : item.label}</dt><dd>{item.label === "Message" && item.value === "None" ? "—" : item.label === "Size" ? (item.value.match(/\((\d+)″\)/)?.[1] ? `${item.value.match(/\((\d+)″\)/)?.[1]} inch` : item.value) : item.value}</dd></div>)}
         <div><dt>Pickup</dt><dd>{pickup?.toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}</dd></div>
@@ -69,7 +76,7 @@ export function CakePickup({ onBack, date, time, onDateChange, onTimeChange, sum
       </dl></div>
       {unavailable && <p className={styles.error} role="alert">Please choose a pickup time at least 24 hours from now.</p>}
       {quoteError && <p className={styles.error} role="alert">{quoteError}</p>}
-      <div className={styles.summaryActions}><button type="button" className={styles.edit} onClick={onBack}>Edit</button><button type="button" className={styles.submit} disabled={!valid} onClick={() => { const current = Date.now(); setNow(current); if (valid && quote) setPaymentQuote(quote); }}>Proceed to Payment</button></div>
+      <div className={styles.summaryActions}><button type="button" className={styles.edit} onClick={() => { setReview(false); onBack(); }}>Edit</button><button type="button" className={styles.submit} disabled={!valid} onClick={() => { const current = Date.now(); setNow(current); if (valid && quote) { setResumePayment(true); setPaymentQuote(quote); } }}>Proceed to Payment</button></div>
     </section> : <form className={styles.form} onSubmit={(event) => { event.preventDefault(); setTouched(true); const current = Date.now(); setNow(current); if (valid) setReview(true); }}>
       <div><label htmlFor="pickup-date">Preferred Pickup Date & Time <span className={styles.required}>*</span></label>
         <div className={styles.inputWrap}><input id="pickup-date" type="text" placeholder="DD/MM/YYYY HH:mm" autoComplete="off" required value={input} aria-describedby={touched && !pickup ? "pickup-error" : pickup ? "pickup-status" : undefined} aria-invalid={touched && (!pickup || unavailable)} onBlur={() => setTouched(true)} onChange={(event) => updateInput(event.target.value)} />          <button ref={trigger} type="button" aria-label="Open pickup calendar" aria-haspopup="dialog" onClick={() => calendar.current?.showModal()}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2M8 18h2"/></svg></button>
@@ -85,15 +92,9 @@ export function CakePickup({ onBack, date, time, onDateChange, onTimeChange, sum
       <fieldset className={styles.pickerTime}>
         <legend>Pickup time (24-hour)</legend>
         <div className={styles.timeFields}>
-          <select aria-label="Pickup hour" className={styles.time} value={time ? time.slice(0, 2) : ""} onChange={(event) => { const value = `${event.target.value}:${time.slice(3) || "00"}`; onTimeChange(value); setInput([date, value].filter(Boolean).join(" ")); }}>
-            <option value="" disabled>Hour</option>
-            {Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0")).map((hour) => <option key={hour} value={hour}>{hour}</option>)}
-          </select>
+          <CakeSelect consistent label="Hour" value={/^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time.slice(0, 2) : "Choose"} options={Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0"))} onChange={(hour) => { const value = `${hour}:${/^[0-5]\d$/.test(time.slice(3)) ? time.slice(3) : "00"}`; onTimeChange(value); setInput([date, value].filter(Boolean).join(" ")); }} />
           <span aria-hidden="true">:</span>
-          <select aria-label="Pickup minute" className={styles.time} value={time ? time.slice(3) : ""} onChange={(event) => { const value = `${time.slice(0, 2) || "00"}:${event.target.value}`; onTimeChange(value); setInput([date, value].filter(Boolean).join(" ")); }}>
-            <option value="" disabled>Minute</option>
-            {Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0")).map((minute) => <option key={minute} value={minute}>{minute}</option>)}
-          </select>
+          <CakeSelect consistent label="Minute" value={/^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time.slice(3) : "Choose"} options={Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0"))} onChange={(minute) => { const value = `${/^([01]\d|2[0-3])$/.test(time.slice(0, 2)) ? time.slice(0, 2) : "00"}:${minute}`; onTimeChange(value); setInput([date, value].filter(Boolean).join(" ")); }} />
         </div>
       </fieldset>
       <button type="button" className={styles.submit} disabled={!validDate || !time} onClick={() => { setTouched(true); closeCalendar(); }}>Done</button>

@@ -7,6 +7,8 @@ import styles from "./CakeCustomiser.module.css";
 import { CakeSelect } from "./CakeSelect";
 import { useCakeQuote } from "./useCakeQuote";
 import { CakePickup } from "./CakePickup";
+import { useDraftState } from "./useDraftState";
+import { draftBoolean, draftChoice, draftIndex, draftText } from "./draft-storage";
 
 // Temporary prices in AUD cents; replace with the Square catalogue later.
 const sizes = [{ label: '6 servings (6″)', price: 0 }, { label: '12 servings (8″)', price: 2000 }, { label: '20 servings (10″)', price: 4000 }, { label: '30 servings (12″)', price: 7000 }];
@@ -21,19 +23,19 @@ function ChoiceGroup({ title, options, selected, onChange }: { title: string; op
 }
 
 export function CakeCustomiser({ base, onBack }: { base: { id: string; name: string; image: string; alt: string }; onBack: () => void }) {
-  const [size, setSize] = useState(0);
-  const [height, setHeight] = useState(0);
-  const [filling, setFilling] = useState(0);
-  const [sponge, setSponge] = useState("Vanilla");
-  const [frosting, setFrosting] = useState("Smooth Buttercream");
-  const [colour, setColour] = useState("Ivory");
-  const [extras, setExtras] = useState<string[]>([]);
-  const [message, setMessage] = useState("");
+  const [size, setSize] = useDraftState("size", 0, draftIndex(sizes.length));
+  const [height, setHeight] = useDraftState("height", 0, draftIndex(heights.length));
+  const [filling, setFilling] = useDraftState("filling", 0, draftIndex(fillings.length));
+  const [sponge, setSponge] = useDraftState("sponge", "Vanilla", draftChoice(["Vanilla", "Chocolate", "Lemon", "Red Velvet"]));
+  const [frosting, setFrosting] = useDraftState("frosting", "Smooth Buttercream", draftChoice(["Smooth Buttercream", "Whipped Cream", "Chocolate Ganache"]));
+  const [colour, setColour] = useDraftState("colour", "Ivory", draftChoice(colours.map(item => item.label)));
+  const [extras, setExtras] = useDraftState<string[]>("extras", [], (value): value is string[] => Array.isArray(value) && value.length <= decorations.length && value.every(item => decorations.includes(item)));
+  const [message, setMessage] = useDraftState("message", "", (value): value is string => draftText(value) && value.length <= 80);
   const [activeImage, setActiveImage] = useState(0);
   const guide = useRef<HTMLDialogElement>(null);
-  const [pickingDate, setPickingDate] = useState(false);
-  const [time, setTime] = useState("");
-  const [date, setDate] = useState("");
+  const [pickingDate, setPickingDate] = useDraftState("pickingDate", false, draftBoolean);
+  const [time, setTime] = useDraftState("time", "", draftText);
+  const [date, setDate] = useDraftState("date", "", draftText);
   const images = [base.image, ...["/images/homeCakes/1-720.webp", "/images/homeCakes/2-720.webp", "/images/homeCakes/3-720.webp"].filter((image) => image !== base.image)];
   const cake = { base: base.id, size, height, filling, sponge, frosting, colour, extras, message };
   const { quote, error: priceError } = useCakeQuote(cake);

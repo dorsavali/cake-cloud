@@ -5,6 +5,7 @@ import {apiUrl} from "@/lib/api";
 import {DesktopHeader,MobileHeader} from "@/components/layout/header";
 import shared from "@/components/custom-cakes/CakeBaseSelector.module.css";
 import styles from "@/components/custom-cakes/CakePickup.module.css";
+import { clearCakeDraft } from "@/components/custom-cakes/draft-storage";
 
 export default function PaymentResult(){
  const [result,setResult]=useState<{status:string;orderId?:string;total?:number;currency?:string}>({status:"checking"});
@@ -15,14 +16,17 @@ export default function PaymentResult(){
   const controller=new AbortController();
   async function check(){
    try{
-    const id=new URLSearchParams(window.location.search).get("checkout");
-    const receipt=id?localStorage.getItem("cake-receipt:"+id):null;
-    if(!receipt)throw new Error("Order verification details are missing. Open this page in the browser used for checkout.");
+    const receiptParams=new URLSearchParams(window.location.hash.slice(1));
+    const orderId=receiptParams.get("orderId");
+    const token=receiptParams.get("token");
+    if(!orderId || !token)throw new Error("This payment link is incomplete or was created before the update. Please contact the shop to check your payment; do not pay again.");
+    const receipt=JSON.stringify({orderId,token});
     const response=await fetch(apiUrl("/api/cake/payment-status"),{method:"POST",headers:{"Content-Type":"application/json"},body:receipt,signal:controller.signal});
     const data=await response.json();
     if(!response.ok)throw new Error(data.error);
     if(!active)return;
     setError("");setResult(data);
+    if(data.status==="paid")clearCakeDraft();
     if(data.status==="pending" && ++attempts<12)timer=setTimeout(check,5000);
    }catch(e){if(active){setResult({status:"unknown"});setError(e instanceof Error?e.message:"Could not verify payment.");}}
   }

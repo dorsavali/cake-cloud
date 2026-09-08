@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDraftState } from "./useDraftState";
 
 import styles from "./CakeBaseSelector.module.css";
 import { CakeCustomiser } from "./CakeCustomiser";
@@ -16,7 +17,14 @@ const bases = [
 ];
 
 export function CakeBaseSelector() {
-  const [selectedBase, setSelectedBase] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  if (!ready) return <main className={styles.page} aria-busy="true"><div className={styles.content}>Loading your cake…</div></main>;
+  return <CakeDraftFlow />;
+}
+
+function CakeDraftFlow() {
+  const [selectedBase, setSelectedBase] = useDraftState<string | null>("base", null, (value): value is string | null => value === null || bases.some(base => base.id === value));
 
   if (selectedBase) {
     const base = bases.find((item) => item.id === selectedBase)!;

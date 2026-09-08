@@ -2,6 +2,7 @@ import { expectedValue, signValue } from "../services/payment-verification.js";
 import { json } from "../http/json.js";
 import { priceCake, pickupInstant, rushFee, type Cake } from "./cake-checkout.js";
 import type { ApiEnv } from "../types/env.js";
+import { configureCheckoutReturn } from "../services/checkout-return.js";
 
 export async function handleHostedCheckout(request: Request, env: ApiEnv): Promise<Response> {
   if (request.method !== "POST") return json({error:"Method not allowed"},405);
@@ -20,7 +21,9 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
     const total=subtotal+fee;
     // Expected total is only a change guard, never the source of the price.
     if(body.expectedTotal!==total)return json({error:"The total changed. Return to Summary to review the updated price."},409);
-    if(typeof body.name!=="string" || !body.name.trim() || body.name.length>100 || typeof body.email!=="string" || body.email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email))throw new Error("Enter a valid full name and email.");
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    if(!name || name.length>100 || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error("Enter a valid full name and email.");
     if(typeof body.idempotencyKey!=="string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey))throw new Error("Invalid checkout request");
     const cake=body.cake as Cake;
     const note=[
@@ -48,13 +51,14 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
         ],
         fulfillments:[{type:"PICKUP",state:"PROPOSED",pickup_details:{
           schedule_type:"SCHEDULED",pickup_at:new Date(instant).toISOString(),
-          recipient:{display_name:body.name.trim(),email_address:body.email},
+          recipient:{display_name:name,email_address:email},
         }}],
         metadata:{cc_expected:expected,cc_signature:await signValue(env,expected),cc_status:"pending",pickup_local:String(body.pickup),time_zone:env.SQUARE_TIMEZONE || "Australia/Perth"},
       },
-      // Recipient email is included in fulfillment; Square rejects a duplicate buyer_email.
+      // Square prepopulates pickup checkout contact fields from this recipient.
+      // Do not also set pre_populated_data.buyer_email: it conflicts with fulfillment.
       checkout_options:{redirect_url:returnUrl.href,allow_tipping:false,ask_for_shipping_address:false,enable_coupon:false,enable_loyalty:false},
-      payment_note:"Cake Cloud custom cake · "+body.name.trim(),
+      payment_note:"Cake Cloud custom cake · "+name,
     };
     try {
       const response=await fetch("https://connect.squareupsandbox.com/v2/online-checkout/payment-links",{
@@ -62,11 +66,12 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
         headers:{authorization:"Bearer "+env.SQUARE_ACCESS_TOKEN,"Square-Version":"2026-08-19","content-type":"application/json"},
         body:JSON.stringify(payload),signal:AbortSignal.timeout(20000),
       });
-      const data=await response.json() as {payment_link?:{url?:string;order_id?:string};errors?:{code?:string}[]};
-      if(!response.ok || !data.payment_link?.url || !data.payment_link.order_id)return json({error:"Square could not create the checkout page. Please retry.",code:data.errors?.[0]?.code},502);
+      const data=await response.json() as {payment_link?:{id?:string;url?:string;order_id?:string};errors?:{code?:string}[]};
+      if(!response.ok || !data.payment_link?.id || !data.payment_link.url || !data.payment_link.order_id)return json({error:"Square could not create the checkout page. Please retry.",code:data.errors?.[0]?.code},502);
       const url=new URL(data.payment_link.url);
       if(url.protocol!=="https:" || !["square.link","sandbox.square.link","checkout.square.site","sandbox.checkout.square.site"].includes(url.hostname))return json({error:"Square returned an unexpected checkout address."},502);
-      return json({url:url.href,orderId:data.payment_link.order_id,token:await signValue(env,"receipt:"+data.payment_link.order_id),total,currency:"AUD"});
+      await configureCheckoutReturn(env, data.payment_link.id, data.payment_link.order_id);
+      return json({url:url.href,total,currency:"AUD"});
     } catch {
       return json({error:"Could not connect to Square. Retry to recover the same checkout link."},502);
     }
