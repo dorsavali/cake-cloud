@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 
 import { apiUrl } from "@/lib/api";
 
@@ -35,6 +36,10 @@ type CartContextValue = {
   addItem: (item: AddCartItem) => void;
   setItemQuantity: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
+  cartReady: boolean;
+  checkout: (orderNumber: string) => void;
+  checkoutBusy: boolean;
+  checkoutError: string;
 };
 
 const initialItems: CartItem[] = [];
@@ -87,13 +92,11 @@ function CartDrawer({
   closeCart,
   setItemQuantity,
   removeItem,
-  checkout,
-  checkoutBusy,
-  checkoutError,
+  reviewOrder,
 }: Pick<
   CartContextValue,
   "items" | "isOpen" | "closeCart" | "setItemQuantity" | "removeItem"
-> & { checkout: () => void; checkoutBusy: boolean; checkoutError: string }) {
+> & { reviewOrder: () => void }) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -216,13 +219,12 @@ function CartDrawer({
           </div>
           <button
             type="button"
-            disabled={items.length === 0 || checkoutBusy}
-            onClick={checkout}
+            disabled={items.length === 0}
+            onClick={reviewOrder}
             className={`${styles.checkoutButton} mt-4 flex h-[52px] w-full items-center justify-center rounded-[18px] border border-primary bg-primary font-kalnia text-lg font-medium text-accent transition-[color,background-color,border-color,transform] duration-200 disabled:cursor-not-allowed disabled:border-primary disabled:bg-primary disabled:opacity-45`}
           >
-            {checkoutBusy ? "Opening Square…" : "Checkout"}
+            Checkout
           </button>
-          {checkoutError && <p className="mt-2 font-signika text-sm text-[#a0443c]" role="alert">{checkoutError}</p>}
         </footer>
       </aside>
     </div>
@@ -230,6 +232,7 @@ function CartDrawer({
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [items, setItems] = useState<CartItem[]>(initialItems);
   const [isOpen, setIsOpen] = useState(false);
   const [cartReady, setCartReady] = useState(false);
@@ -251,14 +254,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem(cartStorageKey, JSON.stringify(items)); } catch { /* Keep cart usable without persistence. */ }
   }, [cartReady, items]);
 
-  const checkout = useCallback(async () => {
+  const checkout = useCallback(async (orderNumber: string) => {
     if (!items.length || checkoutBusy) return;
     setCheckoutBusy(true); setCheckoutError("");
     try {
       const sessionResponse = await fetch(apiUrl("/api/cake/checkout-session"), { method: "POST" });
       if (!sessionResponse.ok) throw new Error("Could not start checkout.");
       const session = await sessionResponse.json();
-      const response = await fetch(apiUrl("/api/cart/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: session.idempotencyKey, items: items.map(({ variationId, quantity, options }) => ({ variationId, quantity, options })) }) });
+      const response = await fetch(apiUrl("/api/cart/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: session.idempotencyKey, orderNumber, items: items.map(({ variationId, quantity, options }) => ({ variationId, quantity, options })) }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not start checkout.");
       const destination = new URL(data.url);
@@ -269,6 +272,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCheckoutBusy(false);
     }
   }, [checkoutBusy, items]);
+
+  const reviewOrder = useCallback(() => {
+    setIsOpen(false);
+    router.push("/checkout");
+  }, [router]);
 
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
@@ -320,14 +328,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addItem,
       setItemQuantity,
       removeItem,
+      cartReady,
+      checkout,
+      checkoutBusy,
+      checkoutError,
     }),
-    [items, isOpen, openCart, closeCart, addItem, setItemQuantity, removeItem],
+    [items, isOpen, openCart, closeCart, addItem, setItemQuantity, removeItem, cartReady, checkout, checkoutBusy, checkoutError],
   );
 
   return (
     <CartContext.Provider value={value}>
       {children}
-      <CartDrawer {...value} checkout={checkout} checkoutBusy={checkoutBusy} checkoutError={checkoutError} />
+      <CartDrawer {...value} reviewOrder={reviewOrder} />
     </CartContext.Provider>
   );
 }

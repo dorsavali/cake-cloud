@@ -22,9 +22,10 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
   try {
     const raw = await request.text();
     if (raw.length > 20_000) return json({ error: "Request too large" }, 413);
-    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown };
+    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown; orderNumber?: unknown };
     if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 30) throw new Error("Your cart is empty or too large.");
     if (typeof body.idempotencyKey !== "string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey)) throw new Error("Invalid checkout request");
+    if (typeof body.orderNumber !== "string" || !/^CC-[A-Z0-9]{6,20}-[A-Z0-9]{4}$/.test(body.orderNumber)) throw new Error("Invalid order number");
 
     // Always load authoritative products, prices, and current inventory from Square.
     const products = await getCatalogItems(env);
@@ -58,13 +59,20 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
       total += largeUpgrades * 100;
       lineItems.push({ name: "Large drink upgrade", quantity: String(largeUpgrades), base_price_money: { amount: 100, currency: "AUD" } });
     }
+    const tax = Math.round(total * 0.1);
+    const shipping = 150;
+    total += tax + shipping;
+    lineItems.push(
+      { name: "Tax", quantity: "1", base_price_money: { amount: tax, currency: "AUD" } },
+      { name: "Estimated Shipping", quantity: "1", base_price_money: { amount: shipping, currency: "AUD" } },
+    );
 
-    const expected = expectedValue(body.idempotencyKey, total, env.SQUARE_LOCATION_ID);
+    const expected = expectedValue(body.orderNumber, total, env.SQUARE_LOCATION_ID);
     const payload = {
       idempotency_key: body.idempotencyKey,
       order: {
         location_id: env.SQUARE_LOCATION_ID,
-        reference_id: body.idempotencyKey,
+        reference_id: body.orderNumber,
         line_items: lineItems,
         metadata: { cc_expected: expected, cc_signature: await signValue(env, expected), cc_status: "pending" },
       },

@@ -1,7 +1,13 @@
 .checkoutButton:not(:disabled):hover {
-  border-color: #464248;
-  background-color: #464248;
-  color: #faf7f0;
+  border-color: #b9a36e;
+  background-color: #d8d4cf;
+  color: #464248;
+}
+
+.reviewCheckoutButton:not(:disabled):hover {
+  border-color: #b9a36e;
+  background-color: #d8d4cf;
+  color: #464248;
 }
 
 .checkoutButton:not(:disabled):active {
