@@ -1,7 +1,9 @@
 import { handlePaymentStatus } from "./services/payment-verification.js";
 import { handleHostedCheckout } from "./routes/hosted-checkout.js";
 import { handleCheckoutSession } from "./routes/checkout-session.js";
+import { handleCakeBrief } from "./routes/cake-brief.js";
 import { handleCakeCheckout } from "./routes/cake-checkout.js";
+import { handleCartCheckout } from "./routes/cart-checkout.js";
 import { notFound } from "./http/json.js";
 import { applyPublicApiRateLimit } from "./http/rate-limit.js";
 import { handleCatalogItems } from "./routes/catalog.js";
@@ -19,6 +21,9 @@ export async function handleApiRequest(
   env: ApiEnv,
 ): Promise<Response | null> {
   const url = new URL(request.url);
+  if (url.pathname === "/api/cake/brief") {
+    return applyPublicApiRateLimit(request) ?? handleCakeBrief(request, env);
+  }
   if (url.pathname === "/api/cake/checkout-session") {
     return applyPublicApiRateLimit(request) ?? handleCheckoutSession(request);
   }
@@ -27,6 +32,9 @@ export async function handleApiRequest(
   }
   if (url.pathname === "/api/cake/checkout") {
     return applyPublicApiRateLimit(request) ?? handleHostedCheckout(request,env);
+  }
+  if (url.pathname === "/api/cart/checkout") {
+    return applyPublicApiRateLimit(request) ?? handleCartCheckout(request, env);
   }
   if (url.pathname === "/api/cake/quote") {
     const limited = applyPublicApiRateLimit(request);

@@ -87,7 +87,7 @@ export function SpecialDemand() {
               Customizables
             </Link>
             <Link
-              href="/custom-cakes"
+              href="/custom-cakes/from-scratch"
               className={`${styles.actionButton} flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary max-[479px]:h-11 max-[479px]:w-[180px] lg:h-[68px] lg:w-[264px] lg:text-base`}
             >
               <span aria-hidden="true" className="text-2xl font-light">+</span>

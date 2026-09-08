@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { apiUrl } from "@/lib/api";
+
 import styles from "./Cart.module.css";
 
 export type CartItem = {
@@ -36,6 +38,20 @@ type CartContextValue = {
 };
 
 const initialItems: CartItem[] = [];
+const cartStorageKey = "cake-cloud-cart-v1";
+
+export function clearStoredCart() {
+  try { localStorage.removeItem(cartStorageKey); } catch { /* Storage may be unavailable. */ }
+  window.dispatchEvent(new Event("cake-cloud-cart-clear"));
+}
+
+function validStoredCart(value: unknown): value is CartItem[] {
+  return Array.isArray(value) && value.length <= 30 && value.every((item) => item && typeof item === "object"
+    && typeof item.id === "string" && (typeof item.variationId === "string" || item.variationId === null)
+    && typeof item.name === "string" && typeof item.unitPrice === "number" && typeof item.currency === "string"
+    && Number.isInteger(item.quantity) && item.quantity > 0 && (item.maxQuantity === null || (typeof item.maxQuantity === "number" && item.maxQuantity >= item.quantity))
+    && (item.options === undefined || (item.options && typeof item.options === "object" && !Array.isArray(item.options))));
+}
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -71,10 +87,13 @@ function CartDrawer({
   closeCart,
   setItemQuantity,
   removeItem,
+  checkout,
+  checkoutBusy,
+  checkoutError,
 }: Pick<
   CartContextValue,
   "items" | "isOpen" | "closeCart" | "setItemQuantity" | "removeItem"
->) {
+> & { checkout: () => void; checkoutBusy: boolean; checkoutError: string }) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -197,11 +216,13 @@ function CartDrawer({
           </div>
           <button
             type="button"
-            disabled={items.length === 0}
+            disabled={items.length === 0 || checkoutBusy}
+            onClick={checkout}
             className={`${styles.checkoutButton} mt-4 flex h-[52px] w-full items-center justify-center rounded-[18px] border border-primary bg-primary font-kalnia text-lg font-medium text-accent transition-[color,background-color,border-color,transform] duration-200 disabled:cursor-not-allowed disabled:border-primary disabled:bg-primary disabled:opacity-45`}
           >
-            Checkout
+            {checkoutBusy ? "Opening Square…" : "Checkout"}
           </button>
+          {checkoutError && <p className="mt-2 font-signika text-sm text-[#a0443c]" role="alert">{checkoutError}</p>}
         </footer>
       </aside>
     </div>
@@ -211,6 +232,43 @@ function CartDrawer({
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(initialItems);
   const [isOpen, setIsOpen] = useState(false);
+  const [cartReady, setCartReady] = useState(false);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+
+  useEffect(() => {
+    try {
+      const saved: unknown = JSON.parse(localStorage.getItem(cartStorageKey) ?? "null");
+      if (validStoredCart(saved)) setItems(saved);
+    } catch { /* Ignore corrupt or unavailable storage. */ }
+    setCartReady(true);
+    const clear = () => setItems([]);
+    window.addEventListener("cake-cloud-cart-clear", clear);
+    return () => window.removeEventListener("cake-cloud-cart-clear", clear);
+  }, []);
+  useEffect(() => {
+    if (!cartReady) return;
+    try { localStorage.setItem(cartStorageKey, JSON.stringify(items)); } catch { /* Keep cart usable without persistence. */ }
+  }, [cartReady, items]);
+
+  const checkout = useCallback(async () => {
+    if (!items.length || checkoutBusy) return;
+    setCheckoutBusy(true); setCheckoutError("");
+    try {
+      const sessionResponse = await fetch(apiUrl("/api/cake/checkout-session"), { method: "POST" });
+      if (!sessionResponse.ok) throw new Error("Could not start checkout.");
+      const session = await sessionResponse.json();
+      const response = await fetch(apiUrl("/api/cart/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: session.idempotencyKey, items: items.map(({ variationId, quantity, options }) => ({ variationId, quantity, options })) }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not start checkout.");
+      const destination = new URL(data.url);
+      if (destination.protocol !== "https:" || !["square.link", "sandbox.square.link", "checkout.square.site", "sandbox.checkout.square.site"].includes(destination.hostname)) throw new Error("Invalid checkout address.");
+      window.location.assign(destination.href);
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : "Could not start checkout.");
+      setCheckoutBusy(false);
+    }
+  }, [checkoutBusy, items]);
 
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
@@ -269,7 +327,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return (
     <CartContext.Provider value={value}>
       {children}
-      <CartDrawer {...value} />
+      <CartDrawer {...value} checkout={checkout} checkoutBusy={checkoutBusy} checkoutError={checkoutError} />
     </CartContext.Provider>
   );
 }

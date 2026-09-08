@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/node.ts",
+    "dev": "tsx watch --no-cache src/node.ts",
     "dev:worker": "wrangler dev --config ../wrangler.jsonc",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/node.js",

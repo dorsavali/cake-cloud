@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDraftState } from "./useDraftState";
+import { clearCakeDraft } from "./draft-storage";
 
 import styles from "./CakeBaseSelector.module.css";
 import { CakeCustomiser } from "./CakeCustomiser";
@@ -18,9 +20,20 @@ const bases = [
 
 export function CakeBaseSelector() {
   const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
+  const [resetRevision, setResetRevision] = useState(0);
+  const searchParams = useSearchParams();
+  const shouldStartOver = searchParams.get("start") === "1";
+  useEffect(() => {
+    if (shouldStartOver) {
+      clearCakeDraft();
+      setResetRevision((revision) => revision + 1);
+      const url = new URL(window.location.href);
+      window.history.replaceState(null, "", url.pathname);
+    }
+    setReady(true);
+  }, [shouldStartOver]);
   if (!ready) return <main className={styles.page} aria-busy="true"><div className={styles.content}>Loading your cake…</div></main>;
-  return <CakeDraftFlow />;
+  return <CakeDraftFlow key={resetRevision} />;
 }
 
 function CakeDraftFlow() {
@@ -40,7 +53,7 @@ function CakeDraftFlow() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m10 6-6 6 6 6M4 12h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             Home
           </Link>
-          <span className={styles.mode}><span aria-hidden="true">✦</span> From Scratch</span>
+          <Link href="/custom-cakes/from-scratch" className={styles.mode}><span aria-hidden="true">✦</span> From Scratch</Link>
         </div>
 
         <nav aria-label="Custom cake progress" className={styles.progress}>

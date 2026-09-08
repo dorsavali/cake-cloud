@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { CakeBaseSelector } from "@/components/custom-cakes/CakeBaseSelector";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
@@ -13,7 +14,9 @@ export default function CustomCakesPage() {
     <>
       <DesktopHeader />
       <MobileHeader />
-      <CakeBaseSelector />
+      <Suspense fallback={null}>
+        <CakeBaseSelector />
+      </Suspense>
     </>
   );
 }

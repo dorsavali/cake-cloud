@@ -7,6 +7,10 @@ export interface ApiEnv {
   SQUARE_ENVIRONMENT: "sandbox" | "production";
   SQUARE_WEBHOOK_SIGNATURE_KEY: string;
   SQUARE_WEBHOOK_NOTIFICATION_URL: string;
+  CAKE_BRIEFS?: {
+    put(key: string, value: ReadableStream | ArrayBuffer | string, options?: { httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }): Promise<unknown>;
+    delete(keys: string | string[]): Promise<void>;
+  };
 }
 
 export interface WorkerEnv extends ApiEnv {

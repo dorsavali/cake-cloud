@@ -62,12 +62,13 @@ export function CakePickup({ onBack, date, time, onDateChange, onTimeChange, sum
     if (resumePayment && valid && quote && !paymentQuote) setPaymentQuote(quote);
   }, [resumePayment, valid, quote, paymentQuote]);
   const closeCalendar = () => { calendar.current?.close(); trigger.current?.focus(); };
+  const backFromPayment = () => { setPaymentQuote(null); setResumePayment(false); setQuoteRevision(value => value + 1); };
 
   return <main className={`${shared.page} ${styles.page} ${review ? styles.reviewPage : ""}`}><div className={shared.content}>
-    <button className={styles.back} type="button" disabled={!!paymentQuote} onClick={paymentQuote ? undefined : review ? () => setReview(false) : onBack}>← <span>{"Custom Cakes"}</span></button>
+    <button className={styles.back} type="button" onClick={paymentQuote ? backFromPayment : review ? () => setReview(false) : onBack}>← <span>{paymentQuote ? "Back to Summary" : review ? "Back to Date" : "Back to Customise"}</span></button>
     <nav className={`${shared.progress} ${styles.progress}`} aria-label="Custom cake progress"><ol>{["Design", "Customise", "Date", "Summary", "Payment"].map((step, index) => <li key={step} aria-current={index === (paymentQuote ? 4 : review ? 3 : 2) ? "step" : undefined}><span className={`${shared.stepNumber} ${index < (paymentQuote ? 4 : review ? 3 : 2) ? styles.complete : ""}`}>{index < (paymentQuote ? 4 : review ? 3 : 2) ? "✓" : index + 1}</span><span className={shared.stepLabel}>{step}</span></li>)}</ol></nav>
     <h1 className={`${shared.title} ${styles.title}`}>{paymentQuote ? "Payment" : review ? "Order Summary" : "Pickup Date & Time"}</h1>
-    {paymentQuote ? <CakePayment cake={cake} pickup={pickupValue!} quote={paymentQuote} onBack={() => { setPaymentQuote(null); setResumePayment(false); setQuoteRevision(v=>v+1); }} /> : review ? <section className={styles.summary} aria-label="Order summary">
+    {paymentQuote ? <CakePayment cake={cake} pickup={pickupValue!} quote={paymentQuote} /> : review ? <section className={styles.summary} aria-label="Order summary">
       <div className={styles.summaryCard}><dl>
         {summary.filter((item) => !["Total", "Design", "Height", "Colour"].includes(item.label) || (item.label === "Height" && !item.value.startsWith("Standard")) || (item.label === "Colour" && item.value !== "Ivory")).map((item) => <div key={item.label}><dt>{item.label === "Sponge" ? "Flavour" : item.label}</dt><dd>{item.label === "Message" && item.value === "None" ? "—" : item.label === "Size" ? (item.value.match(/\((\d+)″\)/)?.[1] ? `${item.value.match(/\((\d+)″\)/)?.[1]} inch` : item.value) : item.value}</dd></div>)}
         <div><dt>Pickup</dt><dd>{pickup?.toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}</dd></div>

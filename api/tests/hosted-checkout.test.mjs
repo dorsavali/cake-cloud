@@ -13,9 +13,13 @@ test("rejects production and invalid amounts before Square",async()=>{
 test("Square receives server price, fulfillment, and a stable retry key",async t=>{
  const sent=[];
  t.mock.method(globalThis,"fetch",async (url,options)=>{
-   assert.equal(url,"https://connect.squareupsandbox.com/v2/online-checkout/payment-links");
-   sent.push(JSON.parse(options.body));
-   return Response.json({payment_link:{url:"https://sandbox.square.link/u/test",order_id:"test-order"}});
+   if(options.method==="POST"){
+    assert.equal(url,"https://connect.squareupsandbox.com/v2/online-checkout/payment-links");
+    sent.push(JSON.parse(options.body));
+    return Response.json({payment_link:{id:"test-link",url:"https://sandbox.square.link/u/test",order_id:"test-order"}});
+   }
+   const checkout_options=options.method==="PUT"?JSON.parse(options.body).payment_link.checkout_options:{};
+   return Response.json({payment_link:{id:"test-link",version:1,order_id:"test-order",checkout_options}});
  });
  const b=body();
  for(let i=0;i<2;i++)assert.equal((await handleHostedCheckout(req(b),env)).status,200);
