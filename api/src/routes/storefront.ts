@@ -9,6 +9,11 @@ const responseCacheHeaders = {
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
+const toPublicProduct = <T extends { customAttributes: unknown }>(product: T) => {
+  const { customAttributes: _customAttributes, ...publicProduct } = product;
+  return publicProduct;
+};
+
 export async function handleCategories(
   request: Request,
   env: ApiEnv,
@@ -37,7 +42,7 @@ export async function handleProductDetail(
     const products = await getCachedCatalogItems(env);
     const product = products.find((item) => item.id === productId);
     if (!product) return json({ error: "Product not found" }, 404);
-    return json({ product }, 200, responseCacheHeaders);
+    return json({ product: toPublicProduct(product) }, 200, responseCacheHeaders);
   } catch {
     return json({ error: "Product is temporarily unavailable" }, 502);
   }

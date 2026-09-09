@@ -9,6 +9,7 @@ import { applyPublicApiRateLimit } from "./http/rate-limit.js";
 import { handleCatalogItems } from "./routes/catalog.js";
 import { handleHealth } from "./routes/health.js";
 import { handleSquareWebhook } from "./routes/square-webhook.js";
+import { handleHostPackages } from "./routes/host-packages.js";
 import {
   handleCategories,
   handleProductCards,
@@ -43,7 +44,8 @@ export async function handleApiRequest(
   const isRateLimitedRoute =
     url.pathname === "/api/categories" ||
     url.pathname === "/api/products" ||
-    url.pathname.startsWith("/api/products/");
+    url.pathname.startsWith("/api/products/") ||
+    url.pathname === "/api/host/packages";
 
   if (isRateLimitedRoute) {
     const rateLimitResponse = applyPublicApiRateLimit(request);
@@ -62,6 +64,10 @@ export async function handleApiRequest(
 
   if (url.pathname === "/api/categories") {
     return handleCategories(request, env);
+  }
+
+  if (url.pathname === "/api/host/packages") {
+    return handleHostPackages(request, env);
   }
 
   const productDetailMatch = url.pathname.match(/^\/api\/products\/([^/]+)$/);

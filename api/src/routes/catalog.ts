@@ -69,8 +69,11 @@ export async function handleCatalogItems(
   }
 
   try {
+    const items = (await getCachedCatalogItems(env)).map(
+      ({ customAttributes: _customAttributes, ...product }) => product,
+    );
     return json(
-      { items: await getCachedCatalogItems(env) },
+      { items },
       200,
       {
         "cache-control": "public, max-age=30, s-maxage=60, stale-while-revalidate=60",

@@ -7,7 +7,13 @@ type SquareCatalogObject = {
   id?: string;
   custom_attribute_values?: Record<
     string,
-    { name?: string; string_value?: string }
+    {
+      name?: string;
+      string_value?: string;
+      number_value?: string;
+      boolean_value?: boolean;
+      selection_uid_values?: string[];
+    }
   >;
   item_data?: {
     name?: string;
@@ -37,6 +43,12 @@ type SquareCatalogObject = {
   };
   image_data?: { url?: string };
   category_data?: { name?: string };
+  custom_attribute_definition_data?: {
+    name?: string;
+    selection_config?: {
+      allowed_selections?: Array<{ uid?: string; name?: string }>;
+    };
+  };
 };
 
 type SquareCatalogListResponse = {
@@ -59,6 +71,7 @@ type StorefrontProduct = {
   allergens: string[];
   stock: number | null;
   popularityScore: number;
+  customAttributes: Record<string, string | number | boolean | string[]>;
 };
 
 type InventoryCount = {
@@ -243,7 +256,9 @@ export async function getCatalogItems(
   let cursor: string | undefined;
 
   do {
-    const params = new URLSearchParams({ types: "ITEM,IMAGE,CATEGORY" });
+    const params = new URLSearchParams({
+      types: "ITEM,IMAGE,CATEGORY,CUSTOM_ATTRIBUTE_DEFINITION",
+    });
     if (cursor) params.set("cursor", cursor);
 
     const response = await fetch(
@@ -274,6 +289,18 @@ export async function getCatalogItems(
       .filter((object) => object.type === "CATEGORY" && object.id)
       .map((object) => [object.id as string, object.category_data?.name]),
   );
+  const customAttributeSelections = new Map<string, string>();
+  for (const object of objects.filter(
+    (object) => object.type === "CUSTOM_ATTRIBUTE_DEFINITION",
+  )) {
+    for (const selection of
+      object.custom_attribute_definition_data?.selection_config
+        ?.allowed_selections ?? []) {
+      if (selection.uid && selection.name) {
+        customAttributeSelections.set(selection.uid, selection.name);
+      }
+    }
+  }
   let popularityByVariation = new Map<string, number>();
   try {
     popularityByVariation = await getPopularityByVariation(env);
@@ -309,6 +336,32 @@ export async function getCatalogItems(
       const ingredients = customAttributes.find(([key, value]) =>
         `${key} ${value.name ?? ""}`.toLowerCase().includes("ingredient"),
       )?.[1].string_value ?? "";
+      const storefrontCustomAttributes: StorefrontProduct["customAttributes"] = {};
+      for (const [key, value] of customAttributes) {
+          const name = (value.name ?? key)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "");
+          if (!name) continue;
+          if (value.string_value !== undefined) {
+            storefrontCustomAttributes[name] = value.string_value;
+            continue;
+          }
+          if (value.number_value !== undefined) {
+            const number = Number(value.number_value);
+            if (Number.isFinite(number)) storefrontCustomAttributes[name] = number;
+            continue;
+          }
+          if (value.boolean_value !== undefined) {
+            storefrontCustomAttributes[name] = value.boolean_value;
+            continue;
+          }
+          if (value.selection_uid_values) {
+            storefrontCustomAttributes[name] = value.selection_uid_values.map(
+              (uid) => customAttributeSelections.get(uid) ?? uid,
+            );
+          }
+      }
 
       return {
         id: item.id as string,
@@ -351,6 +404,7 @@ export async function getCatalogItems(
               : 0),
           0,
         ),
+        customAttributes: storefrontCustomAttributes,
       };
     });
 }
