@@ -117,7 +117,7 @@ export function HostPackages() {
           Complex or Large Order?
         </p>
         <Link
-          href="/custom-cakes/from-scratch"
+          href="/events/enquiry"
           className="inline-flex min-w-40 items-center justify-center rounded-full bg-primary px-4 py-2 font-kalnia text-[11px] font-medium text-white transition-colors hover:bg-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:min-w-44 md:px-5 md:text-[13px]"
         >
           Go to Enquiry Form

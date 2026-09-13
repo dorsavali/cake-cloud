@@ -10,8 +10,8 @@ type PaymentLink = {
 
 // Square persists the return URL alongside the order. No browser storage or
 // process-local lookup is needed when a buyer returns in a different browser.
-export async function configureCheckoutReturn(env: ApiEnv, linkId: string, orderId: string) {
-  const returnUrl = new URL("/custom-cakes/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000");
+export async function configureCheckoutReturn(env: ApiEnv, linkId: string, orderId: string, returnPath = "/custom-cakes/payment-result/") {
+  const returnUrl = new URL(returnPath, env.WEBSITE_ORIGIN || "http://localhost:3000");
   // A fragment avoids sending the read-only receipt token in HTTP referrers.
   returnUrl.hash = new URLSearchParams({ orderId, token: await signValue(env, "receipt:" + orderId) }).toString();
   const path = "/v2/online-checkout/payment-links/" + encodeURIComponent(linkId);

@@ -10,6 +10,8 @@ import { handleCatalogItems } from "./routes/catalog.js";
 import { handleHealth } from "./routes/health.js";
 import { handleSquareWebhook } from "./routes/square-webhook.js";
 import { handleHostPackages } from "./routes/host-packages.js";
+import { handleHostCheckout } from "./routes/host-checkout.js";
+import { handleHostEnquiry } from "./routes/host-enquiry.js";
 import {
   handleCategories,
   handleProductCards,
@@ -36,6 +38,12 @@ export async function handleApiRequest(
   }
   if (url.pathname === "/api/cart/checkout") {
     return applyPublicApiRateLimit(request) ?? handleCartCheckout(request, env);
+  }
+  if (url.pathname === "/api/host/checkout") {
+    return applyPublicApiRateLimit(request) ?? handleHostCheckout(request, env);
+  }
+  if (url.pathname === "/api/host/enquiry") {
+    return applyPublicApiRateLimit(request) ?? handleHostEnquiry(request, env);
   }
   if (url.pathname === "/api/cake/quote") {
     const limited = applyPublicApiRateLimit(request);
