@@ -35,7 +35,7 @@ export default function AboutPage() {
   return <>
     <DesktopHeader />
     <MobileHeader />
-    <main className="min-h-dvh overflow-x-clip bg-accent text-accent-dark md:-mt-16 md:pt-16">
+    <main className="min-h-dvh overflow-x-clip bg-accent text-accent-dark">
       <div className="bg-[url('/images/pattern/background.webp')] bg-[length:auto_100%] bg-top bg-repeat-y md:bg-[length:100%_auto]">
         <div className="mx-auto w-full max-w-[820px] px-4 pb-14 pt-9 sm:px-6 md:pb-20 md:pt-10 lg:px-0">
           <section>
