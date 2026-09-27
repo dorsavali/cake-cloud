@@ -1,5 +1,8 @@
 .deliveryButton {
   transition:
+    width 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    gap 500ms cubic-bezier(0.22, 1, 0.36, 1),
     color 180ms ease,
     background-color 180ms ease,
     border-color 180ms ease;

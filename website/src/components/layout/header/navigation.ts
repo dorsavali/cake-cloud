@@ -6,7 +6,7 @@ export type NavigationItem = {
 
 export const desktopNavigation: NavigationItem[] = [
   { href: "/", label: "Home" },
-  { href: "/DailyMenu", label: "Daily Menu" },
+  { href: "/DailyMenu", label: "Fresh Bakes" },
   { href: "/custom-cakes?start=1", label: "Custom Cakes" },
   { href: "/events", label: "Host" },
   { href: "/about", label: "About" },
@@ -14,7 +14,7 @@ export const desktopNavigation: NavigationItem[] = [
 
 export const mobileNavigation: NavigationItem[] = [
   { href: "/", label: "Home" },
-  { href: "/DailyMenu", label: "Daily Menu" },
+  { href: "/DailyMenu", label: "Fresh Bakes" },
   { href: "/custom-cakes?start=1", label: "Custom Cakes" },
   { href: "/events", label: "Host" },
   { href: "/about", label: "About" },

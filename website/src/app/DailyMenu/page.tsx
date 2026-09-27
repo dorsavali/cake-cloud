@@ -1,4 +1,5 @@
 import { DailyMenuCatalog } from "@/components/daily-menu/catalog";
+import { DeliveryButton } from "@/components/daily-menu/DeliveryButton";
 import { MenuIntro } from "@/components/daily-menu/menu-intro";
 import { Footer } from "@/components/layout/footer";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
@@ -12,6 +13,7 @@ export default function DailyMenuPage() {
         <MenuIntro />
         <DailyMenuCatalog />
       </main>
+      <DeliveryButton />
       <Footer />
     </>
   );

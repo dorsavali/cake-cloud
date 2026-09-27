@@ -133,7 +133,7 @@ export function FilterSidebar({
   };
 
   return (
-    <aside dir="ltr" aria-label="Filter daily menu" className="contents font-signika text-accent-dark lg:block lg:w-[276px] lg:shrink-0">
+    <aside dir="ltr" aria-label="Filter fresh bakes" className="contents font-signika text-accent-dark lg:block lg:w-[276px] lg:shrink-0">
       <div className="hidden lg:block lg:w-auto">
         <p className={`${styles.label} hidden lg:block`}>{options.typeLabel}</p>
         <div ref={productTypeDropdownRef} className={`${styles.dropdown} mt-0 lg:mt-3`}>

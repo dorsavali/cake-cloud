@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 const steps = [
-  { icon: "🛒", title: "1. Browse", text: "Explore our daily menu or custom cake options." },
+  { icon: "🛒", title: "1. Browse", text: "Explore our fresh bakes or custom cake options." },
   { icon: "✏️", title: "2. Customise", text: "Pick your size, flavours, and decorations." },
   { icon: "💳", title: "3. Pay", text: "Secure online payment — no surprises." },
   { icon: "🎂", title: "4. Collect", text: "Pickup at our East Perth boutique or via Uber Eats." },
@@ -68,7 +68,7 @@ export default function AboutPage() {
             <h2 className="mt-4 font-kalnia text-[25px] font-medium md:text-[27px]">Before You Order</h2>
             <div className="mt-4 max-w-[680px] space-y-4 font-signika text-sm leading-[1.55] text-accent-dark/60">
               <p>To make sure your order is ready when you need it, we recommend placing orders in advance — particularly for custom cakes, large quantities, or special occasions. Custom and bespoke cakes require additional lead time, so the earlier you get in touch, the better. Short-notice and same-day requests are subject to availability and may carry a rush fee.</p>
-              <p>Pickup is available directly from our East Perth boutique. For delivery, Cake Cloud is on <strong className="font-medium text-accent-dark">Uber Eats</strong> — search for us in the app and place your delivery order there. Daily menu items are also available for walk-in purchase during opening hours, subject to availability on the day.</p>
+              <p>Pickup is available directly from our East Perth boutique. For delivery, Cake Cloud is on <strong className="font-medium text-accent-dark">Uber Eats</strong> — search for us in the app and place your delivery order there. Fresh Bakes items are also available for walk-in purchase during opening hours, subject to availability on the day.</p>
               <p>For corporate and events packages, use the enquiry forms on those pages — our team will follow up to confirm details and availability. If you have any questions about lead times, ingredients, or a specific occasion, the quickest way to reach us is via WhatsApp or our social channels.</p>
             </div>
           </section>
@@ -81,7 +81,7 @@ export default function AboutPage() {
                 <a href="https://www.google.com/maps/search/?api=1&query=1%2F180+Royal+St+East+Perth+WA+6004" target="_blank" rel="noreferrer" className="flex items-start gap-3 text-accent-dark"><span className="text-primary"><LocationIcon /></span><span><strong className="block font-medium">1/180 Royal Street</strong><span className="mt-1 block text-accent-dark/55">East Perth WA 6004</span></span></a>
                 <div className="flex items-start gap-3 text-accent-dark">
                   <span className="text-primary"><ClockIcon /></span>
-                  <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-3 text-center leading-relaxed">
+                  <div className="grid grid-cols-[auto_auto_auto] items-center gap-2 text-center leading-relaxed">
                     <span><span className="block">Mon - Fri</span><span className="block whitespace-nowrap">6:30 Am - 5 PM</span></span>
                     <span aria-hidden="true" className="text-accent-dark/35">|</span>
                     <span><span className="block">Sat - Sun</span><span className="block whitespace-nowrap">8 Am - 4 PM</span></span>

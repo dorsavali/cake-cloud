@@ -109,5 +109,4 @@ const server = createServer(async (incoming, outgoing) => {
 });
 
 server.listen(port, hostname, () => {
-  console.log(`API listening on http://${hostname}:${port}`);
 });

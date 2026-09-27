@@ -22,7 +22,8 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
   try {
     const raw = await request.text();
     if (raw.length > 20_000) return json({ error: "Request too large" }, 413);
-    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown; orderNumber?: unknown };
+    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown; orderNumber?: unknown; termsAccepted?: unknown };
+    if (body.termsAccepted !== true) throw new Error("Accept the terms and conditions.");
     if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 30) throw new Error("Your cart is empty or too large.");
     if (typeof body.idempotencyKey !== "string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey)) throw new Error("Invalid checkout request");
     if (typeof body.orderNumber !== "string" || !/^CC-[A-Z0-9]{6,20}-[A-Z0-9]{4}$/.test(body.orderNumber)) throw new Error("Invalid order number");

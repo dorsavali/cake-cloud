@@ -19,7 +19,7 @@ export default function RootLayout({
     <html lang="en" dir="ltr">
       <body>
         <CartProvider>
-          <div className="mx-auto min-h-dvh w-full max-w-[1536px]">{children}</div>
+          <div className="mx-auto min-h-dvh w-full max-w-[2048px]">{children}</div>
         </CartProvider>
       </body>
     </html>

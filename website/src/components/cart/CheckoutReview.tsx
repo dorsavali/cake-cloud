@@ -18,6 +18,7 @@ export function CheckoutReview() {
   const { items, cartReady, setItemQuantity, checkout, checkoutBusy, checkoutError } = useCart();
   const [createdAt, setCreatedAt] = useState<Date | null>(null);
   const [orderNumber, setOrderNumber] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   useEffect(() => {
     const now = new Date();
     setCreatedAt(now);
@@ -42,7 +43,7 @@ export function CheckoutReview() {
           <p><strong className="mr-2 text-accent-dark">Order No:</strong>{orderNumber || "…"}</p>
         </div>
 
-        {!cartReady ? <p className="py-12 text-center font-signika text-sm text-accent-dark/60">Loading your order…</p> : items.length === 0 ? <div className="py-12 text-center font-signika"><p>Your cart is empty.</p><Link href="/DailyMenu" className="mt-5 inline-flex text-primary underline underline-offset-4">Browse Daily Menu</Link></div> : <>
+        {!cartReady ? <p className="py-12 text-center font-signika text-sm text-accent-dark/60">Loading your order…</p> : items.length === 0 ? <div className="py-12 text-center font-signika"><p>Your cart is empty.</p><Link href="/DailyMenu" className="mt-5 inline-flex text-primary underline underline-offset-4">Browse Fresh Bakes</Link></div> : <>
           <div className="mt-7 grid grid-cols-[58px_1fr_auto] border-y border-dotted border-[#cbbb98] py-3 font-signika text-[10px] uppercase tracking-wide text-accent-dark/60"><span>Qty</span><span>Item description</span><span>Total</span></div>
           <ul>
             {items.map((item) => <li key={lineId(item)} className="grid grid-cols-[58px_1fr_auto] items-center gap-2 border-b border-dotted border-[#cbbb98] py-4">
@@ -61,8 +62,12 @@ export function CheckoutReview() {
             <div className="flex justify-between border-b border-dotted border-[#cbbb98] pb-3"><dt>Estimated Shipping</dt><dd>{money(shipping, currency)}</dd></div>
           </dl>
           <div className="mt-6 flex items-center justify-between border-y border-dotted border-[#cbbb98] py-5 font-kalnia text-2xl md:text-3xl"><span>Grand Total</span><strong>{money(total, currency)}</strong></div>
+          <label className="mt-5 flex items-start gap-2 font-signika text-xs text-accent-dark/55">
+            <input type="checkbox" required checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} className="mt-0.5 size-4 shrink-0 accent-primary" />
+            <span>I have read and agree to the terms and conditions.</span>
+          </label>
           {checkoutError && <p className="mt-4 font-signika text-sm text-[#a0443c]" role="alert">{checkoutError}</p>}
-          <button type="button" disabled={checkoutBusy || !orderNumber} onClick={() => checkout(orderNumber)} className={`${styles.reviewCheckoutButton} mt-6 flex min-h-14 w-full items-center justify-center rounded-full border border-[#b9a36e] bg-[#faf7f0] px-6 font-kalnia text-lg transition-colors duration-200 disabled:cursor-wait disabled:opacity-60`}>{checkoutBusy ? "Opening Square…" : "Proceed to Checkout"}</button>
+          <button type="button" disabled={checkoutBusy || !orderNumber || !termsAccepted} onClick={() => checkout(orderNumber, termsAccepted)} className={`${styles.reviewCheckoutButton} mt-6 flex min-h-14 w-full items-center justify-center rounded-full border border-[#b9a36e] bg-[#faf7f0] px-6 font-kalnia text-lg transition-colors duration-200 disabled:cursor-wait disabled:opacity-60`}>{checkoutBusy ? "Opening Square…" : "Proceed to Checkout"}</button>
         </>}
       </section>
     </div>

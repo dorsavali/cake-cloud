@@ -12,6 +12,7 @@ export function CakePayment({quote,cake,pickup}:{quote:CakeQuote;cake:CakeConfig
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   const [url,setUrl]=useState("");
+  const [termsAccepted,setTermsAccepted]=useState(false);
   const lock=useRef(false);
   const active=useRef(true);
   const request=useRef<AbortController | null>(null);
@@ -23,7 +24,8 @@ export function CakePayment({quote,cake,pickup}:{quote:CakeQuote;cake:CakeConfig
       const parsed = JSON.parse(value);
       return !!parsed && typeof parsed.idempotencyKey === "string" && /^[a-f0-9-]{36}$/i.test(parsed.idempotencyKey)
         && JSON.stringify(parsed.cake) === JSON.stringify(cake) && parsed.pickup === pickup
-        && parsed.name === name.trim() && parsed.email === email.trim() && parsed.expectedTotal === quote.total;
+        && parsed.name === name.trim() && parsed.email === email.trim() && parsed.expectedTotal === quote.total
+        && parsed.termsAccepted === true;
     } catch { return false; }
   });
   const attempt=useRef<string|undefined>(savedAttempt ?? undefined);
@@ -40,7 +42,7 @@ export function CakePayment({quote,cake,pickup}:{quote:CakeQuote;cake:CakeConfig
         if (!sessionResponse.ok) throw new Error("Could not start checkout. Please try again.");
         const session = await sessionResponse.json();
         if (typeof session.idempotencyKey !== "string" || !/^[a-f0-9-]{36}$/i.test(session.idempotencyKey)) throw new Error("Could not start checkout. Please try again.");
-        attempt.current = JSON.stringify({cake,pickup,name:name.trim(),email:email.trim(),expectedTotal:quote.total,idempotencyKey:session.idempotencyKey});
+        attempt.current = JSON.stringify({cake,pickup,name:name.trim(),email:email.trim(),expectedTotal:quote.total,idempotencyKey:session.idempotencyKey,termsAccepted:true});
         saveAttempt(attempt.current);
       }
       const response=await fetch(apiUrl("/api/cake/checkout"),{method:"POST",headers:{"Content-Type":"application/json"},body:attempt.current,signal:request.current.signal});
@@ -65,6 +67,10 @@ export function CakePayment({quote,cake,pickup}:{quote:CakeQuote;cake:CakeConfig
       <input className={styles.time} id="payer-email" type="email" autoComplete="email" required maxLength={254} value={email} disabled={busy||!!attempt.current} onChange={event=>setEmail(event.target.value)}/>
     </div>
     <div className={styles.paymentTotal}><span>Total</span><strong>{total}</strong></div>
+    <label className="!mb-0 flex items-start gap-2 text-xs text-accent-dark/55">
+      <input type="checkbox" required checked={termsAccepted} disabled={busy||!!attempt.current} onChange={event=>setTermsAccepted(event.target.checked)} className="mt-0.5 size-4 shrink-0 accent-primary" />
+      <span>I have read and agree to the terms and conditions.</span>
+    </label>
     <p className={styles.checkoutHint}>You’ll complete your payment securely on Square.</p>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     <button className={styles.submit} disabled={busy}>{busy?"Opening Square…":"Continue to Square"}</button>

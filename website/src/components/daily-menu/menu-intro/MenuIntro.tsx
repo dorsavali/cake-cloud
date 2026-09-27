@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 import styles from "./MenuIntro.module.css";
 
@@ -18,6 +21,15 @@ function StoreIcon() {
 }
 
 export function MenuIntro() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 80);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+
   return (
     <section
       dir="ltr"
@@ -35,7 +47,7 @@ export function MenuIntro() {
 
           <button
             type="button"
-            className={`${styles.deliveryButton} inline-flex h-12 min-w-[145px] items-center justify-center gap-2 rounded-full border border-luxury-accent bg-[#FAF7F0] px-4 font-signika text-base font-medium text-accent-dark max-[420px]:min-w-[135px] md:min-w-[242px] md:gap-3 md:px-8`}
+            className={`${styles.deliveryButton} inline-flex h-12 items-center justify-center overflow-hidden rounded-full border border-luxury-accent bg-[#FAF7F0] font-signika text-base font-medium text-accent-dark transition-[width,padding,gap,color,background-color,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${scrolled ? "w-12 gap-0 px-0" : "w-[145px] gap-2 px-4 max-[420px]:w-[135px] md:w-[242px] md:gap-3 md:px-8"}`}
           >
             <Image
               src="/icons/delivery.svg"
@@ -45,7 +57,9 @@ export function MenuIntro() {
               unoptimized
               className="h-6 w-auto md:h-6"
             />
-            Delivery
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-300 motion-reduce:transition-none ${scrolled ? "max-w-0 translate-x-2 opacity-0" : "max-w-24 translate-x-0 opacity-100"}`}>
+              Delivery
+            </span>
           </button>
         </div>
 

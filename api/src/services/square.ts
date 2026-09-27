@@ -284,12 +284,6 @@ export async function getCatalogItems(
     throw new Error("Square access token is not configured");
   }
 
-  console.info("[square] Catalog fetch started", {
-    environment: env.SQUARE_ENVIRONMENT,
-    hasApplicationId: Boolean(env.SQUARE_APPLICATION_ID),
-    hasLocationId: Boolean(env.SQUARE_LOCATION_ID),
-  });
-
   const objects: SquareCatalogObject[] = [];
   let cursor: string | undefined;
 
@@ -320,10 +314,6 @@ export async function getCatalogItems(
     objects.push(...(page.objects ?? []));
     cursor = page.cursor;
   } while (cursor);
-
-  console.info("[square] Catalog fetch completed", {
-    objectCount: objects.length,
-  });
 
   const imageUrls = new Map(
     objects
@@ -363,12 +353,6 @@ export async function getCatalogItems(
     .map((variation) => variation.id)
     .filter((id): id is string => Boolean(id));
   const inventoryByVariation = await getInventoryByVariation(env, variationIds);
-
-  console.info("[square] Catalog enrichment completed", {
-    variationCount: variationIds.length,
-    inventoryAvailable: inventoryByVariation !== null,
-    popularityEntryCount: popularityByVariation.size,
-  });
 
   return objects
     .filter((object) => object.type === "ITEM" && object.id)

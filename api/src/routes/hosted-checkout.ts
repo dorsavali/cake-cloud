@@ -14,6 +14,7 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
     if(raw.length>20000)return json({error:"Request too large"},413);
     body=JSON.parse(raw);
     if(!body || typeof body!=="object" || Array.isArray(body))throw new Error("Invalid request");
+    if(body.termsAccepted!==true)throw new Error("Accept the terms and conditions.");
     const subtotal=priceCake(body.cake);
     const instant=pickupInstant(body.pickup,env.SQUARE_TIMEZONE || "Australia/Perth");
     const {available,fee}=rushFee(instant);

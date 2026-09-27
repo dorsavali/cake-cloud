@@ -83,14 +83,14 @@ export function Footer() {
       dir="ltr"
       className="flex items-center justify-center border-t-4 border-luxury-accent bg-primary px-4 py-5 text-accent lg:px-8 lg:py-6"
     >
-      <div className="flex w-full max-w-[1100px] flex-col items-center text-center">
+      <div className="flex w-full max-w-275 flex-col items-center text-center">
         <Image
           src="/images/logo/main.svg"
           alt="Cake Cloud"
           width={400}
           height={349}
           unoptimized
-          className="h-auto w-[80px] lg:w-[130px]"
+          className="h-auto w-20 lg:w-32.5"
         />
 
         <nav aria-label="Footer navigation" className="mt-3">
@@ -113,7 +113,7 @@ export function Footer() {
                   )}
                   <Link
                     href={item.href}
-                    className="font-signika text-[10px] font-normal leading-[5px] tracking-[0.05em] text-accent transition-opacity hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:text-base lg:leading-5"
+                    className="font-signika text-[10px] font-normal leading-1.25 tracking-wider text-accent transition-opacity hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:text-base lg:leading-5"
                   >
                     {item.label}
                   </Link>
@@ -134,7 +134,7 @@ export function Footer() {
             1/180 Royal St, East Perth WA 6004
           </a>
 
-          <div className="flex items-start gap-3 text-center text-sm leading-[1.25] tracking-[0.02em] lg:text-xl">
+          <div className="flex items-start gap-3 text-center text-sm leading-tight tracking-[0.02em] lg:text-xl">
             <span className="mt-1 size-5 shrink-0 lg:size-6"><ClockIcon /></span>
             <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-3 lg:gap-5">
               <span>
@@ -193,7 +193,7 @@ export function Footer() {
             target="_blank"
             rel="noreferrer"
             aria-label="Order Cake Cloud on Uber Eats"
-            className="h-6 w-[34px] text-accent transition-opacity hover:opacity-70"
+            className="h-6 w-8.5 text-accent transition-opacity hover:opacity-70"
           >
             <UberEatsIcon />
           </a>

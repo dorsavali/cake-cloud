@@ -2,7 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {handleHostedCheckout} from "../dist/routes/hosted-checkout.js";
 const env={SQUARE_ENVIRONMENT:"sandbox",SQUARE_ACCESS_TOKEN:"test",SQUARE_LOCATION_ID:"test",SQUARE_TIMEZONE:"Australia/Perth"};
-const body=()=>({cake:{base:"classic-round",size:0,height:0,filling:0,sponge:"Vanilla",frosting:"Smooth Buttercream",colour:"Ivory",extras:[],message:""},pickup:new Date(Date.now()+72*3600000).toISOString().slice(0,16),name:"Test Buyer",email:"test@example.com",expectedTotal:14500,idempotencyKey:crypto.randomUUID()});
+const body=()=>({cake:{base:"classic-round",size:0,height:0,filling:0,sponge:"Vanilla",frosting:"Smooth Buttercream",colour:"Ivory",extras:[],message:""},pickup:new Date(Date.now()+72*3600000).toISOString().slice(0,16),name:"Test Buyer",email:"test@example.com",expectedTotal:14500,idempotencyKey:crypto.randomUUID(),termsAccepted:true});
 const req=b=>new Request("http://localhost/api/cake/checkout",{method:"POST",body:JSON.stringify(b)});
 test("rejects production and invalid amounts before Square",async()=>{
  assert.equal((await handleHostedCheckout(req(body()),{...env,SQUARE_ENVIRONMENT:"production"})).status,503);
