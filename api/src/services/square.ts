@@ -107,6 +107,17 @@ const squareHeaders = (env: ApiEnv) => ({
   "square-version": "2026-08-19",
 });
 
+const squareResponseLog = (stage: string, response: Response) => ({
+  stage,
+  status: response.status,
+  statusText: response.statusText,
+  contentType: response.headers.get("content-type"),
+  requestId:
+    response.headers.get("x-request-id") ??
+    response.headers.get("square-request-id") ??
+    response.headers.get("cf-ray"),
+});
+
 const popularityCache = new Map<
   string,
   { expiresAt: number; quantities: Map<string, number> }
@@ -140,7 +151,13 @@ async function getInventoryByVariation(
         },
       );
 
-      if (!response.ok) return null;
+      if (!response.ok) {
+        console.error(
+          "[square] Inventory request failed",
+          squareResponseLog("inventory", response),
+        );
+        return null;
+      }
 
       const page = (await response.json()) as BatchRetrieveInventoryCountsResponse;
       for (const count of page.counts ?? []) {
@@ -173,6 +190,10 @@ async function getPopularityByVariation(env: ApiEnv): Promise<Map<string, number
     headers: squareHeaders(env),
   });
   if (!locationsResponse.ok) {
+    console.error(
+      "[square] Locations request failed",
+      squareResponseLog("locations", locationsResponse),
+    );
     throw new Error(`Square Locations request failed (${locationsResponse.status})`);
   }
 
@@ -219,6 +240,10 @@ async function getPopularityByVariation(env: ApiEnv): Promise<Map<string, number
       });
 
       if (!response.ok) {
+        console.error(
+          "[square] Orders request failed",
+          squareResponseLog("orders", response),
+        );
         throw new Error(`Square Orders request failed (${response.status})`);
       }
 
@@ -249,8 +274,21 @@ export async function getCatalogItems(
   env: ApiEnv,
 ): Promise<StorefrontProduct[]> {
   if (!env.SQUARE_ACCESS_TOKEN) {
+    console.error("[square] Catalog request cannot start", {
+      stage: "configuration",
+      reason: "SQUARE_ACCESS_TOKEN is missing",
+      environment: env.SQUARE_ENVIRONMENT,
+      hasApplicationId: Boolean(env.SQUARE_APPLICATION_ID),
+      hasLocationId: Boolean(env.SQUARE_LOCATION_ID),
+    });
     throw new Error("Square access token is not configured");
   }
+
+  console.info("[square] Catalog fetch started", {
+    environment: env.SQUARE_ENVIRONMENT,
+    hasApplicationId: Boolean(env.SQUARE_APPLICATION_ID),
+    hasLocationId: Boolean(env.SQUARE_LOCATION_ID),
+  });
 
   const objects: SquareCatalogObject[] = [];
   let cursor: string | undefined;
@@ -269,6 +307,10 @@ export async function getCatalogItems(
     );
 
     if (!response.ok) {
+      console.error(
+        "[square] Catalog request failed",
+        squareResponseLog("catalog", response),
+      );
       // Upstream response bodies can contain account data and must not be
       // exposed through public API errors.
       throw new Error(`Square Catalog request failed (${response.status})`);
@@ -278,6 +320,10 @@ export async function getCatalogItems(
     objects.push(...(page.objects ?? []));
     cursor = page.cursor;
   } while (cursor);
+
+  console.info("[square] Catalog fetch completed", {
+    objectCount: objects.length,
+  });
 
   const imageUrls = new Map(
     objects
@@ -304,7 +350,10 @@ export async function getCatalogItems(
   let popularityByVariation = new Map<string, number>();
   try {
     popularityByVariation = await getPopularityByVariation(env);
-  } catch {
+  } catch (error) {
+    console.warn("[square] Popularity lookup failed; using zero scores", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     // Catalog browsing must stay available if Orders or Locations permissions
     // are missing. Popularity safely falls back to zero in that case.
   }
@@ -314,6 +363,12 @@ export async function getCatalogItems(
     .map((variation) => variation.id)
     .filter((id): id is string => Boolean(id));
   const inventoryByVariation = await getInventoryByVariation(env, variationIds);
+
+  console.info("[square] Catalog enrichment completed", {
+    variationCount: variationIds.length,
+    inventoryAvailable: inventoryByVariation !== null,
+    popularityEntryCount: popularityByVariation.size,
+  });
 
   return objects
     .filter((object) => object.type === "ITEM" && object.id)

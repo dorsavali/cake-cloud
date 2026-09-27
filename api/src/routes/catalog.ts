@@ -79,7 +79,10 @@ export async function handleCatalogItems(
         "cache-control": "public, max-age=30, s-maxage=60, stale-while-revalidate=60",
       },
     );
-  } catch {
+  } catch (error) {
+    console.error("[api] Catalog endpoint failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return json({ error: "Catalog is temporarily unavailable" }, 502);
   }
 }

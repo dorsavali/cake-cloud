@@ -23,8 +23,6 @@ const defaultFilters: MenuFilters = {
   productType: "All Types",
   dietary: [],
   allergens: [],
-  minPrice: 0,
-  maxPrice: Number.POSITIVE_INFINITY,
 };
 
 const sortValues: Record<SortOption, string> = {
@@ -38,7 +36,6 @@ type ProductsResponse = {
   items?: DailyMenuProductCard[];
   total?: number;
   totalPages?: number;
-  maxAvailablePrice?: number;
 };
 
 export function DailyMenuCatalog() {
@@ -53,7 +50,6 @@ export function DailyMenuCatalog() {
   const [pageSize, setPageSize] = useState(9);
   const [totalResults, setTotalResults] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [maxAvailablePrice, setMaxAvailablePrice] = useState(20);
   const productsStartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,10 +71,6 @@ export function DailyMenuCatalog() {
         view: "cards",
         category: categoryNames[activeCategory],
         productType: filters.productType,
-        minPrice: String(filters.minPrice),
-        maxPrice: Number.isFinite(filters.maxPrice)
-          ? String(filters.maxPrice)
-          : String(Number.MAX_SAFE_INTEGER),
         sort: sortValues[sortBy],
         page: String(currentPage),
         limit: String(pageSize),
@@ -97,7 +89,6 @@ export function DailyMenuCatalog() {
         setProducts(data.items ?? []);
         setTotalResults(data.total ?? 0);
         setTotalPages(data.totalPages ?? 1);
-        setMaxAvailablePrice(data.maxAvailablePrice ?? 20);
         setLoadState("success");
       } catch (error) {
         if (isActive && (error as Error).name !== "AbortError") {
@@ -144,9 +135,8 @@ export function DailyMenuCatalog() {
       <div className={`${styles.layout} mx-auto w-full max-w-[1476px] gap-y-3 px-4 pt-8 md:px-8 lg:gap-y-0`}>
         <div className={styles.filters}>
           <FilterSidebar
-            key={`filters-${activeCategory}-${maxAvailablePrice}`}
+            key={`filters-${activeCategory}`}
             category={activeCategory}
-            maxAvailablePrice={maxAvailablePrice}
             onFiltersChange={handleFiltersChange}
           />
         </div>

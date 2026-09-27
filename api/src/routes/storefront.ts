@@ -26,7 +26,10 @@ export async function handleCategories(
       .filter(Boolean)
       .sort((left, right) => left.localeCompare(right));
     return json({ categories }, 200, responseCacheHeaders);
-  } catch {
+  } catch (error) {
+    console.error("[api] Categories endpoint failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return json({ error: "Categories are temporarily unavailable" }, 502);
   }
 }
@@ -43,7 +46,11 @@ export async function handleProductDetail(
     const product = products.find((item) => item.id === productId);
     if (!product) return json({ error: "Product not found" }, 404);
     return json({ product: toPublicProduct(product) }, 200, responseCacheHeaders);
-  } catch {
+  } catch (error) {
+    console.error("[api] Product detail endpoint failed", {
+      productId,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return json({ error: "Product is temporarily unavailable" }, 502);
   }
 }
@@ -60,8 +67,6 @@ export async function handleProductCards(
     const productType = normalize(url.searchParams.get("productType") ?? "");
     const dietaryFilters = url.searchParams.getAll("dietary").map(normalize);
     const allergenFilters = url.searchParams.getAll("allergen").map(normalize);
-    const minPrice = Number(url.searchParams.get("minPrice") ?? 0);
-    const maxPrice = Number(url.searchParams.get("maxPrice") ?? Number.POSITIVE_INFINITY);
     const sort = url.searchParams.get("sort") ?? "popular";
     const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
     const limit = Math.min(24, Math.max(1, Number.parseInt(url.searchParams.get("limit") ?? "9", 10) || 9));
@@ -70,23 +75,16 @@ export async function handleProductCards(
       (product) =>
         !category || product.categories.some((name) => normalize(name) === category),
     );
-    const maxAvailablePrice = categoryProducts.reduce(
-      (highest, product) => Math.max(highest, product.price.amount / 100),
-      20,
-    );
     const filtered = categoryProducts.filter((product) => {
       const categories = product.categories.map(normalize);
       const dietary = product.dietaryPreferences.map(normalize);
       const allergens = product.allergens.map(normalize);
-      const price = product.price.amount / 100;
       const allProductTypes = !productType || productType.startsWith("all ");
 
       return (
         (allProductTypes || categories.includes(productType)) &&
         dietaryFilters.every((value) => dietary.includes(value)) &&
-        allergenFilters.every((value) => !allergens.includes(value)) &&
-        price >= minPrice &&
-        price <= maxPrice
+        allergenFilters.every((value) => !allergens.includes(value))
       );
     });
 
@@ -115,12 +113,14 @@ export async function handleProductCards(
         page,
         limit,
         totalPages: Math.max(1, Math.ceil(filtered.length / limit)),
-        maxAvailablePrice,
       },
       200,
       responseCacheHeaders,
     );
-  } catch {
+  } catch (error) {
+    console.error("[api] Products endpoint failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return json({ error: "Products are temporarily unavailable" }, 502);
   }
 }

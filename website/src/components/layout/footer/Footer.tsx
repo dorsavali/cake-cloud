@@ -90,7 +90,7 @@ export function Footer() {
           width={400}
           height={349}
           unoptimized
-          className="h-auto w-[68px] lg:w-[76px]"
+          className="h-auto w-[80px] lg:w-[130px]"
         />
 
         <nav aria-label="Footer navigation" className="mt-3">
@@ -123,34 +123,39 @@ export function Footer() {
           </ul>
         </nav>
 
-        <div className="mt-4 flex flex-col items-center gap-3">
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 font-signika text-[10px] font-normal tracking-[0.05em] text-accent lg:text-sm">
-            <span className="flex items-center gap-2">
-              <span className="size-5 shrink-0"><ClockIcon /></span>
-              Opening Hours
-            </span>
-            <span>Mon–Fri 6:30 am–5 pm</span>
-            <span aria-hidden="true" className="text-accent/50">|</span>
-            <span>Sat–Sun 8 am–4 pm</span>
-          </div>
-
+        <div className="mt-5 flex w-fit max-w-full flex-col items-stretch gap-4 font-signika font-light text-accent">
           <a
             href="https://www.google.com/maps/search/?api=1&query=1%2F180+Royal+St+East+Perth+WA+6004"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-3 font-signika text-[10px] font-normal leading-[5px] tracking-[0.05em] text-accent transition-opacity hover:opacity-70 lg:text-sm lg:leading-5"
+            className="flex items-center gap-3 text-sm leading-5 tracking-[0.02em] transition-opacity hover:opacity-70 lg:text-xl lg:leading-7"
           >
-            <span className="size-5 shrink-0"><LocationIcon /></span>
+            <span className="size-5 shrink-0 lg:size-6"><LocationIcon /></span>
             1/180 Royal St, East Perth WA 6004
           </a>
+
+          <div className="flex items-start gap-3 text-center text-sm leading-[1.25] tracking-[0.02em] lg:text-xl">
+            <span className="mt-1 size-5 shrink-0 lg:size-6"><ClockIcon /></span>
+            <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-3 lg:gap-5">
+              <span>
+                <span className="block">Mon - Fri</span>
+                <span className="block whitespace-nowrap">6:30 Am - 5 PM</span>
+              </span>
+              <span aria-hidden="true" className="text-accent/70">|</span>
+              <span>
+                <span className="block">Sat - Sun</span>
+                <span className="block whitespace-nowrap">8 Am - 4 PM</span>
+              </span>
+            </div>
+          </div>
 
           <a
             href="https://wa.me/61413681344"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-3 font-signika text-[10px] font-normal leading-[5px] tracking-[0.05em] text-accent transition-opacity hover:opacity-70 lg:text-sm lg:leading-5"
+            className="flex items-center justify-center gap-3 text-sm leading-5 tracking-[0.02em] transition-opacity hover:opacity-70 lg:text-xl lg:leading-7"
           >
-            <span className="size-5 shrink-0"><PhoneIcon /></span>
+            <span className="size-5 shrink-0 lg:size-6"><PhoneIcon /></span>
             WhatsApp Us
           </a>
         </div>

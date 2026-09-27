@@ -54,30 +54,23 @@ export type MenuFilters = {
   productType: string;
   dietary: string[];
   allergens: string[];
-  minPrice: number;
-  maxPrice: number;
 };
 
 type FilterSidebarProps = {
   category: DailyMenuCategory;
-  maxAvailablePrice: number;
   onFiltersChange: (filters: MenuFilters) => void;
 };
 
 export function FilterSidebar({
   category,
-  maxAvailablePrice,
   onFiltersChange,
 }: FilterSidebarProps) {
   const options = filterOptions[category];
-  const priceCeiling = Math.max(20, Math.ceil(maxAvailablePrice));
   const [isProductTypeOpen, setIsProductTypeOpen] = useState(false);
   const [isAllergensOpen, setIsAllergensOpen] = useState(false);
   const [productType, setProductType] = useState(options.productTypes[0]);
   const [dietary, setDietary] = useState<string[]>([]);
   const [allergens, setAllergens] = useState<string[]>([]);
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(priceCeiling);
   const productTypeDropdownRef = useRef<HTMLDivElement>(null);
   const allergensDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -113,14 +106,10 @@ export function FilterSidebar({
       productType,
       dietary,
       allergens,
-      minPrice,
-      maxPrice,
     });
   }, [
     allergens,
     dietary,
-    maxPrice,
-    minPrice,
     onFiltersChange,
     productType,
   ]);
@@ -141,8 +130,6 @@ export function FilterSidebar({
     setProductType(options.productTypes[0]);
     setDietary([]);
     setAllergens([]);
-    setMinPrice(0);
-    setMaxPrice(priceCeiling);
   };
 
   return (
@@ -260,42 +247,6 @@ export function FilterSidebar({
           </div>
         </div>
       </div>
-
-      <fieldset className="mt-8 hidden lg:block">
-        <legend className={styles.label}>Price Range</legend>
-        <div className={`${styles.rangeControl} mt-5`}>
-          <div className={styles.rangeTrack} />
-          <div
-            className={styles.rangeFill}
-            style={{
-              left: `${(minPrice / priceCeiling) * 100}%`,
-              right: `${100 - (maxPrice / priceCeiling) * 100}%`,
-            }}
-          />
-          <input
-            aria-label="Minimum price"
-            type="range"
-            min="0"
-            max={priceCeiling}
-            value={minPrice}
-            onChange={(event) => setMinPrice(Math.min(Number(event.target.value), maxPrice - 1))}
-            className={styles.rangeInput}
-          />
-          <input
-            aria-label="Maximum price"
-            type="range"
-            min="0"
-            max={priceCeiling}
-            value={maxPrice}
-            onChange={(event) => setMaxPrice(Math.max(Number(event.target.value), minPrice + 1))}
-            className={styles.rangeInput}
-          />
-        </div>
-        <div className="mt-3 flex justify-between px-3 text-sm text-accent-dark/65">
-          <span>${minPrice}</span>
-          <span>${maxPrice}</span>
-        </div>
-      </fieldset>
 
       <button
         type="button"

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import { Footer } from "@/components/layout/footer";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
 
 export const metadata: Metadata = {
@@ -23,6 +23,10 @@ function ChatIcon() {
   return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-5"><path d="M20 11.5a7.5 7.5 0 0 1-11.3 6.5L4 19l1.1-4.3A7.5 7.5 0 1 1 20 11.5Z" stroke="currentColor" strokeWidth="1.7"/></svg>;
 }
 
+function ClockIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-5"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/><path d="M12 7v5l3.5 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>;
+}
+
 function InstagramIcon() {
   return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-5"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>;
 }
@@ -35,8 +39,8 @@ export default function AboutPage() {
   return <>
     <DesktopHeader />
     <MobileHeader />
-    <main className="min-h-dvh overflow-x-clip bg-accent text-accent-dark">
-      <div className="bg-[url('/images/pattern/background.webp')] bg-[length:auto_100%] bg-top bg-repeat-y md:bg-[length:100%_auto]">
+    <main className="-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:auto_100%] bg-top bg-repeat-y pt-16 text-accent-dark md:bg-[length:100%_auto]">
+      <div>
         <div className="mx-auto w-full max-w-[820px] px-4 pb-14 pt-9 sm:px-6 md:pb-20 md:pt-10 lg:px-0">
           <section>
             <p className="font-signika text-[9px] uppercase tracking-[0.22em] text-accent-dark/50">Our Story</p>
@@ -73,25 +77,28 @@ export default function AboutPage() {
             <p className="font-signika text-[9px] uppercase tracking-[0.22em] text-accent-dark/50">Find Us</p>
             <h2 className="mt-4 font-kalnia text-[25px] font-medium md:text-[27px]">Visit the Boutique</h2>
             <div className="mt-5 rounded-xl border border-[#ddd2bf] bg-[#faf7f0] p-5 font-signika text-xs text-accent-dark/65 md:p-6">
-              <a href="https://www.google.com/maps/search/?api=1&query=1%2F180+Royal+St+East+Perth+WA+6004" target="_blank" rel="noreferrer" className="flex items-start gap-3 text-accent-dark"><span className="text-primary"><LocationIcon /></span><span><strong className="block font-medium">1/180 Royal Street</strong><span className="mt-1 block text-accent-dark/55">East Perth WA 6004</span></span></a>
-              <a href="https://wa.me/61413681344" target="_blank" rel="noreferrer" className="mt-5 flex items-center gap-3 text-primary"><ChatIcon /> WhatsApp Us</a>
-              <div className="mt-5 flex items-center gap-6 text-primary">
-                <span className="inline-flex items-center gap-2"><InstagramIcon /> Instagram</span>
-                <span className="inline-flex items-center gap-2"><FacebookIcon /> Facebook</span>
+              <div className="grid gap-5 md:grid-cols-2 md:gap-3">
+                <a href="https://www.google.com/maps/search/?api=1&query=1%2F180+Royal+St+East+Perth+WA+6004" target="_blank" rel="noreferrer" className="flex items-start gap-3 text-accent-dark"><span className="text-primary"><LocationIcon /></span><span><strong className="block font-medium">1/180 Royal Street</strong><span className="mt-1 block text-accent-dark/55">East Perth WA 6004</span></span></a>
+                <div className="flex items-start gap-3 text-accent-dark">
+                  <span className="text-primary"><ClockIcon /></span>
+                  <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-3 text-center leading-relaxed">
+                    <span><span className="block">Mon - Fri</span><span className="block whitespace-nowrap">6:30 Am - 5 PM</span></span>
+                    <span aria-hidden="true" className="text-accent-dark/35">|</span>
+                    <span><span className="block">Sat - Sun</span><span className="block whitespace-nowrap">8 Am - 4 PM</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-primary">
+                <span className="inline-flex items-center gap-2 whitespace-nowrap"><InstagramIcon /> Instagram</span>
+                <span className="inline-flex items-center gap-2 whitespace-nowrap"><FacebookIcon /> Facebook</span>
+                <a href="https://wa.me/61413681344" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 whitespace-nowrap"><ChatIcon /> WhatsApp Us</a>
               </div>
             </div>
           </section>
         </div>
       </div>
 
-      <section className="mx-auto w-full max-w-[820px] px-4 py-10 sm:px-6 lg:px-0">
-        <h2 className="font-kalnia text-xl font-medium">Explore More</h2>
-        <nav aria-label="Explore more" className="mt-5 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-          {[
-            ["Daily Menu", "/DailyMenu"], ["Custom Cakes", "/custom-cakes?start=1"], ["Corporate", "/events?category=Corporate"], ["Events", "/events"],
-          ].map(([label, href]) => <Link key={label} href={href} className="inline-flex min-h-10 items-center justify-center rounded-full border border-[#b9a47a] px-7 font-kalnia text-sm transition-colors hover:bg-primary hover:text-white">{label}</Link>)}
-        </nav>
-      </section>
     </main>
+    <Footer />
   </>;
 }

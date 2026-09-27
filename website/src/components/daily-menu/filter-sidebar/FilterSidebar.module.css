@@ -167,7 +167,8 @@
   border: 1px solid rgb(185 164 122 / 28%);
   border-radius: 16px;
   padding: 0 14px;
-  color: rgb(70 66 72 / 62%);
+  background: rgb(250 247 240 / 28%);
+  color: rgb(70 66 72 / 78%);
   transition:
     color 180ms ease,
     border-color 180ms ease,
@@ -180,7 +181,7 @@
 
 .checkedRow {
   border-color: #718d7f;
-  background: rgb(250 247 240 / 18%);
+  background: rgb(113 141 127 / 12%);
   color: #718d7f;
   font-weight: 500;
 }
@@ -211,60 +212,4 @@
 .checkedBox {
   border-color: #718d7f;
   background: #718d7f;
-}
-
-.rangeControl {
-  position: relative;
-  height: 20px;
-}
-
-.rangeTrack,
-.rangeFill {
-  position: absolute;
-  top: 9px;
-  right: 8px;
-  left: 8px;
-  height: 3px;
-  border-radius: 999px;
-}
-
-.rangeTrack {
-  background: rgb(185 164 122 / 35%);
-}
-
-.rangeFill {
-  background: #718d7f;
-}
-
-.rangeInput {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 20px;
-  margin: 0;
-  appearance: none;
-  pointer-events: none;
-  background: transparent;
-}
-
-.rangeInput::-webkit-slider-thumb {
-  width: 16px;
-  height: 16px;
-  appearance: none;
-  pointer-events: auto;
-  cursor: pointer;
-  border: 2px solid #718d7f;
-  border-radius: 50%;
-  background: #faf7f0;
-  box-shadow: 0 1px 3px rgb(70 66 72 / 18%);
-}
-
-.rangeInput::-moz-range-thumb {
-  width: 13px;
-  height: 13px;
-  pointer-events: auto;
-  cursor: pointer;
-  border: 2px solid #718d7f;
-  border-radius: 50%;
-  background: #faf7f0;
 }
