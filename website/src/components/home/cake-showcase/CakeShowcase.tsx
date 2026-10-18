@@ -6,7 +6,7 @@ export function CakeShowcase() {
     <section
       dir="ltr"
       aria-label="Explore Cake Cloud collections"
-      className="py-8 lg:py-12"
+      className="py-10 lg:py-[35px]"
     >
       <div className="mx-auto w-full max-w-[1100px] px-4 lg:px-8">
         {cakeShowcaseItems.map((item) => (

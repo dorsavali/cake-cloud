@@ -15,8 +15,8 @@ export default function Home() {
       <main className="overflow-x-hidden supports-[overflow:clip]:overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y">
         <Hero />
         <CakeShowcase />
-        <ProductRecommendations />
         <SpecialDemand />
+        <ProductRecommendations />
         <Reviews />
         <Partners />
       </main>

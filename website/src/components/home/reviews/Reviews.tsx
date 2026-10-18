@@ -75,7 +75,7 @@ export function Reviews() {
     <section
       dir="ltr"
       aria-label="Customer reviews"
-      className="flex min-h-[360px] w-full items-center justify-center overflow-x-hidden px-4 py-8 lg:min-h-[340px] lg:px-8 lg:py-6"
+      className="flex min-h-[360px] w-full items-center justify-center overflow-x-hidden px-4 py-10 lg:min-h-[340px] lg:px-8 lg:py-[35px]"
     >
       <div className="w-full max-w-[560px] text-center text-accent-dark lg:max-w-[720px]">
         <a

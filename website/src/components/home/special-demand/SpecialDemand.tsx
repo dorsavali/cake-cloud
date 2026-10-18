@@ -64,9 +64,9 @@ export function SpecialDemand() {
       ref={sectionRef}
       dir="ltr"
       aria-labelledby="special-demand-heading"
-      className="relative z-10 overflow-visible lg:py-10"
+      className="relative z-10 overflow-visible pb-10  lg:pb-[35px]"
     >
-      <div className="relative mx-auto min-h-[320px] w-full max-w-[1100px] px-4 lg:grid lg:min-h-[500px] lg:grid-cols-[minmax(0,1fr)_460px] lg:items-center lg:gap-20 lg:px-8">
+      <div className="relative mx-auto min-h-[320px] w-full max-w-[1100px] px-4 lg:grid lg:min-h-[400px] lg:grid-cols-[minmax(0,1fr)_460px] lg:items-center lg:gap-20 lg:px-8">
         <div className="pt-10 lg:pt-0">
           <h2
             id="special-demand-heading"

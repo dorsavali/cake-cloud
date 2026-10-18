@@ -15,6 +15,7 @@ import styles from "./DailyMenuCatalog.module.css";
 const categoryNames: Record<DailyMenuCategory, string> = {
   "cakes-and-pastries": "Cakes & Pastries",
   drinks: "Drinks",
+  "whole-cakes": "Whole Cakes",
   packages: "Packages",
   "pet-treats": "Pet Treats",
 };

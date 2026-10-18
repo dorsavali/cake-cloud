@@ -3,6 +3,7 @@ import styles from "./CategoryTabs.module.css";
 const categories = [
   { id: "cakes-and-pastries", label: "Cakes & Pastries" },
   { id: "drinks", label: "Drinks" },
+  { id: "whole-cakes", label: "Whole Cakes" },
   { id: "pet-treats", label: "Pet Treats" },
   { id: "packages", label: "Packages" },
 ] as const;

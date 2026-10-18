@@ -21,6 +21,12 @@ const filterOptions: Record<
     dietary: ["Vegan", "Dairy-Free", "Sugar-Free"],
     allergens: ["Milk", "Nuts", "Almonds"],
   },
+  "whole-cakes": {
+    typeLabel: "Product Type",
+    productTypes: ["All Types"],
+    dietary: ["Vegetarian", "Gluten-Free", "Vegan", "Dairy-Free"],
+    allergens: ["Wheat", "Milk", "Eggs", "Nuts", "Almonds"],
+  },
   packages: {
     typeLabel: "Package Type",
     productTypes: ["All Packages", "Gift Boxes", "Party Packages", "Bundles"],
