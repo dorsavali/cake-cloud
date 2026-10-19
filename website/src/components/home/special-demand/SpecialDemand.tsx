@@ -72,26 +72,19 @@ export function SpecialDemand() {
             id="special-demand-heading"
             className="font-kalnia text-[18px] font-medium leading-[1.15] text-accent-dark lg:text-[32px]"
           >
-            Need an Special Demand?
+            Up to something special?
           </h2>
           <p className="mt-2 font-signika text-xs text-accent-dark lg:text-base">
-            Custom Cakes the way you want them.
+            Create Cakes the way you want them.
           </p>
 
           <div className="mt-16 flex flex-col gap-4 lg:flex-row lg:gap-8">
-            <Link
-              href="/custom-cakes"
-              className={`${styles.actionButton} flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary max-[479px]:h-11 max-[479px]:w-[180px] lg:h-[68px] lg:w-[264px] lg:text-base`}
-            >
-              <span aria-hidden="true" className="text-2xl font-light">+</span>
-              Customizables
-            </Link>
             <Link
               href="/custom-cakes/from-scratch"
               className={`${styles.actionButton} flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary max-[479px]:h-11 max-[479px]:w-[180px] lg:h-[68px] lg:w-[264px] lg:text-base`}
             >
               <span aria-hidden="true" className="text-2xl font-light">+</span>
-              From Scratch
+              Describe
             </Link>
           </div>
         </div>
@@ -104,7 +97,7 @@ export function SpecialDemand() {
           <Image
             src="/images/heroExplode/7.webp"
             alt="Two-tier custom celebration cake"
-            width={998}
+            width={1000}
             height={732}
             unoptimized
             className={styles.closedCake}

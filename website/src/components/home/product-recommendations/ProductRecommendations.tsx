@@ -64,7 +64,7 @@ export function ProductRecommendations() {
             id="recommendations-heading"
             className="font-kalnia text-[18px] font-medium leading-6 text-accent-dark lg:text-[24px] lg:leading-8"
           >
-            Today&apos;s Recommends
+            Our Recommends
           </h2>
           <Link
             href="/DailyMenu"

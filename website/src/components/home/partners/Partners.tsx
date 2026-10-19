@@ -139,7 +139,7 @@ export function Partners() {
                     isLoopClone ? "lg:hidden" : ""
                   }`}
                 >
-                  <div className="mx-auto flex min-h-[160px] w-full max-w-[400px] flex-col items-center justify-center rounded-2xl bg-accent px-3 py-5 lg:min-h-[145px] lg:max-w-none lg:rounded-xl lg:px-4">
+                  <div className="mx-auto flex min-h-[160px] w-full max-w-[400px] flex-col items-center justify-center rounded-2xl bg-accent px-3 py-5 lg:h-full lg:min-h-[145px] lg:max-w-none lg:rounded-xl lg:px-4">
                     <div className="flex h-11 w-full items-center justify-center">
                       <Image
                         src={partner.image}

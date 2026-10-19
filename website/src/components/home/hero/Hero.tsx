@@ -53,7 +53,7 @@ export function Hero() {
           Bite into a cloud.
         </h1>
         <p className="mt-2 max-w-87.5 font-signika text-base leading-4.75 text-accent-dark md:mt-1 md:max-w-162.5 md:leading-6">
-          Handcrafted daily in Perth with French technique and Iranian soul.
+          Handcrafted daily in Perth with Parisian technique and Persian soul.
         </p>
       </div>
 

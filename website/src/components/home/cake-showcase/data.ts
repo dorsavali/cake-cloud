@@ -10,7 +10,7 @@ export type CakeShowcaseItem = {
 
 export const cakeShowcaseItems: CakeShowcaseItem[] = [
   {
-    title: "Ready-to-Eat",
+    title: "Daily Showcase",
     description:
       "Freshly baked artisan pastries. Pickup or delivery via Uber Eats.",
     image: "/images/homeCakes/1-720.webp",

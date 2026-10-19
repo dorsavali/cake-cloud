@@ -21,7 +21,7 @@
 .closedCake,
 .layer {
   position: absolute;
-  left: 50%;
+  left: 58%;
   height: auto;
   transform: translateX(-50%);
   pointer-events: none;
