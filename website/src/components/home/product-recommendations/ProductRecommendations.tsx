@@ -24,8 +24,8 @@ export function ProductRecommendations() {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const response = await fetch(apiUrl("/api/products?view=cards&limit=4"));
-       if (!response.ok) throw new Error("Products request failed");
+        const response = await fetch(apiUrl("/api/recommendations"));
+        if (!response.ok) throw new Error("Recommendations request failed");
 
         const data = (await response.json()) as ProductsResponse;
         setProducts(
@@ -33,7 +33,7 @@ export function ProductRecommendations() {
             ...item,
             image: item.image ?? "/images/homeCakes/1-720.webp",
             imageAlt: item.name,
-            href: `/DailyMenu#${item.id}`,
+            href: `/DailyMenu/Product?id=${encodeURIComponent(item.id)}`,
           })),
         );
         setError(false);

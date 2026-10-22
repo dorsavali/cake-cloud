@@ -9,12 +9,12 @@
 }
 
 .deliveryButton:hover {
-  border-color: #464248;
-  background-color: #464248;
+  border-color: #718d7f;
+  background-color: #718d7f;
   color: #faf7f0;
 }
 
 .deliveryButton:active {
-  border-color: #718d7f;
-  background-color: #718d7f;
+  border-color: #5e796c;
+  background-color: #5e796c;
 }

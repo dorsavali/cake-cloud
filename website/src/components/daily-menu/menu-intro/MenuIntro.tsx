@@ -1,7 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
+
+import { UberEatsIcon } from "@/components/ui";
 
 import styles from "./MenuIntro.module.css";
 
@@ -49,14 +50,7 @@ export function MenuIntro() {
             type="button"
             className={`${styles.deliveryButton} inline-flex h-12 items-center justify-center overflow-hidden rounded-full border border-luxury-accent bg-[#FAF7F0] font-signika text-base font-medium text-accent-dark transition-[width,padding,gap,color,background-color,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${scrolled ? "w-12 gap-0 px-0" : "w-[145px] gap-2 px-4 max-[420px]:w-[135px] md:w-[242px] md:gap-3 md:px-8"}`}
           >
-            <Image
-              src="/icons/delivery.svg"
-              alt=""
-              width={35}
-              height={32}
-              unoptimized
-              className="h-6 w-auto md:h-6"
-            />
+            <UberEatsIcon className="h-6 w-auto shrink-0" />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-300 motion-reduce:transition-none ${scrolled ? "max-w-0 translate-x-2 opacity-0" : "max-w-24 translate-x-0 opacity-100"}`}>
               Delivery
             </span>

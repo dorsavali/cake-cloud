@@ -12,7 +12,7 @@ export const cakeShowcaseItems: CakeShowcaseItem[] = [
   {
     title: "Daily Showcase",
     description:
-      "Freshly baked artisan pastries. Pickup or delivery via Uber Eats.",
+      "Freshly baked artisan pastries & drinks. Pickup or delivery via Uber Eats.",
     image: "/images/homeCakes/1-720.webp",
     imageAfter: "/images/homeCakes/1in-720.webp",
     imageAlt: "Ready-to-eat artisan pastry",

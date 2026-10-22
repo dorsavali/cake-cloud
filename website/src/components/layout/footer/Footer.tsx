@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Fragment } from "react";
 
 import { desktopNavigation } from "@/components/layout/header/navigation";
+import { UberEatsIcon } from "@/components/ui";
 
 function LocationIcon() {
   return (
@@ -64,15 +65,6 @@ function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <text x="12" y="18" textAnchor="middle" fill="currentColor" fontFamily="Arial, sans-serif" fontSize="19" fontWeight="700">G</text>
-    </svg>
-  );
-}
-
-function UberEatsIcon() {
-  return (
-    <svg viewBox="0 0 34 24" aria-hidden="true">
-      <text x="17" y="10" textAnchor="middle" fill="currentColor" fontFamily="Arial, sans-serif" fontSize="8" fontWeight="700">UBER</text>
-      <text x="17" y="19" textAnchor="middle" fill="currentColor" fontFamily="Arial, sans-serif" fontSize="8" fontWeight="700">EATS</text>
     </svg>
   );
 }

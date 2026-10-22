@@ -18,10 +18,10 @@ export function DesktopHeader() {
         className="w-fit rounded-sm outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary"
       >
         <Image
-          src="/images/logo/hangSignCC.svg"
+          src="/images/logo/Logo.svg"
           alt="Cake Cloud"
-          width={45}
-          height={42}
+          width={65}
+          height={62}
           priority
           unoptimized
         />

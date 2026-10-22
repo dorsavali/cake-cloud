@@ -22,7 +22,7 @@ export function ProductGrid({ products }: { products: DailyMenuProductCard[] }) 
   }
 
   return (
-    <ul className="grid w-full min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-x-5 lg:gap-y-6">
+    <ul className="grid w-full min-w-0 grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-6">
       {products.map((product) => (
         <li key={product.id} id={product.id} className="min-w-0">
           <article className="relative min-w-0 overflow-hidden rounded-2xl border border-luxury-accent/25 bg-accent shadow-[0_3px_14px_rgb(70_66_72_/_6%)]">
@@ -38,7 +38,7 @@ export function ProductGrid({ products }: { products: DailyMenuProductCard[] }) 
                   src={product.image}
                   alt={product.name}
                   fill
-                  sizes="(min-width: 1024px) 30vw, 100vw"
+                  sizes="(min-width: 1024px) 22vw, 50vw"
                   unoptimized
                   className="object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[1.025]"
                 />

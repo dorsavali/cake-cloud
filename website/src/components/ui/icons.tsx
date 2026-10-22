@@ -25,3 +25,12 @@ export function PlusIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function UberEatsIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 34 24" aria-hidden="true">
+      <text x="17" y="10" textAnchor="middle" fill="currentColor" fontFamily="Arial, sans-serif" fontSize="8" fontWeight="700">UBER</text>
+      <text x="17" y="19" textAnchor="middle" fill="currentColor" fontFamily="Arial, sans-serif" fontSize="8" fontWeight="700">EATS</text>
+    </svg>
+  );
+}

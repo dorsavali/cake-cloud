@@ -24,6 +24,7 @@
   top: calc(100% + 10px);
   right: 0;
   width: 250px;
+  padding-bottom: 6px;
   visibility: hidden;
   overflow: hidden;
   border: 1px solid rgb(185 164 122 / 28%);
@@ -43,6 +44,19 @@
   opacity: 1;
   transform: translateY(0);
   transition-delay: 0s;
+}
+
+/* Open towards the right edge on narrow screens so the panel stays on screen. */
+.menuLeft {
+  right: auto;
+  left: 0;
+}
+
+/* Long allergen lists scroll instead of running past the viewport. */
+.menuScroll {
+  max-height: min(70vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .option {

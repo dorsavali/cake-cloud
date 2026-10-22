@@ -4,13 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiUrl } from "@/lib/api";
 
+import type { AllergenOption } from "../allergens";
 import { CategoryTabs, type DailyMenuCategory } from "../category-tabs";
-import { FilterSidebar, type MenuFilters } from "../filter-sidebar";
 import { Pagination } from "../pagination";
 import { ProductGrid } from "../product-grid";
 import { ResultsToolbar, type SortOption } from "../results-toolbar";
 import type { DailyMenuProductCard } from "../types";
-import styles from "./DailyMenuCatalog.module.css";
 
 const categoryNames: Record<DailyMenuCategory, string> = {
   "cakes-and-pastries": "Cakes & Pastries",
@@ -18,12 +17,6 @@ const categoryNames: Record<DailyMenuCategory, string> = {
   "whole-cakes": "Whole Cakes",
   packages: "Packages",
   "pet-treats": "Pet Treats",
-};
-
-const defaultFilters: MenuFilters = {
-  productType: "All Types",
-  dietary: [],
-  allergens: [],
 };
 
 const sortValues: Record<SortOption, string> = {
@@ -37,25 +30,27 @@ type ProductsResponse = {
   items?: DailyMenuProductCard[];
   total?: number;
   totalPages?: number;
+  allergenOptions?: AllergenOption[];
 };
 
 export function DailyMenuCatalog() {
   const [activeCategory, setActiveCategory] =
     useState<DailyMenuCategory>("cakes-and-pastries");
   const [products, setProducts] = useState<DailyMenuProductCard[]>([]);
-  const [filters, setFilters] = useState<MenuFilters>(defaultFilters);
+  const [allergens, setAllergens] = useState<string[]>([]);
+  const [allergenOptions, setAllergenOptions] = useState<AllergenOption[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("Most Popular");
   const [loadState, setLoadState] =
     useState<"loading" | "success" | "error">("loading");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(9);
+  const [pageSize, setPageSize] = useState(12);
   const [totalResults, setTotalResults] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const productsStartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
-    const updatePageSize = () => setPageSize(mediaQuery.matches ? 6 : 9);
+    const updatePageSize = () => setPageSize(mediaQuery.matches ? 6 : 12);
 
     updatePageSize();
     mediaQuery.addEventListener("change", updatePageSize);
@@ -71,13 +66,11 @@ export function DailyMenuCatalog() {
       const params = new URLSearchParams({
         view: "cards",
         category: categoryNames[activeCategory],
-        productType: filters.productType,
         sort: sortValues[sortBy],
         page: String(currentPage),
         limit: String(pageSize),
       });
-      filters.dietary.forEach((value) => params.append("dietary", value));
-      filters.allergens.forEach((value) => params.append("allergen", value));
+      allergens.forEach((value) => params.append("allergen", value));
 
       try {
         const response = await fetch(apiUrl(`/api/products?${params}`), {
@@ -90,6 +83,7 @@ export function DailyMenuCatalog() {
         setProducts(data.items ?? []);
         setTotalResults(data.total ?? 0);
         setTotalPages(data.totalPages ?? 1);
+        setAllergenOptions(data.allergenOptions ?? []);
         setLoadState("success");
       } catch (error) {
         if (isActive && (error as Error).name !== "AbortError") {
@@ -103,18 +97,18 @@ export function DailyMenuCatalog() {
       isActive = false;
       controller.abort();
     };
-  }, [activeCategory, currentPage, filters, pageSize, sortBy]);
+  }, [activeCategory, allergens, currentPage, pageSize, sortBy]);
 
   const handleCategoryChange = (category: DailyMenuCategory) => {
     setCurrentPage(1);
     setActiveCategory(category);
-    setFilters(defaultFilters);
+    setAllergens([]);
     setSortBy("Most Popular");
   };
 
-  const handleFiltersChange = useCallback((nextFilters: MenuFilters) => {
+  const handleAllergensChange = useCallback((nextAllergens: string[]) => {
     setCurrentPage(1);
-    setFilters(nextFilters);
+    setAllergens(nextAllergens);
   }, []);
 
   const handleSortChange = (nextSort: SortOption) => {
@@ -133,42 +127,34 @@ export function DailyMenuCatalog() {
         activeCategory={activeCategory}
         onCategoryChange={handleCategoryChange}
       />
-      <div className={`${styles.layout} mx-auto w-full max-w-[1476px] gap-y-3 px-4 pt-8 md:px-8 lg:gap-y-0`}>
-        <div className={styles.filters}>
-          <FilterSidebar
-            key={`filters-${activeCategory}`}
-            category={activeCategory}
-            onFiltersChange={handleFiltersChange}
-          />
-        </div>
-        <div className={styles.toolbar}>
-          <ResultsToolbar
-            resultCount={totalResults}
-            sortBy={sortBy}
-            onSortChange={handleSortChange}
-          />
-        </div>
-        <div className={styles.products}>
-          <div ref={productsStartRef} className="scroll-mt-24 lg:mt-5">
-            {loadState === "loading" ? (
-              <p className="py-20 text-center font-signika text-base text-accent-dark/65">
-                Loading products...
-              </p>
-            ) : loadState === "error" ? (
-              <p className="py-20 text-center font-signika text-base text-accent-dark">
-                Products are temporarily unavailable.
-              </p>
-            ) : (
-              <>
-                <ProductGrid products={products} />
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
-              </>
-            )}
-          </div>
+      <div className="mx-auto w-full max-w-[1476px] px-4  pt-4 lg:pt-8 md:px-8">
+        <ResultsToolbar
+          resultCount={totalResults}
+          sortBy={sortBy}
+          onSortChange={handleSortChange}
+          allergenOptions={allergenOptions}
+          selectedAllergens={allergens}
+          onAllergensChange={handleAllergensChange}
+        />
+        <div ref={productsStartRef} className="mt-5 scroll-mt-24">
+          {loadState === "loading" ? (
+            <p className="py-20 text-center font-signika text-base text-accent-dark/65">
+              Loading products...
+            </p>
+          ) : loadState === "error" ? (
+            <p className="py-20 text-center font-signika text-base text-accent-dark">
+              Products are temporarily unavailable.
+            </p>
+          ) : (
+            <>
+              <ProductGrid products={products} />
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </div>
     </>

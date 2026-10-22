@@ -32,10 +32,10 @@ export function MobileHeader() {
 
         <Link href="/" aria-label="Cake Cloud home">
           <Image
-            src="/images/logo/hangSignCC.svg"
+            src="/images/logo/Logo.svg"
             alt="Cake Cloud"
-            width={45}
-            height={42}
+            width={62}
+            height={59}
             priority
             unoptimized
           />

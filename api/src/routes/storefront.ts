@@ -14,6 +14,34 @@ const toPublicProduct = <T extends { customAttributes: unknown }>(product: T) =>
   return publicProduct;
 };
 
+type CatalogProduct = Awaited<ReturnType<typeof getCachedCatalogItems>>[number];
+
+const toCard = (product: CatalogProduct) => ({
+  id: product.id,
+  name: product.name,
+  description: product.description,
+  variationName: product.variationName,
+  price: product.price,
+  image: product.image,
+  stock: product.stock,
+});
+
+// Home "Our Recommends" row: best sellers from the main menu plus one
+// signature item from drinks and pet treats.
+const homeRecommendationPlan = [
+  { category: "cakes & pastries", count: 2 },
+  { category: "drinks", count: 1 },
+  { category: "pet treats", count: 1 },
+] as const;
+
+const homeRecommendationTotal = homeRecommendationPlan.reduce(
+  (total, step) => total + step.count,
+  0,
+);
+
+const byPopularity = (left: CatalogProduct, right: CatalogProduct) =>
+  right.popularityScore - left.popularityScore;
+
 export async function handleCategories(
   request: Request,
   env: ApiEnv,
@@ -75,6 +103,19 @@ export async function handleProductCards(
       (product) =>
         !category || product.categories.some((name) => normalize(name) === category),
     );
+
+    // Facets are computed from the whole category (ignoring the active allergen
+    // selection) so options stay on screen while the user is filtering.
+    const allergenCounts = new Map<string, number>();
+    for (const product of categoryProducts) {
+      for (const allergen of new Set(product.allergens.map(normalize))) {
+        allergenCounts.set(allergen, (allergenCounts.get(allergen) ?? 0) + 1);
+      }
+    }
+    const allergenOptions = [...allergenCounts.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((left, right) => left.value.localeCompare(right.value));
+
     const filtered = categoryProducts.filter((product) => {
       const categories = product.categories.map(normalize);
       const dietary = product.dietaryPreferences.map(normalize);
@@ -113,6 +154,7 @@ export async function handleProductCards(
         page,
         limit,
         totalPages: Math.max(1, Math.ceil(filtered.length / limit)),
+        allergenOptions,
       },
       200,
       responseCacheHeaders,
@@ -122,5 +164,50 @@ export async function handleProductCards(
       error: error instanceof Error ? error.message : String(error),
     });
     return json({ error: "Products are temporarily unavailable" }, 502);
+  }
+}
+
+export async function handleRecommendations(
+  request: Request,
+  env: ApiEnv,
+): Promise<Response> {
+  if (request.method !== "GET") return methodNotAllowed();
+
+  try {
+    const products = await getCachedCatalogItems(env);
+    const picks: CatalogProduct[] = [];
+
+    for (const step of homeRecommendationPlan) {
+      const matches = products
+        .filter((product) =>
+          product.categories.some((name) => normalize(name) === step.category),
+        )
+        .sort(byPopularity)
+        .slice(0, step.count);
+
+      for (const product of matches) {
+        if (!picks.some((pick) => pick.id === product.id)) picks.push(product);
+      }
+    }
+
+    // Backfill from the overall best sellers if a category has no products yet,
+    // so the home row always keeps the same number of cards.
+    if (picks.length < homeRecommendationTotal) {
+      for (const product of [...products].sort(byPopularity)) {
+        if (picks.length >= homeRecommendationTotal) break;
+        if (!picks.some((pick) => pick.id === product.id)) picks.push(product);
+      }
+    }
+
+    return json(
+      { items: picks.slice(0, homeRecommendationTotal).map(toCard) },
+      200,
+      responseCacheHeaders,
+    );
+  } catch (error) {
+    console.error("[api] Recommendations endpoint failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return json({ error: "Recommendations are temporarily unavailable" }, 502);
   }
 }

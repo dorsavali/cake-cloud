@@ -4,10 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { CloseIcon, IconButton } from "@/components/ui";
 
-import {
-  LocationIcon,
-  MessageIcon,
-} from "./HeaderIcons";
+import { LocationIcon, MessageIcon } from "./HeaderIcons";
 import { mobileNavigation } from "./navigation";
 
 type MobileMenuDrawerProps = {
@@ -69,7 +66,7 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
         <div className="flex h-[74px] shrink-0 items-center justify-between border-b border-luxury-accent/20 px-5">
           <Link href="/" aria-label="Cake Cloud home" onClick={onClose}>
             <Image
-              src="/images/logo/hangSignCC.svg"
+              src="/images/logo/Logo.svg"
               alt="Cake Cloud"
               width={45}
               height={42}

@@ -16,6 +16,7 @@ import {
   handleCategories,
   handleProductCards,
   handleProductDetail,
+  handleRecommendations,
 } from "./routes/storefront.js";
 import type { ApiEnv } from "./types/env.js";
 
@@ -52,6 +53,7 @@ export async function handleApiRequest(
   const isRateLimitedRoute =
     url.pathname === "/api/categories" ||
     url.pathname === "/api/products" ||
+    url.pathname === "/api/recommendations" ||
     url.pathname.startsWith("/api/products/") ||
     url.pathname === "/api/host/packages";
 
@@ -72,6 +74,10 @@ export async function handleApiRequest(
 
   if (url.pathname === "/api/categories") {
     return handleCategories(request, env);
+  }
+
+  if (url.pathname === "/api/recommendations") {
+    return handleRecommendations(request, env);
   }
 
   if (url.pathname === "/api/host/packages") {
