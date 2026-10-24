@@ -2,69 +2,188 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import shared from "./CakeBaseSelector.module.css";
 import styles from "./CakeCustomiser.module.css";
-import { CakeSelect } from "./CakeSelect";
 import { useCakeQuote } from "./useCakeQuote";
 import { CakePickup } from "./CakePickup";
+import { CakeProgress } from "./CakeProgress";
 import { useDraftState } from "./useDraftState";
-import { draftBoolean, draftChoice, draftIndex, draftText } from "./draft-storage";
+import { draftBoolean, draftText } from "./draft-storage";
+import {
+  colourFor,
+  defaultSelections,
+  incompleteLists,
+  isColourList,
+  money,
+  selectedModifiers,
+  toggleModifier,
+  type CakeConfig,
+  type CakeDesign,
+  type CakeModifierList,
+} from "./cake-types";
 
-// Temporary prices in AUD cents; replace with the Square catalogue later.
-const sizes = [{ label: '6 servings (6″)', price: 0 }, { label: '12 servings (8″)', price: 2000 }, { label: '20 servings (10″)', price: 4000 }, { label: '30 servings (12″)', price: 7000 }];
-const heights = [{ label: 'Standard (4″)', price: 0 }, { label: 'Tall (6″)', price: 3000 }];
-const fillings = [{ label: "Pastry Cream", price: 0 }, { label: "Chantilly", price: 0 }, { label: "Fruit Compote", price: 1000 }, { label: "Pistachio Cream", price: 1500 }, { label: "Salted Caramel", price: 1500 }];
-const colours = [{ label: "Ivory", hex: "#faf7f0" }, { label: "Blush", hex: "#efc2c2" }, { label: "Sage", hex: "#91ac88" }, { label: "Lavender", hex: "#c5b1d8" }, { label: "Chocolate", hex: "#8a593b" }, { label: "Dusty Rose", hex: "#c68779" }];
-const decorations = ["Fresh Flowers", "Macarons", "Fruit Arrangement", "Gold Leaf", "Chocolate Shards", "Sugar Pearls", "Custom Topper"];
-const money = (amount: number) => new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(amount / 100);
+function ModifierGroup({
+  list,
+  selectedIds,
+  currency,
+  onChange,
+}: {
+  list: CakeModifierList;
+  selectedIds: string[];
+  currency: string;
+  onChange: (modifierIds: string[]) => void;
+}) {
+  const multiple = list.selectionType === "MULTIPLE";
+  const showColours = isColourList(list.name);
 
-function ChoiceGroup({ title, options, selected, onChange }: { title: string; options: { label: string; price: number }[]; selected: number; onChange: (value: number) => void }) {
-  return <fieldset className={styles.group}><legend>{title}</legend><div className={styles.choices}>{options.map((option, index) => <label key={option.label} className={styles.choice}><input type="radio" name={title} checked={selected === index} onChange={() => onChange(index)} /><span>{option.label}{option.price > 0 ? ` +$${option.price / 100}` : ""}</span></label>)}</div></fieldset>;
+  return (
+    <fieldset className={`${styles.group} ${list.modifiers.length > 6 ? styles.small : ""}`}>
+      <legend>
+        {list.name}
+        {list.minSelected > 0 ? <span className={styles.required}> · Required</span> : null}
+        {multiple && list.maxSelected > 0 ? <span className={styles.limit}> · up to {list.maxSelected}</span> : null}
+      </legend>
+      <div className={styles.choices}>
+        {list.modifiers.map((modifier) => {
+          const checked = selectedIds.includes(modifier.id);
+          const disabled = multiple && !checked && list.maxSelected > 0 && selectedIds.length >= list.maxSelected;
+          const hex = showColours ? colourFor(modifier.name) : null;
+          return (
+            <label key={modifier.id} className={hex ? styles.colour : styles.choice}>
+              <input
+                type={multiple ? "checkbox" : "radio"}
+                name={list.id}
+                checked={checked}
+                disabled={disabled}
+                onChange={() => onChange(toggleModifier(list, selectedIds, modifier.id))}
+              />
+              <span>
+                {hex ? <i style={{ background: hex }} /> : null}
+                {modifier.name}
+                {modifier.price > 0 ? ` +${money(modifier.price, currency)}` : ""}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
 }
 
-export function CakeCustomiser({ base, onBack }: { base: { id: string; name: string; image: string; alt: string }; onBack: () => void }) {
-  const [size, setSize] = useDraftState("size", 0, draftIndex(sizes.length));
-  const [height, setHeight] = useDraftState("height", 0, draftIndex(heights.length));
-  const [filling, setFilling] = useDraftState("filling", 0, draftIndex(fillings.length));
-  const [sponge, setSponge] = useDraftState("sponge", "Vanilla", draftChoice(["Vanilla", "Chocolate", "Lemon", "Red Velvet"]));
-  const [frosting, setFrosting] = useDraftState("frosting", "Smooth Buttercream", draftChoice(["Smooth Buttercream", "Whipped Cream", "Chocolate Ganache"]));
-  const [colour, setColour] = useDraftState("colour", "Ivory", draftChoice(colours.map(item => item.label)));
-  const [extras, setExtras] = useDraftState<string[]>("extras", [], (value): value is string[] => Array.isArray(value) && value.length <= decorations.length && value.every(item => decorations.includes(item)));
+export function CakeCustomiser({ design, onBack }: { design: CakeDesign; onBack: () => void }) {
+  const [rawSelections, setSelections] = useDraftState<Record<string, string[]>>("selections", {}, (value): value is Record<string, string[]> =>
+    !!value && typeof value === "object" && !Array.isArray(value) &&
+    Object.entries(value).every(([key, ids]) => key.length <= 200 && Array.isArray(ids) && ids.length <= 50 && ids.every((id) => typeof id === "string" && id.length <= 200)));
   const [message, setMessage] = useDraftState("message", "", (value): value is string => draftText(value) && value.length <= 80);
   const [activeImage, setActiveImage] = useState(0);
   const guide = useRef<HTMLDialogElement>(null);
+  const defaultsApplied = useRef(false);
   const [pickingDate, setPickingDate] = useDraftState("pickingDate", false, draftBoolean);
   const [time, setTime] = useDraftState("time", "", draftText);
   const [date, setDate] = useDraftState("date", "", draftText);
-  const images = [base.image, ...["/images/homeCakes/1-720.webp", "/images/homeCakes/2-720.webp", "/images/homeCakes/3-720.webp"].filter((image) => image !== base.image)];
-  const cake = { base: base.id, size, height, filling, sponge, frosting, colour, extras, message };
+
+  useEffect(() => {
+    if (defaultsApplied.current) return;
+    defaultsApplied.current = true;
+    const defaults = defaultSelections(design);
+    if (Object.keys(defaults).length > 0) {
+      setSelections((current) => (Object.keys(current).length > 0 ? current : defaults));
+    }
+  }, [design, setSelections]);
+
+  const selections = design.modifierLists
+    .map((list) => ({ listId: list.id, modifierIds: (rawSelections[list.id] ?? []).filter((id) => list.modifiers.some((modifier) => modifier.id === id)) }))
+    .filter((selection) => selection.modifierIds.length > 0);
+  const cake: CakeConfig = { design: design.id, selections, message };
   const { quote, error: priceError } = useCakeQuote(cake);
   const total = quote?.subtotal;
+  const currency = design.price.currency;
+  const images = design.images;
+  const missing = incompleteLists(design, rawSelections);
+  const sizeList = design.modifierLists.find((list) => /size/i.test(list.name));
+  const heroImage = images[Math.min(activeImage, Math.max(images.length - 1, 0))];
 
-  if (pickingDate) return <CakePickup cake={cake} onBack={() => setPickingDate(false)} date={date} time={time} onDateChange={setDate} onTimeChange={setTime} summary={[{ label: "Design", value: base.name }, { label: "Size", value: sizes[size].label }, { label: "Height", value: heights[height].label }, { label: "Sponge", value: sponge }, { label: "Filling", value: fillings[filling].label }, { label: "Frosting", value: frosting }, { label: "Colour", value: colour }, { label: "Decorations", value: extras.join(", ") || "None" }, { label: "Message", value: message || "None" }, { label: "Total", value: total === undefined ? "…" : money(total) }]} />;
+  const summary = [
+    { label: "Design", value: design.name },
+    ...design.modifierLists.flatMap((list) => {
+      const names = selectedModifiers(list, rawSelections[list.id] ?? []).map((modifier) => modifier.name);
+      return names.length > 0 ? [{ label: list.name, value: names.join(", ") }] : [];
+    }),
+    { label: "Message", value: message || "None" },
+    { label: "Total", value: total === undefined ? "…" : money(total, currency) },
+  ];
 
-  return <main className={`${shared.page} ${styles.page}`}><div className={styles.content}>
-    <div className={shared.toolbar}><button type="button" onClick={onBack} className={`${styles.toolbarBack} ${shared.home}`}>← <span>Back to Design</span></button><Link href="/custom-cakes/from-scratch" className={`${shared.mode} ${styles.mode}`}>✨ From Scratch</Link></div>
-    <nav aria-label="Custom cake progress" className={`${shared.progress} ${styles.progress}`}><ol>{["Design", "Customise", "Date", "Summary", "Payment"].map((step, index) => <li key={step} aria-current={index === 1 ? "step" : undefined}>{index === 0 ? <button type="button" onClick={onBack} className={styles.back}><span className={`${shared.stepNumber} ${styles.complete}`}>✓</span>Design</button> : <><span className={shared.stepNumber}>{index + 1}</span><span className={shared.stepLabel}>{step}</span></>}</li>)}</ol></nav>
-    <h1 className={`${shared.title} ${styles.title}`}>Customise Your Cake</h1>
-    <div className={styles.layout}>
-      <section aria-label={`${base.name} gallery`}>
-        <div className={styles.heroImage}><Image src={images[activeImage]} alt={activeImage === 0 ? base.alt : "Cake design inspiration"} fill unoptimized priority className={styles.image} /><button type="button" className={styles.previous} aria-label="Previous cake image" onClick={() => setActiveImage((activeImage + images.length - 1) % images.length)}>‹</button><button type="button" className={styles.next} aria-label="Next cake image" onClick={() => setActiveImage((activeImage + 1) % images.length)}>›</button></div>
-        <div className={styles.thumbnails}>{images.map((image, index) => <button key={image} type="button" aria-label={`Show cake image ${index + 1}`} aria-pressed={activeImage === index} onClick={() => setActiveImage(index)}><Image src={image} alt="" fill unoptimized className={styles.image} /></button>)}</div>
-      </section>
-      <section aria-label="Cake customisation" className={styles.options}>
-        <div className={styles.size}><button type="button" className={styles.guideLink} onClick={() => guide.current?.showModal()}>Size Guide</button><ChoiceGroup title="Size" options={sizes} selected={size} onChange={setSize} /></div>
-        <ChoiceGroup title="Height" options={heights} selected={height} onChange={setHeight} />
-        <CakeSelect label="Sponge Flavour" value={sponge} onChange={setSponge} options={["Vanilla", "Chocolate", "Lemon", "Red Velvet"]} />
-        <ChoiceGroup title="Filling" options={fillings} selected={filling} onChange={setFilling} />
-        <CakeSelect label="Frosting" value={frosting} onChange={setFrosting} options={["Smooth Buttercream", "Whipped Cream", "Chocolate Ganache"]} />
-        <fieldset className={`${styles.group} ${styles.small}`}><legend>Cake Color</legend><div className={styles.choices}>{colours.map((item) => <label key={item.label} className={styles.colour}><input type="radio" name="Cake Color" checked={colour === item.label} onChange={() => setColour(item.label)} /><span><i style={{ background: item.hex }} />{item.label}</span></label>)}</div></fieldset>
-        <fieldset className={`${styles.group} ${styles.small}`}><legend>Decorations (+$12 each)</legend><div className={styles.choices}>{decorations.map((item) => <label key={item} className={styles.choice}><input type="checkbox" checked={extras.includes(item)} onChange={() => setExtras((current) => current.includes(item) ? current.filter((value) => value !== item) : [...current, item])} /><span>{item}</span></label>)}</div></fieldset>
-        <label className={styles.select}>Message on Cake (optional)<input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Happy Birthday!" maxLength={80} /></label>
-        {priceError && <p role="alert">{priceError}</p>}<div className={styles.footer}><output aria-live="polite" aria-label="Cake price">{total === undefined ? "…" : money(total)}</output><button type="button" className={styles.continue} onClick={() => { setPickingDate(true); window.scrollTo(0, 0); }}>Next: Pick a Date</button></div>
-      </section>
-    </div>
-    <dialog ref={guide} className={styles.dialog}><h2>Size Guide</h2><p>Approximate servings for each cake diameter.</p><ul>{sizes.map((item) => <li key={item.label}>{item.label}</li>)}</ul><form method="dialog"><button className={styles.continue}>Close</button></form></dialog>
-  </div></main>;
+  if (pickingDate) return <CakePickup cake={cake} onBack={() => setPickingDate(false)} date={date} time={time} onDateChange={setDate} onTimeChange={setTime} summary={summary} />;
+
+  const handleBack = () => {
+    setPickingDate(false);
+    onBack();
+  };
+
+  return (
+    <main className={`${shared.page} ${styles.page}`}>
+      <div className={styles.content}>
+        <div className={styles.topbar}>
+          <CakeProgress current={1} onBack={handleBack} />
+          <Link href="/custom-cakes/from-scratch" className={`${shared.mode} ${styles.mode}`}>✨ From Scratch</Link>
+        </div>
+
+        <h1 className={`${shared.title} ${styles.title}`}>Customise Your Cake</h1>
+        <div className={styles.layout}>
+          <section aria-label={`${design.name} gallery`}>
+            <div className={styles.heroImage}>
+              {heroImage ? (
+                <Image src={heroImage} alt={design.name} fill unoptimized priority className={styles.image} />
+              ) : (
+                <div className={styles.placeholder}><span>Photo coming soon</span></div>
+              )}
+              {images.length > 1 ? (
+                <>
+                  <button type="button" className={styles.previous} aria-label="Previous cake image" onClick={() => setActiveImage((activeImage + images.length - 1) % images.length)}>‹</button>
+                  <button type="button" className={styles.next} aria-label="Next cake image" onClick={() => setActiveImage((activeImage + 1) % images.length)}>›</button>
+                </>
+              ) : null}
+            </div>
+            {images.length > 1 ? (
+              <div className={styles.thumbnails}>{images.map((image, index) => (
+                <button key={image} type="button" aria-label={`Show cake image ${index + 1}`} aria-pressed={activeImage === index} onClick={() => setActiveImage(index)}>
+                  <Image src={image} alt="" fill unoptimized className={styles.image} />
+                </button>
+              ))}</div>
+            ) : null}
+            {design.description ? <p className={styles.description}>{design.description}</p> : null}
+          </section>
+
+          <section aria-label="Cake customisation" className={styles.options}>
+            {sizeList ? <div className={styles.size}><button type="button" className={styles.guideLink} onClick={() => guide.current?.showModal()}>Size Guide</button></div> : null}
+            {design.modifierLists.map((list) => (
+              <ModifierGroup
+                key={list.id}
+                list={list}
+                selectedIds={rawSelections[list.id] ?? []}
+                currency={currency}
+                onChange={(modifierIds) => setSelections((current) => ({ ...current, [list.id]: modifierIds }))}
+              />
+            ))}
+            <label className={styles.select}>Message on Cake (optional)<input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Happy Birthday!" maxLength={80} /></label>
+            {priceError && <p role="alert">{priceError}</p>}
+            {missing.length > 0 && <p className={styles.missing} role="status">Choose an option for {missing.map((list) => list.name).join(", ")}.</p>}
+            <div className={styles.footer}>
+              <output aria-live="polite" aria-label="Cake price">{total === undefined ? "…" : money(total, currency)}</output>
+              <button type="button" className={styles.continue} disabled={missing.length > 0} onClick={() => { setPickingDate(true); window.scrollTo(0, 0); }}>Next: Pick a Date</button>
+            </div>
+          </section>
+        </div>
+        {sizeList ? (
+          <dialog ref={guide} className={styles.dialog}>
+            <h2>Size Guide</h2>
+            <p>Approximate servings for each cake diameter.</p>
+            <ul>{sizeList.modifiers.map((modifier) => <li key={modifier.id}>{modifier.name}</li>)}</ul>
+            <form method="dialog"><button className={styles.continue}>Close</button></form>
+          </dialog>
+        ) : null}
+      </div>
+    </main>
+  );
 }

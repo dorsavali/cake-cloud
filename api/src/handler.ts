@@ -2,6 +2,7 @@ import { handlePaymentStatus } from "./services/payment-verification.js";
 import { handleHostedCheckout } from "./routes/hosted-checkout.js";
 import { handleCheckoutSession } from "./routes/checkout-session.js";
 import { handleCakeBrief } from "./routes/cake-brief.js";
+import { handleCakeCatalog } from "./routes/cake-catalog.js";
 import { handleCakeCheckout } from "./routes/cake-checkout.js";
 import { handleCartCheckout } from "./routes/cart-checkout.js";
 import { notFound } from "./http/json.js";
@@ -49,6 +50,10 @@ export async function handleApiRequest(
   if (url.pathname === "/api/cake/quote") {
     const limited = applyPublicApiRateLimit(request);
     return limited ?? handleCakeCheckout(request, env);
+  }
+  if (url.pathname === "/api/cake/catalog") {
+    const limited = applyPublicApiRateLimit(request);
+    return limited ?? handleCakeCatalog(request, env);
   }
   const isRateLimitedRoute =
     url.pathname === "/api/categories" ||

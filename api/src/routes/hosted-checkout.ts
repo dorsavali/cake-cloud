@@ -1,6 +1,6 @@
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { json } from "../http/json.js";
-import { priceCake, pickupInstant, rushFee, type Cake } from "./cake-checkout.js";
+import { CakeError, getPricedCake, pickupInstant, rushFee } from "./cake-checkout.js";
 import type { ApiEnv } from "../types/env.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 
@@ -13,31 +13,39 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
     const raw=await request.text();
     if(raw.length>20000)return json({error:"Request too large"},413);
     body=JSON.parse(raw);
-    if(!body || typeof body!=="object" || Array.isArray(body))throw new Error("Invalid request");
-    if(body.termsAccepted!==true)throw new Error("Accept the terms and conditions.");
-    const subtotal=priceCake(body.cake);
+    if(!body || typeof body!=="object" || Array.isArray(body))throw new CakeError("Invalid request");
+    if(body.termsAccepted!==true)throw new CakeError("Accept the terms and conditions.");
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    if(!name || name.length>100 || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new CakeError("Enter a valid full name and email.");
+    if(typeof body.idempotencyKey!=="string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey))throw new CakeError("Invalid checkout request");
+    const priced=await getPricedCake(env, body.cake);
+    const subtotal=priced.subtotal;
     const instant=pickupInstant(body.pickup,env.SQUARE_TIMEZONE || "Australia/Perth");
     const {available,fee}=rushFee(instant);
     if(!available)return json({error:"Please choose a pickup time at least 24 hours from now."},409);
     const total=subtotal+fee;
     // Expected total is only a change guard, never the source of the price.
     if(body.expectedTotal!==total)return json({error:"The total changed. Return to Summary to review the updated price."},409);
-    const name = typeof body.name === "string" ? body.name.trim() : "";
-    const email = typeof body.email === "string" ? body.email.trim() : "";
-    if(!name || name.length>100 || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error("Enter a valid full name and email.");
-    if(typeof body.idempotencyKey!=="string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey))throw new Error("Invalid checkout request");
-    const cake=body.cake as Cake;
-    const note=[
-      "Design: "+cake.base,
-      "Size: "+[6,8,10,12][cake.size]+" inch",
-      "Height: "+["Standard","Tall"][cake.height],
-      "Flavour: "+cake.sponge,
-      "Filling: "+["Pastry Cream","Chantilly","Fruit Compote","Pistachio Cream","Salted Caramel"][cake.filling],
-      "Frosting: "+cake.frosting,
-      "Colour: "+cake.colour,
-      "Decorations: "+(cake.extras.join(", ")||"None"),
-      "Message: "+(cake.message||"None"),
-    ].join("\n");
+    const message = priced.cake.message.trim();
+    // Square receives the real catalogue item and its modifiers so the receipt
+    // and reports show the chosen options instead of a single text note.
+    const appliedModifiers = priced.lines.flatMap(line =>
+      line.modifiers.map(modifier => ({ catalog_object_id: modifier.id, quantity: "1" })),
+    );
+    const lineItem = priced.design.variationId
+      ? {
+          catalog_object_id: priced.design.variationId,
+          quantity: "1",
+          applied_modifiers: appliedModifiers,
+          ...(message ? { note: "Message on cake: " + message } : {}),
+        }
+      : {
+          name: priced.design.name,
+          quantity: "1",
+          base_price_money: { amount: priced.design.price.amount, currency: priced.design.price.currency },
+          ...(message ? { note: "Message on cake: " + message } : {}),
+        };
     const expected=expectedValue(body.idempotencyKey,total,env.SQUARE_LOCATION_ID);
     const returnUrl=new URL("/custom-cakes/payment-result/",env.WEBSITE_ORIGIN || "http://localhost:3000");
     returnUrl.searchParams.set("checkout",body.idempotencyKey);
@@ -47,7 +55,7 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
         location_id:env.SQUARE_LOCATION_ID,
         reference_id:body.idempotencyKey,
         line_items:[
-          {name:"Custom Cake",quantity:"1",base_price_money:{amount:subtotal,currency:"AUD"},note},
+          lineItem,
           ...(fee?[{name:"Next-day creation",quantity:"1",base_price_money:{amount:fee,currency:"AUD"}}]:[]),
         ],
         fulfillments:[{type:"PICKUP",state:"PROPOSED",pickup_details:{
@@ -77,6 +85,8 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
       return json({error:"Could not connect to Square. Retry to recover the same checkout link."},502);
     }
   } catch(error) {
-    return json({error:error instanceof Error?error.message:"Invalid checkout request"},400);
+    if (error instanceof CakeError) return json({error:error.message},400);
+    console.error("[api] Custom cake checkout failed", { error: error instanceof Error ? error.message : String(error) });
+    return json({error:"Checkout is temporarily unavailable. Please retry."},502);
   }
 }

@@ -1,6 +1,7 @@
 import { reconcilePayment } from "../services/payment-verification.js";
 import { json, methodNotAllowed } from "../http/json.js";
 import { invalidateCatalogCache } from "./catalog.js";
+import { invalidateCakeCatalogCache } from "./cake-catalog.js";
 import type { ApiEnv } from "../types/env.js";
 
 const supportedEvents = new Set([
@@ -105,6 +106,7 @@ export async function handleSquareWebhook(
   }
   if(event.event_id)processedEvents.set(event.event_id,Date.now()+processedEventDurationMs);  if (event.type && supportedEvents.has(event.type)) {
     invalidateCatalogCache(env);
+    invalidateCakeCatalogCache(env);
   }
 
   return json({ received: true });

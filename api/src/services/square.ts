@@ -40,6 +40,34 @@ type SquareCatalogObject = {
         track_inventory?: boolean;
       };
     }>;
+    modifier_list_info?: Array<{
+      modifier_list_id?: string;
+      enabled?: boolean;
+      hidden_online?: boolean;
+      ordinal?: number;
+      min_selected_modifiers?: number;
+      max_selected_modifiers?: number;
+      modifier_overrides?: Array<{
+        modifier_id?: string;
+        on_by_default?: boolean;
+      }>;
+    }>;
+  };
+  modifier_list_data?: {
+    name?: string;
+    ordinal?: number;
+    selection_type?: string;
+    allow_quantities?: boolean;
+    min_selected_modifiers?: number;
+    max_selected_modifiers?: number;
+    hidden_from_customer?: boolean;
+    modifiers?: SquareCatalogObject[];
+  };
+  modifier_data?: {
+    name?: string;
+    price_money?: SquareMoney;
+    ordinal?: number;
+    modifier_list_id?: string;
   };
   image_data?: { url?: string };
   category_data?: { name?: string };
@@ -444,6 +472,248 @@ export async function getCatalogItems(
           0,
         ),
         customAttributes: storefrontCustomAttributes,
+      };
+    });
+}
+
+export type CakeModifier = {
+  id: string;
+  name: string;
+  price: number;
+  defaultSelected: boolean;
+};
+
+export type CakeModifierList = {
+  id: string;
+  name: string;
+  selectionType: "SINGLE" | "MULTIPLE";
+  minSelected: number;
+  maxSelected: number;
+  modifiers: CakeModifier[];
+};
+
+export type CakeDesign = {
+  id: string;
+  variationId: string | null;
+  name: string;
+  description: string;
+  image: string | null;
+  images: string[];
+  price: { amount: number; currency: string };
+  modifierLists: CakeModifierList[];
+};
+
+const normalizeCatalogName = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const wholeNumber = (value: unknown, fallback: number) =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : fallback;
+
+/**
+ * Cake designs are the items in the "Custom Cake Designs" Square category. Each
+ * design carries the modifier lists that are attached to it in the dashboard,
+ * so prices and options stay in sync with Square without a deploy.
+ */
+export async function getCakeDesigns(env: ApiEnv): Promise<CakeDesign[]> {
+  if (!env.SQUARE_ACCESS_TOKEN) {
+    throw new Error("Square access token is not configured");
+  }
+
+  const objects: SquareCatalogObject[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const params = new URLSearchParams({
+      types: "ITEM,MODIFIER_LIST,MODIFIER,IMAGE,CATEGORY",
+    });
+    if (cursor) params.set("cursor", cursor);
+
+    const response = await fetch(
+      `${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/catalog/list?${params}`,
+      { headers: squareHeaders(env) },
+    );
+
+    if (!response.ok) {
+      console.error(
+        "[square] Cake catalog request failed",
+        squareResponseLog("cake-catalog", response),
+      );
+      throw new Error(`Square Catalog request failed (${response.status})`);
+    }
+
+    const page = (await response.json()) as SquareCatalogListResponse;
+    objects.push(...(page.objects ?? []));
+    cursor = page.cursor;
+  } while (cursor);
+
+  const categories = objects.filter(
+    (object) => object.type === "CATEGORY" && object.id,
+  );
+  const exactCategory = categories.find(
+    (object) =>
+      normalizeCatalogName(object.category_data?.name ?? "") ===
+      "custom cake designs",
+  );
+  const matchingCategories = categories.filter((object) =>
+    normalizeCatalogName(object.category_data?.name ?? "").includes(
+      "custom cake",
+    ),
+  );
+  const categoryIds = new Set(
+    (exactCategory ? [exactCategory] : matchingCategories)
+      .map((object) => object.id)
+      .filter((id): id is string => Boolean(id)),
+  );
+
+  const imageUrls = new Map(
+    objects
+      .filter((object) => object.type === "IMAGE" && object.id)
+      .map((object) => [object.id as string, object.image_data?.url]),
+  );
+
+  const modifierObjects = new Map<string, SquareCatalogObject>();
+  for (const object of objects) {
+    if (object.type === "MODIFIER" && object.id) {
+      modifierObjects.set(object.id, object);
+    }
+  }
+
+  const modifierLists = new Map<string, SquareCatalogObject>();
+  for (const object of objects) {
+    if (object.type !== "MODIFIER_LIST" || !object.id) continue;
+    modifierLists.set(object.id, object);
+    for (const modifier of object.modifier_list_data?.modifiers ?? []) {
+      if (modifier.id) modifierObjects.set(modifier.id, modifier);
+    }
+  }
+
+  return objects
+    .filter(
+      (object) =>
+        object.type === "ITEM" &&
+        object.id &&
+        (object.item_data?.categories ?? []).some(
+          (category) => category.id && categoryIds.has(category.id),
+        ),
+    )
+    .map((item) => {
+      const variation = item.item_data?.variations?.find(
+        (candidate) =>
+          candidate.item_variation_data?.price_money?.amount != null,
+      );
+      const money = variation?.item_variation_data?.price_money;
+      const imageIds = [
+        ...(item.item_data?.image_ids ?? []),
+        ...(variation?.item_variation_data?.image_ids ?? []),
+      ];
+      const images = [...new Set(imageIds)]
+        .map((id) => imageUrls.get(id))
+        .filter((url): url is string => Boolean(url));
+
+      const modifierListsOnItem = (
+        item.item_data?.modifier_list_info ?? []
+      )
+        .flatMap((info, index) => {
+          const list = info.modifier_list_id
+            ? modifierLists.get(info.modifier_list_id)
+            : undefined;
+          const data = list?.modifier_list_data;
+          if (
+            !list?.id ||
+            !data ||
+            info.enabled === false ||
+            info.hidden_online === true ||
+            data.hidden_from_customer === true
+          ) {
+            return [];
+          }
+
+          const overrides = new Map(
+            (info.modifier_overrides ?? [])
+              .filter((override) => override.modifier_id)
+              .map((override) => [
+                override.modifier_id as string,
+                override.on_by_default === true,
+              ]),
+          );
+
+          const modifiers = (data.modifiers ?? [])
+            .flatMap((modifier): CakeModifier[] => {
+              const modifierData = modifier.modifier_data ??
+                (modifier.id ? modifierObjects.get(modifier.id)?.modifier_data : undefined);
+              if (!modifier.id || !modifierData) return [];
+              return [
+                {
+                  id: modifier.id,
+                  name: modifierData.name ?? "Option",
+                  price: modifierData.price_money?.amount ?? 0,
+                  defaultSelected: overrides.get(modifier.id) === true,
+                },
+              ];
+            })
+            .sort((left, right) => {
+              const leftOrdinal =
+                modifierObjects.get(left.id)?.modifier_data?.ordinal ?? 0;
+              const rightOrdinal =
+                modifierObjects.get(right.id)?.modifier_data?.ordinal ?? 0;
+              return leftOrdinal - rightOrdinal;
+            });
+
+          if (modifiers.length === 0) return [];
+
+          const selectionType: CakeModifierList["selectionType"] =
+            data.selection_type === "MULTIPLE" ? "MULTIPLE" : "SINGLE";
+          const maxDefault = selectionType === "MULTIPLE" ? 0 : 1;
+          // -1 means "no item-level override" in the Square API.
+          const overrideOr = (override: unknown, fallback: number) =>
+            typeof override === "number" &&
+            Number.isInteger(override) &&
+            override >= 0
+              ? override
+              : fallback;
+
+          return [
+            {
+              id: list.id,
+              name: data.name ?? "Options",
+              selectionType,
+              minSelected: overrideOr(
+                info.min_selected_modifiers,
+                wholeNumber(data.min_selected_modifiers, 0),
+              ),
+              maxSelected: overrideOr(
+                info.max_selected_modifiers,
+                wholeNumber(data.max_selected_modifiers, maxDefault),
+              ),
+              ordinal: info.ordinal ?? data.ordinal ?? index,
+              modifiers,
+            },
+          ];
+        })
+        .sort((left, right) => left.ordinal - right.ordinal)
+        .map(({ ordinal: _ordinal, ...list }) => list);
+
+      return {
+        id: item.id as string,
+        variationId: variation?.id ?? null,
+        name: item.item_data?.name ?? "Custom cake",
+        description:
+          item.item_data?.description_plaintext ??
+          item.item_data?.description ??
+          "",
+        image: images[0] ?? null,
+        images,
+        price: {
+          amount: money?.amount ?? 0,
+          currency: money?.currency ?? "AUD",
+        },
+        modifierLists: modifierListsOnItem,
       };
     });
 }

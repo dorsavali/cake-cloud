@@ -70,7 +70,7 @@ export function CakePickup({ onBack, date, time, onDateChange, onTimeChange, sum
     <h1 className={`${shared.title} ${styles.title}`}>{paymentQuote ? "Payment" : review ? "Order Summary" : "Pickup Date & Time"}</h1>
     {paymentQuote ? <CakePayment cake={cake} pickup={pickupValue!} quote={paymentQuote} /> : review ? <section className={styles.summary} aria-label="Order summary">
       <div className={styles.summaryCard}><dl>
-        {summary.filter((item) => !["Total", "Design", "Height", "Colour"].includes(item.label) || (item.label === "Height" && !item.value.startsWith("Standard")) || (item.label === "Colour" && item.value !== "Ivory")).map((item) => <div key={item.label}><dt>{item.label === "Sponge" ? "Flavour" : item.label}</dt><dd>{item.label === "Message" && item.value === "None" ? "—" : item.label === "Size" ? (item.value.match(/\((\d+)″\)/)?.[1] ? `${item.value.match(/\((\d+)″\)/)?.[1]} inch` : item.value) : item.value}</dd></div>)}
+        {summary.filter((item) => item.label !== "Total").map((item) => <div key={item.label}><dt>{item.label}</dt><dd>{item.label === "Message" && item.value === "None" ? "—" : item.value}</dd></div>)}
         <div><dt>Pickup</dt><dd>{pickup?.toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}</dd></div>
         <div><dt>Rush Fee</dt><dd>{availability} <span className={styles.fee}>{fee ? "+$80" : "$0"}</span></dd></div>
         <div className={styles.total}><dt>Total</dt><dd>{quote ? money(quote.total) : "…"}</dd></div>
