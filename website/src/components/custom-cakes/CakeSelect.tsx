@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
-import styles from "./CakeCustomiser.module.css";
-
+/** A native select so the calendar dialog never clips its options. */
 export function CakeSelect({ label, value, options, onChange, consistent = false }: {
   label: string;
   value: string;
@@ -10,45 +8,17 @@ export function CakeSelect({ label, value, options, onChange, consistent = false
   onChange: (value: string) => void;
   consistent?: boolean;
 }) {
-  const id = useId();
-  const details = useRef<HTMLDetailsElement>(null);
-
-  useEffect(() => {
-    const closeOutside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !details.current?.contains(event.target) && details.current) {
-        details.current.open = false;
-      }
-    };
-    document.addEventListener("pointerdown", closeOutside);
-    return () => document.removeEventListener("pointerdown", closeOutside);
-  }, []);
-
-  return <>
-    {!consistent && <label className={`${styles.select} ${styles.desktopSelect}`}>{label}
-      <select value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option}>{option}</option>)}</select>
-    </label>}
-    <div className={`${styles.select} ${styles.mobileSelect} ${consistent ? styles.consistentSelect : ""}`}>
-      <span id={id}>{label}</span>
-      <details ref={details} onKeyDown={(event) => {
-        if (event.key === "Escape" && details.current) {
-          details.current.open = false;
-          details.current.querySelector("summary")?.focus();
-        }
-      }}>
-        <summary aria-labelledby={`${id} ${id}-value`}><span id={`${id}-value`}>{value}</span><svg className={styles.selectChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></summary>
-        <div className={styles.selectOptions} role="group" aria-labelledby={id}>
-          {options.map((option) => <label key={option}>
-            <input type="radio" name={id} checked={value === option} onChange={() => {
-              onChange(option);
-              if (details.current) {
-                details.current.open = false;
-                details.current.querySelector("summary")?.focus();
-              }
-            }} />
-            <span>{option}</span>
-          </label>)}
-        </div>
-      </details>
-    </div>
-  </>;
+  return (
+    <label className="flex min-w-0 flex-col gap-1.5 text-[13px] md:text-sm">
+      <span className={consistent ? "sr-only" : "text-xs text-accent-dark/70 md:text-sm"}>{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 w-full min-w-0 rounded-[7px] border border-[#e3d7c2] bg-[#f5f0e7] px-2.5 text-base text-accent-dark focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:h-[38px] md:px-3 md:text-sm"
+      >
+        {options.includes(value) ? null : <option>{value}</option>}
+        {options.map((option) => <option key={option}>{option}</option>)}
+      </select>
+    </label>
+  );
 }

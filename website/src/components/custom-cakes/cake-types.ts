@@ -33,6 +33,8 @@ export type CakeConfig = {
   message: string;
 };
 
+export type CakeSummaryItem = { label: string; value: string };
+
 export type CakeQuote = {
   subtotal: number;
   total: number;

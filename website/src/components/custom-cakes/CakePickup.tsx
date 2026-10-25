@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
-import { CakePayment } from "./CakePayment";
-import { useCakeQuote, type CakeConfig, type CakeQuote } from "./useCakeQuote";
-import shared from "./CakeBaseSelector.module.css";
-import styles from "./CakePickup.module.css";
-import { useDraftState } from "./useDraftState";
-import { draftBoolean } from "./draft-storage";
+
+import type { CakeQuote } from "./useCakeQuote";
 import { CakeSelect } from "./CakeSelect";
+import { CakeProgress } from "./CakeProgress";
+import {
+  container,
+  errorText,
+  fieldLabel,
+  inputClass,
+  pageShell,
+  pageTitle,
+  primaryButton,
+  requiredMark,
+} from "./cake-ui";
 
 function parseDate(value: string) {
   const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
@@ -19,36 +26,33 @@ function parseDate(value: string) {
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : undefined;
 }
 
-export function CakePickup({ onBack, date, time, onDateChange, onTimeChange, summary, cake }: {
-  onBack: () => void; date: string; time: string;
-  onDateChange: (value: string) => void; onTimeChange: (value: string) => void;
-  summary: { label: string; value: string }[]; cake: CakeConfig;
+const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export function CakePickup({ date, time, quote, quoteError, onDateChange, onTimeChange, onBack, onContinue }: {
+  date: string;
+  time: string;
+  quote?: CakeQuote;
+  quoteError?: string;
+  onDateChange: (value: string) => void;
+  onTimeChange: (value: string) => void;
+  onBack: () => void;
+  onContinue: () => void;
 }) {
-  const [quoteRevision,setQuoteRevision]=useState(0);
   const calendar = useRef<HTMLDialogElement>(null);
-  const [paymentQuote, setPaymentQuote] = useState<CakeQuote | null>(null);
-  const [resumePayment, setResumePayment] = useDraftState("paymentStep", false, draftBoolean);
   const trigger = useRef<HTMLButtonElement>(null);
   const [month, setMonth] = useState(parseDate(date) ?? new Date());
-  const [review, setReview] = useDraftState("review", false, draftBoolean);
   const [touched, setTouched] = useState(false);
   const [input, setInput] = useState([date, time].filter(Boolean).join(" "));
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-  const today = new Date(now);
+
+  const today = new Date();
   today.setHours(0, 0, 0, 0);
   const selected = parseDate(date);
-  const validDate = !!selected;
-  const pickup = selected && /^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), Number(time.slice(0, 2)), Number(time.slice(3))) : undefined;
-  const pickupValue = selected && time ? `${selected.getFullYear()}-${String(selected.getMonth()+1).padStart(2,"0")}-${String(selected.getDate()).padStart(2,"0")}T${time}` : undefined;
-  const { quote, error: quoteError } = useCakeQuote(cake, pickupValue, quoteRevision);
+  const validDate = !!selected && timePattern.test(time);
   const unavailable = quote?.available === false;
   const fee = quote?.fee ?? 0;
   const availability = unavailable ? "Not available (< 24 h)" : fee ? "Next-day creation (+$80)" : "Standard (free)";
-  const money = (amount: number) => new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(amount / 100);
+  const valid = validDate && quote?.available === true && !!quote.expires && quote.expires > Date.now();
+
   function updateInput(value: string) {
     setInput(value);
     const parts = value.trim().split(/\s+/);
@@ -57,48 +61,140 @@ export function CakePickup({ onBack, date, time, onDateChange, onTimeChange, sum
     const next = parseDate(parts[0] ?? "");
     if (next) setMonth(next);
   }
-  const valid = !!pickup && quote?.available === true && !!quote.expires && quote.expires > now;
-  useEffect(() => {
-    if (resumePayment && valid && quote && !paymentQuote) setPaymentQuote(quote);
-  }, [resumePayment, valid, quote, paymentQuote]);
-  const closeCalendar = () => { calendar.current?.close(); trigger.current?.focus(); };
-  const backFromPayment = () => { setPaymentQuote(null); setResumePayment(false); setQuoteRevision(value => value + 1); };
 
-  return <main className={`${shared.page} ${styles.page} ${review ? styles.reviewPage : ""}`}><div className={shared.content}>
-    <button className={styles.back} type="button" onClick={paymentQuote ? backFromPayment : review ? () => setReview(false) : onBack}>← <span>{paymentQuote ? "Back to Summary" : review ? "Back to Date" : "Back to Customise"}</span></button>
-    <nav className={`${shared.progress} ${styles.progress}`} aria-label="Custom cake progress"><ol>{["Design", "Customise", "Date", "Summary", "Payment"].map((step, index) => <li key={step} aria-current={index === (paymentQuote ? 4 : review ? 3 : 2) ? "step" : undefined}><span className={`${shared.stepNumber} ${index < (paymentQuote ? 4 : review ? 3 : 2) ? styles.complete : ""}`}>{index < (paymentQuote ? 4 : review ? 3 : 2) ? "✓" : index + 1}</span><span className={shared.stepLabel}>{step}</span></li>)}</ol></nav>
-    <h1 className={`${shared.title} ${styles.title}`}>{paymentQuote ? "Payment" : review ? "Order Summary" : "Pickup Date & Time"}</h1>
-    {paymentQuote ? <CakePayment cake={cake} pickup={pickupValue!} quote={paymentQuote} /> : review ? <section className={styles.summary} aria-label="Order summary">
-      <div className={styles.summaryCard}><dl>
-        {summary.filter((item) => item.label !== "Total").map((item) => <div key={item.label}><dt>{item.label}</dt><dd>{item.label === "Message" && item.value === "None" ? "—" : item.value}</dd></div>)}
-        <div><dt>Pickup</dt><dd>{pickup?.toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}</dd></div>
-        <div><dt>Rush Fee</dt><dd>{availability} <span className={styles.fee}>{fee ? "+$80" : "$0"}</span></dd></div>
-        <div className={styles.total}><dt>Total</dt><dd>{quote ? money(quote.total) : "…"}</dd></div>
-      </dl></div>
-      {unavailable && <p className={styles.error} role="alert">Please choose a pickup time at least 24 hours from now.</p>}
-      {quoteError && <p className={styles.error} role="alert">{quoteError}</p>}
-      <div className={styles.summaryActions}><button type="button" className={styles.edit} onClick={() => { setReview(false); onBack(); }}>Edit</button><button type="button" className={styles.submit} disabled={!valid} onClick={() => { const current = Date.now(); setNow(current); if (valid && quote) { setResumePayment(true); setPaymentQuote(quote); } }}>Proceed to Payment</button></div>
-    </section> : <form className={styles.form} onSubmit={(event) => { event.preventDefault(); setTouched(true); const current = Date.now(); setNow(current); if (valid) setReview(true); }}>
-      <div><label htmlFor="pickup-date">Preferred Pickup Date & Time <span className={styles.required}>*</span></label>
-        <div className={styles.inputWrap}><input id="pickup-date" type="text" placeholder="DD/MM/YYYY HH:mm" autoComplete="off" required value={input} aria-describedby={touched && !pickup ? "pickup-error" : pickup ? "pickup-status" : undefined} aria-invalid={touched && (!pickup || unavailable)} onBlur={() => setTouched(true)} onChange={(event) => updateInput(event.target.value)} />          <button ref={trigger} type="button" aria-label="Open pickup calendar" aria-haspopup="dialog" onClick={() => calendar.current?.showModal()}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2M8 18h2"/></svg></button>
-        </div>{touched && !pickup && <p id="pickup-error" className={styles.error}>Enter a valid date and time: DD/MM/YYYY HH:mm (24-hour time).</p>}
+  const closeCalendar = () => {
+    calendar.current?.close();
+    trigger.current?.focus();
+  };
+
+  return (
+    <main className={pageShell}>
+      <div className={container}>
+        <button className="inline-flex min-h-6 items-center gap-[7px] border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
+          ← <span>Back to Customise</span>
+        </button>
+        <div className="mt-[18px] md:mt-[22px]"><CakeProgress current={2} /></div>
+        <h1 className={`${pageTitle} mt-6 tracking-[-.025em] md:tracking-normal`}>Pickup Date &amp; Time</h1>
+        <form
+          className="grid gap-[15px] md:gap-[18px]"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setTouched(true);
+            if (valid) onContinue();
+          }}
+        >
+          <div>
+            <label className={fieldLabel} htmlFor="pickup-date">
+              Preferred Pickup Date &amp; Time <span className={requiredMark}>*</span>
+            </label>
+            <div className="relative">
+              <input
+                id="pickup-date"
+                type="text"
+                placeholder="DD/MM/YYYY HH:mm"
+                autoComplete="off"
+                required
+                value={input}
+                aria-describedby={touched && !validDate ? "pickup-error" : selected && quote ? "pickup-status" : undefined}
+                aria-invalid={touched && (!validDate || unavailable)}
+                onBlur={() => setTouched(true)}
+                onChange={(event) => updateInput(event.target.value)}
+                className={`${inputClass} pr-11 md:pr-[46px]`}
+              />
+              <button
+                ref={trigger}
+                type="button"
+                aria-label="Open pickup calendar"
+                aria-haspopup="dialog"
+                onClick={() => calendar.current?.showModal()}
+                className="absolute right-0 top-0 grid size-10 w-11 place-items-center border-0 bg-none text-primary md:h-[38px] md:w-[42px]"
+              >
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="[stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.5] stroke-current">
+                  <rect x="3" y="5" width="18" height="16" rx="2" />
+                  <path d="M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2M8 18h2" />
+                </svg>
+              </button>
+            </div>
+            {touched && !validDate && <p id="pickup-error" className={errorText}>Enter a valid date and time: DD/MM/YYYY HH:mm (24-hour time).</p>}
+          </div>
+          <div aria-live="polite">
+            {selected && quote && (
+              <div id="pickup-status" className={`flex items-start gap-3 rounded-[10px] border px-3.5 py-[15px] text-sm ${unavailable ? "border-[#ffc7ce] bg-[#fff3f4]" : "border-[#e3d7c2] bg-[#f0eadd]"}`}>
+                <span aria-hidden="true">{unavailable ? "⛔" : "🕒"}</span>
+                <div>
+                  {availability}
+                  {unavailable && <p className="mt-1 text-xs text-[#e12727]">Please choose a date at least 24 hours from now.</p>}
+                </div>
+              </div>
+            )}
+          </div>
+          {quoteError && <p className={errorText} role="alert">{quoteError}</p>}
+          <button className={primaryButton} disabled={!valid}>Review Order</button>
+        </form>
+
+        <dialog
+          ref={calendar}
+          className="m-auto max-h-[calc(100dvh-32px)] w-[min(340px,calc(100vw-24px))] overflow-y-auto rounded-[14px] border border-[#e3d7c2] bg-accent p-3 text-accent-dark shadow-[0_18px_60px_#46424826] backdrop:bg-[#46424838] md:w-auto md:max-w-[min(420px,calc(100vw-32px))] md:p-5"
+          aria-labelledby="calendar-title"
+          onClick={(event) => { if (event.target === event.currentTarget) closeCalendar(); }}
+        >
+          <div className="mb-3 flex items-center justify-between gap-3 md:mb-[18px]">
+            <h2 id="calendar-title" className="font-kalnia text-sm md:text-base">Choose pickup date &amp; time</h2>
+            <button type="button" aria-label="Close calendar" onClick={closeCalendar} className="grid size-10 shrink-0 place-items-center rounded-full border-0 bg-primary/8 text-2xl leading-none text-primary md:size-8 md:text-[23px]">×</button>
+          </div>
+          <DayPicker
+            className="font-signika text-sm [--rdp-accent-background-color:#718d7f18] [--rdp-accent-color:#718d7f] [--rdp-selected-border:1px_solid_#718d7f] [--rdp-today-color:#718d7f] [&_.rdp-selected_button]:bg-primary [&_.rdp-selected_button]:text-accent max-md:[--rdp-day-width:clamp(30px,10vw,42px)] max-md:[--rdp-day-height:42px] max-md:[--rdp-day_button-width:clamp(28px,9vw,40px)] max-md:[--rdp-day_button-height:40px]"
+            mode="single"
+            selected={selected}
+            month={month}
+            onMonthChange={setMonth}
+            disabled={{ before: today }}
+            autoFocus
+            onSelect={(value) => {
+              if (!value) return;
+              const text = `${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}`;
+              onDateChange(text);
+              setInput(`${text}${time ? ` ${time}` : ""}`);
+            }}
+          />
+          <fieldset className="my-4 grid gap-1.5 text-sm">
+            <legend>Pickup time (24-hour)</legend>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+              <CakeSelect
+                consistent
+                label="Hour"
+                value={timePattern.test(time) ? time.slice(0, 2) : "Choose"}
+                options={Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0"))}
+                onChange={(hour) => {
+                  const value = `${hour}:${/^[0-5]\d$/.test(time.slice(3)) ? time.slice(3) : "00"}`;
+                  onTimeChange(value);
+                  setInput([date, value].filter(Boolean).join(" "));
+                }}
+              />
+              <span aria-hidden="true">:</span>
+              <CakeSelect
+                consistent
+                label="Minute"
+                value={timePattern.test(time) ? time.slice(3) : "Choose"}
+                options={Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0"))}
+                onChange={(minute) => {
+                  const value = `${/^([01]\d|2[0-3])$/.test(time.slice(0, 2)) ? time.slice(0, 2) : "00"}:${minute}`;
+                  onTimeChange(value);
+                  setInput([date, value].filter(Boolean).join(" "));
+                }}
+              />
+            </div>
+          </fieldset>
+          <button
+            type="button"
+            className={primaryButton}
+            disabled={!validDate}
+            onClick={() => { setTouched(true); closeCalendar(); }}
+          >
+            Done
+          </button>
+        </dialog>
       </div>
-      <div aria-live="polite">{pickup && quote && <div id="pickup-status" className={`${styles.status} ${unavailable ? styles.unavailable : ""}`}><span aria-hidden="true">{unavailable ? "⛔" : "🕒"}</span><div>{availability}{unavailable && <p>Please choose a date at least 24 hours from now.</p>}</div></div>}</div>
-      {quoteError && <p className={styles.error} role="alert">{quoteError}</p>}
-      <button className={styles.submit} disabled={!valid}>Review Order</button>
-    </form>}
-    <dialog ref={calendar} className={styles.calendarDialog} aria-labelledby="calendar-title" onClick={(event) => { if (event.target === event.currentTarget) closeCalendar(); }}>
-      <div className={styles.calendarHeader}><h2 id="calendar-title">Choose pickup date & time</h2><button type="button" aria-label="Close calendar" onClick={closeCalendar}>×</button></div>
-      <DayPicker className={styles.calendar} mode="single" selected={selected} month={month} onMonthChange={setMonth} disabled={{ before: today }} autoFocus onSelect={(value) => { if (value) { onDateChange(`${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}`); setInput(`${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}${time ? ` ${time}` : ""}`); } }} />
-      <fieldset className={styles.pickerTime}>
-        <legend>Pickup time (24-hour)</legend>
-        <div className={styles.timeFields}>
-          <CakeSelect consistent label="Hour" value={/^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time.slice(0, 2) : "Choose"} options={Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0"))} onChange={(hour) => { const value = `${hour}:${/^[0-5]\d$/.test(time.slice(3)) ? time.slice(3) : "00"}`; onTimeChange(value); setInput([date, value].filter(Boolean).join(" ")); }} />
-          <span aria-hidden="true">:</span>
-          <CakeSelect consistent label="Minute" value={/^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time.slice(3) : "Choose"} options={Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0"))} onChange={(minute) => { const value = `${/^([01]\d|2[0-3])$/.test(time.slice(0, 2)) ? time.slice(0, 2) : "00"}:${minute}`; onTimeChange(value); setInput([date, value].filter(Boolean).join(" ")); }} />
-        </div>
-      </fieldset>
-      <button type="button" className={styles.submit} disabled={!validDate || !time} onClick={() => { setTouched(true); closeCalendar(); }}>Done</button>
-    </dialog>
-  </div></main>;
+    </main>
+  );
 }
