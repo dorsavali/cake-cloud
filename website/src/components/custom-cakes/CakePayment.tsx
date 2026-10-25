@@ -68,14 +68,14 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
 
   return (
     <main className={pageShell}>
-      <div className={container}>
-        <button className="inline-flex min-h-6 items-center gap-[7px] border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
+      <div className={`${container} max-w-[620px] md:max-w-[60%]`}>
+        <button className="inline-flex min-h-6 items-center gap-[7px] border-0 bg-none p-0 pt-4 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
           ← <span>Back to Summary</span>
         </button>
-        <div className="mt-[18px] md:mt-[22px]"><CakeProgress current={4} /></div>
+        <div className="mt-[18px] min-w-0 max-md:mt-[22px] md:mt-[22px]"><CakeProgress current={4} /></div>
         <h1 className={`${pageTitle} mt-6 tracking-[-.025em] md:tracking-normal`}>Payment</h1>
 
-        <div className="grid gap-5 md:max-w-[620px]">
+        <div className="grid gap-5">
 
 
           <form
@@ -129,8 +129,8 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
               <span className="text-xs text-accent-dark md:text-sm">Total</span>
               <strong className="font-kalnia text-[21px] font-normal text-primary">{money(quote.total)}</strong>
             </div>
-            <label className="flex items-start gap-2 text-xs text-accent-dark/55">
-              <input type="checkbox" required checked={termsAccepted} disabled={busy || !!attempt.current} onChange={(event) => setTermsAccepted(event.target.checked)} className="mt-0.5 size-4 shrink-0 accent-primary" />
+            <label className="flex items-center gap-2 text-xs text-accent-dark/55">
+              <input type="checkbox" required checked={termsAccepted} disabled={busy || !!attempt.current} onChange={(event) => setTermsAccepted(event.target.checked)} className="size-4 shrink-0 accent-primary" />
               <span>I have read and agree to the terms and conditions.</span>
             </label>
             <p className="text-[13px] leading-[1.5] text-[#88857d]">You’ll complete your payment securely on Square.</p>

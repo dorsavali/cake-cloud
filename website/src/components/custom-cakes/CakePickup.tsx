@@ -69,11 +69,11 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
 
   return (
     <main className={pageShell}>
-      <div className={container}>
-        <button className="inline-flex min-h-6 items-center gap-[7px] border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
+      <div className={`${container} max-w-[620px] md:max-w-[60%]`}>
+        <button className="inline-flex  min-h-6 items-center gap-[7px] border-0 bg-none p-0 pt-4 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
           ← <span>Back to Customise</span>
         </button>
-        <div className="mt-[18px] md:mt-[22px]"><CakeProgress current={2} /></div>
+        <div className="mt-[18px] min-w-0 max-md:mt-[22px] md:mt-[22px]"><CakeProgress current={2} /></div>
         <h1 className={`${pageTitle} mt-6 tracking-[-.025em] md:tracking-normal`}>Pickup Date &amp; Time</h1>
         <form
           className="grid gap-[15px] md:gap-[18px]"
@@ -139,11 +139,11 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
           onClick={(event) => { if (event.target === event.currentTarget) closeCalendar(); }}
         >
           <div className="mb-3 flex items-center justify-between gap-3 md:mb-[18px]">
-            <h2 id="calendar-title" className="font-kalnia text-sm md:text-base">Choose pickup date &amp; time</h2>
+            <h2 id="calendar-title" className="font-kalnia font-medium text-sm md:text-base">Choose pickup date &amp; time</h2>
             <button type="button" aria-label="Close calendar" onClick={closeCalendar} className="grid size-10 shrink-0 place-items-center rounded-full border-0 bg-primary/8 text-2xl leading-none text-primary md:size-8 md:text-[23px]">×</button>
           </div>
           <DayPicker
-            className="font-signika text-sm [--rdp-accent-background-color:#718d7f18] [--rdp-accent-color:#718d7f] [--rdp-selected-border:1px_solid_#718d7f] [--rdp-today-color:#718d7f] [&_.rdp-selected_button]:bg-primary [&_.rdp-selected_button]:text-accent max-md:[--rdp-day-width:clamp(30px,10vw,42px)] max-md:[--rdp-day-height:42px] max-md:[--rdp-day_button-width:clamp(28px,9vw,40px)] max-md:[--rdp-day_button-height:40px]"
+            className="font-signika text-sm max-md:[--rdp-day-width:clamp(30px,10vw,42px)] max-md:[--rdp-day-height:42px] max-md:[--rdp-day_button-width:clamp(28px,9vw,40px)] max-md:[--rdp-day_button-height:40px]"
             mode="single"
             selected={selected}
             month={month}
@@ -158,7 +158,7 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
             }}
           />
           <fieldset className="my-4 grid gap-1.5 text-sm">
-            <legend>Pickup time (24-hour)</legend>
+            <legend className="mb-4">Pickup time (24-hour)</legend>
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
               <CakeSelect
                 consistent

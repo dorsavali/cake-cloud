@@ -10,6 +10,7 @@ export function CakeSelect({ label, value, options, onChange, consistent = false
 }) {
   return (
     <label className="flex min-w-0 flex-col gap-1.5 text-[13px] md:text-sm">
+      
       <span className={consistent ? "sr-only" : "text-xs text-accent-dark/70 md:text-sm"}>{label}</span>
       <select
         value={value}

@@ -78,11 +78,11 @@ export function CakeSummary({ summary, pickup, availability, fee, quote, unavail
 }) {
   return (
     <main className={pageShell}>
-      <div className={container}>
-        <button className="inline-flex min-h-6 items-center gap-[7px] border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
+      <div className={`${container} max-w-[620px] md:max-w-[60%]`}>
+        <button className="inline-flex min-h-6 items-center gap-[7px] border-0 bg-none p-0 pt-4 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
           ← <span>Back to Date</span>
         </button>
-        <div className="mt-[18px] md:mt-[22px]"><CakeProgress current={3} /></div>
+        <div className="mt-[18px] min-w-0 max-md:mt-[22px] md:mt-[22px]"><CakeProgress current={3} /></div>
         <h1 className={`${pageTitle} mt-6 tracking-[-.025em] md:tracking-normal`}>Order Summary</h1>
         <section aria-label="Order summary">
           <CakeSummaryDetails summary={summary} pickup={pickup} availability={availability} fee={fee} quote={quote} unavailable={unavailable} />

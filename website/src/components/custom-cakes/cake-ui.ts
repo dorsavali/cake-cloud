@@ -1,4 +1,4 @@
-/** Shared Tailwind building blocks for the custom cake flow. */
+
 
 export const pageShell =
   "-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-cover bg-top bg-no-repeat px-4 pb-8 pt-16 font-signika text-accent-dark md:bg-[length:100%_auto] md:bg-repeat-y md:px-8 md:pb-16";
@@ -8,7 +8,7 @@ export const pageTitle =
   "my-5 font-kalnia text-[clamp(25px,7.5vw,32px)] font-medium leading-[1.3] md:text-[30px]";
 
 export const topbar =
-  "mt-5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-stretch max-md:gap-3.5";
+  "mt-4 flex items-center justify-between gap-4 max-md:flex-col max-md:items-stretch max-md:gap-3.5";
 
 export const progressInTopbar = "min-w-0 flex-1 max-w-[70%] max-md:max-w-none";
 

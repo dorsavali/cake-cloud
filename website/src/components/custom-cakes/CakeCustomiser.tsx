@@ -112,7 +112,10 @@ export function CakeCustomiser({
   return (
     <main className={`${pageShell} pb-[30px]`}>
       <div className={container}>
-        <div className={`${topbar} mt-6`}>
+        <button className="inline-flex min-h-6 items-center border-0 bg-none p-0 pt-4 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
+          ← <span>Back to Design</span>
+        </button>
+        <div className={`${topbar}`}>
           <div className={progressInTopbar}>
             <CakeProgress current={1} onBack={onBack} />
           </div>

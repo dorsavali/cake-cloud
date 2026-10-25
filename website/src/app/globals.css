@@ -1,5 +1,45 @@
 @import "tailwindcss";
 
+/* react-day-picker: keep the pickup calendar on the brand green.
+   !important beats the library's own .rdp-root defaults regardless of
+   stylesheet order, and covers the native focus ring too. */
+.rdp-root {
+  --rdp-accent-color: #718d7f !important;
+  --rdp-accent-background-color: rgb(113 141 127 / 10%) !important;
+  --rdp-selected-border: 1px solid #718d7f !important;
+  --rdp-today-color: #718d7f !important;
+  color-scheme: light;
+}
+
+.rdp-root .rdp-chevron {
+  fill: #718d7f !important;
+}
+
+.rdp-root .rdp-selected .rdp-day_button {
+  background-color: #718d7f !important;
+  color: #faf7f0 !important;
+}
+
+.rdp-root .rdp-day_button:focus-visible,
+.rdp-root .rdp-button_next:focus-visible,
+.rdp-root .rdp-button_previous:focus-visible,
+.rdp-root .rdp-dropdown:focus-visible,
+.rdp-root .rdp-dropdown_root:focus-within .rdp-caption_label,
+.rdp-root .rdp-table:focus-visible,
+.rdp-root .rdp-month:focus-visible {
+  outline: 2px solid #718d7f !important;
+  outline-offset: 1px !important;
+}
+
+.rdp-root .rdp-dropdown:focus-visible ~ .rdp-caption_label {
+  outline: none !important;
+}
+
+.rdp-root .rdp-button_next:hover .rdp-chevron,
+.rdp-root .rdp-button_previous:hover .rdp-chevron {
+  fill: #5e796c !important;
+}
+
 @font-face {
   font-family: "Kalnia";
   src: url("/fonts/kalnia/Kalnia-VariableFont_wdth%2Cwght.ttf")

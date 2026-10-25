@@ -7,9 +7,6 @@ export type CakeStep = "design" | "customise" | "date" | "summary" | "payment";
 export const cakeStepNames: readonly CakeStep[] = ["design", "customise", "date", "summary", "payment"];
 
 export function CakeProgress({ current, onBack }: { current: number; onBack?: () => void }) {
-  // Steps that were already completed on the previous render. A connector only
-  // turns green on the render right after its step finishes, so the colour
-  // change transitions instead of appearing pre-filled after a remount.
   const previousDone = useRef<number[] | null>(null);
   const [, bump] = useState(0);
 
