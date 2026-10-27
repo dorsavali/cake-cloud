@@ -203,7 +203,7 @@ export function CakeCustomiser({
             {priceError && <p role="alert" className="text-xs text-[#a0443c]">{priceError}</p>}
             {missing.length > 0 && <p className="-mt-2 text-xs text-[#a0443c]" role="status">Choose an option for {missing.map((list) => list.name).join(", ")}.</p>}
             <div className="flex flex-nowrap items-center justify-between gap-3 border-t border-[#e3d7c250] pt-4">
-              <output aria-live="polite" aria-label="Cake price" className="whitespace-nowrap font-kalnia text-[19px] text-primary md:text-[23px]">
+              <output aria-live="polite" aria-label="Cake price" className="whitespace-nowrap font-signika text-[23px] text-primary lg:text-[35px]">
                 {subtotal === undefined ? "…" : money(subtotal, currency)}
               </output>
               <button

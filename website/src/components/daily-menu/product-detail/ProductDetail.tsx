@@ -195,7 +195,7 @@ export function ProductDetail() {
               <h1 className="font-kalnia text-xl font-medium leading-tight lg:text-[26px]">{product.name}</h1>
               {product.variationName && <p className="mt-1 font-signika text-sm font-light text-accent-dark/60">{product.variationName}</p>}
             </div>
-            <p aria-live="polite" className="shrink-0 font-kalnia text-lg font-normal text-primary lg:text-2xl">{formatPrice(product, unitPrice)}</p>
+            <p aria-live="polite" className="shrink-0 font-signika text-lg font-normal text-primary lg:text-2xl">{formatPrice(product, unitPrice)}</p>
           </div>
 
           {categoryTags.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5 font-signika text-[10px] text-accent-dark/60 lg:gap-x-7 lg:gap-y-1.5 lg:text-xs">{categoryTags.map((category) => <span key={category} className="rounded-full bg-[#eee8da] px-2 py-1 lg:bg-transparent lg:px-0 lg:py-0">{category}</span>)}</div>}

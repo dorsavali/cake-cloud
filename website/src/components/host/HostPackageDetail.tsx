@@ -141,7 +141,7 @@ export function HostPackageDetail() {
           ) : null}
 
           <div className="mt-7 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-[#ded4c3] pt-4 md:flex md:justify-between md:gap-3">
-            <p className="whitespace-nowrap font-kalnia text-[20px] text-primary md:text-[24px]">{money.format(total / 100)}</p>
+            <p className="whitespace-nowrap font-signika text-[20px] text-primary md:text-[24px]">{money.format(total / 100)}</p>
             <button type="button" onClick={addToRequest} className="inline-flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-2 font-kalnia text-[12px] font-medium text-white transition-colors hover:bg-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:min-h-12 md:min-w-64 md:flex-none md:px-4 md:text-base">Add to The Request</button>
           </div>
         </div>

@@ -215,7 +215,7 @@ export function HostPackages() {
                 ) : null}
 
                 <div className="mt-auto flex items-end justify-between border-t border-[#ded4c3] pt-3">
-                  <p className="font-kalnia text-[18px] leading-none text-primary">
+                  <p className="font-signika text-[18px] leading-none text-primary">
                     {formatPrice(hostPackage)}
                     {hostPackage.minimumGuests ? (
                       <span className="font-signika text-[11px] text-accent-dark/55">
