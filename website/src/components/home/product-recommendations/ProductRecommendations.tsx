@@ -56,7 +56,7 @@ export function ProductRecommendations() {
     <section
       dir="ltr"
       aria-labelledby="recommendations-heading"
-      className="overflow-hidden py-10 lg:py-0 lg:pb-[35px]"
+      className="overflow-hidden py-5 lg:py-0 lg:pb-[35px]"
     >
       <div className="mx-auto w-full max-w-[1100px] px-4 lg:px-8">
         <div className="flex items-center justify-between">

@@ -11,7 +11,7 @@
 
 .cakeStage {
   position: absolute;
-  top: 35px;
+  top: -10px;
   right: 0;
   width: 240px;
   height: 280px;
@@ -62,18 +62,6 @@
   opacity: 1;
   transform: translate(-50%, var(--mobile-open-y)) scale(1);
   transition-delay: var(--delay), var(--delay);
-}
-
-@media (max-width: 479px) {
-  .cakeStage {
-    position: absolute;
-    top: 35px;
-    right: 0;
-    width: 240px;
-    height: 280px;
-    transform: scale(0.75);
-    transform-origin: right center;
-  }
 }
 
 @media (min-width: 1024px) {

@@ -13,7 +13,7 @@ export const topbar =
 export const progressInTopbar = "min-w-0 flex-1 max-w-[70%] max-md:max-w-none";
 
 export const modeLink =
-  "inline-flex h-11 shrink-0 items-center justify-center gap-3 rounded-full border border-luxury-accent bg-accent px-5 font-signika text-sm font-medium text-accent-dark transition-colors duration-200 [&:hover>span]:text-accent hover:border-primary hover:bg-primary hover:text-accent motion-reduce:transition-none md:h-12 md:px-8 md:text-base";
+  "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-luxury-accent bg-accent px-3 font-signika text-xs font-medium text-accent-dark transition-colors duration-200 [&:hover>span]:text-accent hover:border-primary hover:bg-primary hover:text-accent motion-reduce:transition-none md:h-12 md:gap-3 md:px-8 md:text-base";
 
 export const modeIcon = "text-[#ead58b]";
 

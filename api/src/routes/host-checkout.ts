@@ -2,56 +2,15 @@ import { json, methodNotAllowed } from "../http/json.js";
 import { getCatalogItems } from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
+import {
+  normalizeSquarePhone,
+  upsertSquareCustomer,
+} from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 
 const maxFileBytes = 5 * 1024 * 1024;
 const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const normalize = (value: string) => value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
-const normalizePhone = (value: string) => {
-  const compact = value.replace(/[\s().-]/g, "");
-  if (/^04\d{8}$/.test(compact)) return `+61${compact.slice(1)}`;
-  if (/^4\d{8}$/.test(compact)) return `+61${compact}`;
-  return compact;
-};
-
-type SquareCustomer = { id?: string; version?: number };
-
-async function squareCustomerRequest<T>(env: ApiEnv, path: string, method: "POST" | "PUT", body: unknown): Promise<T> {
-  const baseUrl = env.SQUARE_ENVIRONMENT === "production" ? "https://connect.squareup.com" : "https://connect.squareupsandbox.com";
-  const response = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers: { authorization: `Bearer ${env.SQUARE_ACCESS_TOKEN}`, "Square-Version": "2026-08-19", "content-type": "application/json" },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!response.ok) {
-    const result = await response.json().catch(() => ({})) as { errors?: Array<{ code?: string }> };
-    const code = result.errors?.[0]?.code ?? `HTTP_${response.status}`;
-    if (code === "INVALID_EMAIL_ADDRESS") throw new Error("Square did not accept this email address.");
-    if (code === "INVALID_PHONE_NUMBER") throw new Error("Square did not accept this phone number. Include its country code.");
-    if (code === "UNAUTHORIZED" || code === "FORBIDDEN" || code === "REQUEST_NOT_AUTHORIZED") throw new Error("Square customer access is missing. Enable CUSTOMERS_READ and CUSTOMERS_WRITE permissions.");
-    throw new Error(`Square could not save the customer details (${code}).`);
-  }
-  return response.json() as Promise<T>;
-}
-
-async function upsertSquareCustomer(env: ApiEnv, fullName: string, email: string, phone: string, idempotencyKey: string) {
-  const search = await squareCustomerRequest<{ customers?: SquareCustomer[] }>(env, "/v2/customers/search", "POST", {
-    limit: 1,
-    query: { filter: { email_address: { exact: email } } },
-  });
-  const existing = search.customers?.[0];
-  if (existing?.id) return existing.id;
-  const created = await squareCustomerRequest<{ customer?: SquareCustomer }>(env, "/v2/customers", "POST", {
-    idempotency_key: idempotencyKey,
-    given_name: fullName,
-    email_address: email,
-    phone_number: phone,
-  });
-  if (!created.customer?.id) throw new Error("Square could not save the customer details.");
-  return created.customer.id;
-}
-
 function text(form: FormData, key: string, max: number, required = false) {
   const value = form.get(key);
   if (typeof value !== "string") throw new Error(required ? `Enter ${key}.` : `Invalid ${key}.`);
@@ -79,7 +38,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     const form = await request.formData();
     const fullName = text(form, "fullName", 100, true);
     const email = text(form, "email", 254, true).toLowerCase();
-    const phone = normalizePhone(text(form, "phone", 30, true));
+    const phone = normalizeSquarePhone(text(form, "phone", 30, true));
     const eventDate = text(form, "eventDate", 10, true);
     const notes = text(form, "notes", 1500);
     const idempotencyKey = text(form, "idempotencyKey", 36, true);
@@ -124,7 +83,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
       summary.push({ id: product.id, name: product.name, guests: guests as number, unitPrice: product.price.amount, priceUnit: fixed ? "package" : "head" });
     }
 
-    const customerId = await upsertSquareCustomer(env, fullName, email, phone, idempotencyKey);
+    const customerId = await upsertSquareCustomer(env, fullName, email, phone, idempotencyKey, false);
 
     const reference = crypto.randomUUID();
     const file = form.get("logo");

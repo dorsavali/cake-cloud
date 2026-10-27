@@ -82,12 +82,23 @@ function CakeDraftFlow({ designs, error, onRetry }: { designs?: CakeDesign[]; er
     <section>
       <main className={pageShell}>
         <div className={container}>
-          <div className={topbar}>
+          <div className="flex items-center justify-between gap-3 pt-4 md:block">
+            <Link
+              href="/"
+              className="inline-flex min-h-6 items-center border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]"
+            >
+              ← <span>Back to Home</span>
+            </Link>
+            <Link href="/custom-cakes/from-scratch" className={`${modeLink} md:hidden`}>
+              <span aria-hidden="true" className={modeIcon}>✨</span> From Scratch
+            </Link>
+          </div>
+          <div className={`${topbar} max-md:mt-5`}>
             <div className={progressInTopbar}>
               <CakeProgress current={0} />
             </div>
-            <Link href="/custom-cakes/from-scratch" className={modeLink}>
-              <span aria-hidden="true" className={modeIcon}>✦</span> From Scratch
+            <Link href="/custom-cakes/from-scratch" className={`${modeLink} max-md:hidden`}>
+              <span aria-hidden="true" className={modeIcon}>✨</span> From Scratch
             </Link>
           </div>
 

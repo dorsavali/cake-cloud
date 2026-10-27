@@ -103,7 +103,7 @@ export function Partners() {
     <section
       dir="ltr"
       aria-labelledby="partners-heading"
-      className="overflow-x-hidden py-10 lg:flex lg:min-h-[430px] lg:items-center lg:py-[35px]"
+      className="overflow-x-hidden py-5 lg:flex lg:min-h-[430px] lg:items-center lg:py-[35px]"
     >
       <div className="mx-auto w-full max-w-[2056px] px-4 text-center text-accent-dark lg:px-8">
         <p className="font-signika text-sm font-light uppercase tracking-[0.2em] lg:text-xs">

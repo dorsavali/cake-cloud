@@ -10,7 +10,8 @@ const requests = new Map<string, Promise<CakeDesigns>>();
 // still invalidate the cache immediately.
 const cacheDurationMs = 5 * 60 * 1000;
 
-const cacheKey = (env: ApiEnv) => `cake:${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}`;
+const cacheKey = (env: ApiEnv) =>
+  `cake:${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${env.SQUARE_LOCATION_ID ?? "all"}`;
 
 export async function getCachedCakeDesigns(env: ApiEnv): Promise<CakeDesigns> {
   const key = cacheKey(env);

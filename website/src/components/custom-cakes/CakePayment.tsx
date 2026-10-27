@@ -18,6 +18,7 @@ import {
   primaryButton,
   requiredMark,
 } from "./cake-ui";
+import Link from "next/link";
 
 /**
  * Payment step for the Square-hosted checkout.
@@ -37,10 +38,12 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
 }) {
   const [name, setName] = useDraftState("name", "", draftText);
   const [email, setEmail] = useDraftState("email", "", draftText);
+  const [phone, setPhone] = useDraftState("phone", "", draftText);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [url, setUrl] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [allergenAccepted, setAllergenAccepted] = useState(false);
   const lock = useRef(false);
   const active = useRef(true);
   const request = useRef<AbortController | null>(null);
@@ -60,8 +63,8 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
       const parsed = JSON.parse(value);
       return !!parsed && typeof parsed.idempotencyKey === "string" && /^[a-f0-9-]{36}$/i.test(parsed.idempotencyKey)
         && JSON.stringify(parsed.cake) === JSON.stringify(cake) && parsed.pickup === pickup
-        && parsed.name === name.trim() && parsed.email === email.trim() && parsed.expectedTotal === quote.total
-        && parsed.termsAccepted === true;
+        && parsed.name === name.trim() && parsed.email === email.trim() && parsed.phone === phone.trim() && parsed.expectedTotal === quote.total
+        && parsed.termsAccepted === true && parsed.allergenAccepted === true;
     } catch { return false; }
   });
   const attempt = useRef<string | undefined>(savedAttempt ?? undefined);
@@ -94,7 +97,7 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
                   if (!sessionResponse.ok) throw new Error("Could not start checkout. Please try again.");
                   const session = await sessionResponse.json();
                   if (typeof session.idempotencyKey !== "string" || !/^[a-f0-9-]{36}$/i.test(session.idempotencyKey)) throw new Error("Could not start checkout. Please try again.");
-                  attempt.current = JSON.stringify({ cake, pickup, name: name.trim(), email: email.trim(), expectedTotal: quote.total, idempotencyKey: session.idempotencyKey, termsAccepted: true });
+                  attempt.current = JSON.stringify({ cake, pickup, name: name.trim(), email: email.trim(), phone: phone.trim(), expectedTotal: quote.total, idempotencyKey: session.idempotencyKey, termsAccepted: true, allergenAccepted: true });
                   saveAttempt(attempt.current);
                 }
                 const response = await fetch(apiUrl("/api/cake/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: attempt.current, signal: request.current.signal });
@@ -125,17 +128,85 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
               <label htmlFor="payer-email" className={fieldLabel}>Email <span className={requiredMark}>*</span></label>
               <input className={inputClass} id="payer-email" type="email" autoComplete="email" required maxLength={254} value={email} disabled={busy || !!attempt.current} onChange={(event) => setEmail(event.target.value)} />
             </div>
+            <div>
+              <label htmlFor="payer-phone" className={fieldLabel}>Phone <span className={requiredMark}>*</span></label>
+              <input className={inputClass} id="payer-phone" type="tel" autoComplete="tel" required minLength={7} maxLength={30} pattern="[+()0-9\s.\-]{7,30}" value={phone} disabled={busy || !!attempt.current} onChange={(event) => setPhone(event.target.value)} />
+              <p className="mt-1 text-[11px] text-accent-dark/50">Saved to your Square customer profile for order management.</p>
+            </div>
             <div className="flex items-center justify-between border-t border-[#e3d7c2] pt-3">
               <span className="text-xs text-accent-dark md:text-sm">Total</span>
-              <strong className="font-kalnia text-[21px] font-normal text-primary">{money(quote.total)}</strong>
+              <strong className="font-signika text-bold text-[21px] lg:text-[25px] font-normal text-primary">{money(quote.total)}</strong>
             </div>
-            <label className="flex items-center gap-2 text-xs text-accent-dark/55">
-              <input type="checkbox" required checked={termsAccepted} disabled={busy || !!attempt.current} onChange={(event) => setTermsAccepted(event.target.checked)} className="size-4 shrink-0 accent-primary" />
-              <span>I have read and agree to the terms and conditions.</span>
-            </label>
-            <p className="text-[13px] leading-[1.5] text-[#88857d]">You’ll complete your payment securely on Square.</p>
-            {error && <p className={errorText} role="alert">{error}</p>}
-            <button className={primaryButton} disabled={busy}>{busy ? "Opening Square…" : "Continue to Square"}</button>
+            <div className="space-y-4">
+  <label className="flex items-start gap-3 text-sm leading-6 text-accent-dark/75">
+    <input
+      type="checkbox"
+      required
+      checked={termsAccepted}
+      disabled={busy || !!attempt.current}
+      onChange={(event) => setTermsAccepted(event.target.checked)}
+      className="mt-1 size-4 shrink-0 accent-primary"
+    />
+    <span>
+      I have read and agree to Cake Cloud&apos;s{" "}
+      <Link
+        href="/terms-and-conditions"
+        className="font-semibold text-accent-dark underline underline-offset-2"
+      >
+        Terms &amp; Conditions
+      </Link>{" "}
+      and{" "}
+      <Link
+        href="/cancellation-refund-policy"
+        className="font-semibold text-accent-dark underline underline-offset-2"
+      >
+        Cancellation &amp; Refund Policy
+      </Link>
+      . I understand that orders cannot be cancelled, modified or refunded
+      within 48 hours of the scheduled collection time, except as required
+      by Australian Consumer Law.
+    </span>
+  </label>
+
+  <label className="flex items-start gap-3 text-sm leading-6 text-accent-dark/75">
+    <input
+      type="checkbox"
+      required
+      checked={allergenAccepted}
+      disabled={busy || !!attempt.current}
+      onChange={(event) => setAllergenAccepted(event.target.checked)}
+      className="mt-1 size-4 shrink-0 accent-primary"
+    />
+    <span>
+      I have read Cake Cloud&apos;s{" "}
+      <Link
+        href="/allergen-food-safety"
+        className="font-semibold text-accent-dark underline underline-offset-2"
+      >
+        Allergen &amp; Food Safety Information
+      </Link>{" "}
+      and understand that products may contain allergens and cannot be
+      guaranteed allergen-free.
+    </span>
+  </label>
+</div>
+
+<p className="text-[13px] leading-[1.5] text-[#88857d]">
+  You’ll complete your payment securely on Square.
+</p>
+
+{error && (
+  <p className={errorText} role="alert">
+    {error}
+  </p>
+)}
+
+<button
+  className={primaryButton}
+  disabled={busy || !termsAccepted || !allergenAccepted}
+>
+  {busy ? "Opening Square…" : "Continue to Square"}
+</button>
           </form>
         </div>
       </div>

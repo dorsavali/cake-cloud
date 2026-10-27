@@ -5,7 +5,16 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { CakeProgress } from "./CakeProgress";
-import { defaultSelections, incompleteLists, isColourList, money, toggleModifier, colourFor, type CakeDesign, type CakeModifierList } from "./cake-types";
+import {
+  colourFor,
+  defaultSelections,
+  incompleteLists,
+  isColourList,
+  money,
+  toggleModifier,
+  type CakeDesign,
+  type CakeModifierList,
+} from "./cake-types";
 import {
   container,
   modeIcon,
@@ -30,41 +39,71 @@ function ModifierGroup({
 }) {
   const multiple = list.selectionType === "MULTIPLE";
   const showColours = isColourList(list.name);
+  const showDropdown = /\b(sponge|frosting)\b/i.test(list.name);
   const small = list.modifiers.length > 6;
+  const selectedValue = list.modifiers.some(
+    (modifier) => modifier.id === selectedIds[0],
+  )
+    ? selectedIds[0]
+    : "";
 
   return (
     <fieldset className="m-0 min-w-0 border-0 p-0">
       <legend className="mb-[9px] text-[9px] uppercase tracking-[.15em] text-[#88857d] md:text-[10px]">
         {list.name}
         {list.minSelected > 0 ? <span className="text-[#b05249]"> · Required</span> : null}
-        {multiple && list.maxSelected > 0 ? <span className="normal-case tracking-[.02em] text-[#88857d]"> · up to {list.maxSelected}</span> : null}
+        {multiple && !showDropdown && list.maxSelected > 0 ? <span className="normal-case tracking-[.02em] text-[#88857d]"> · up to {list.maxSelected}</span> : null}
       </legend>
-      <div className="-m-[3px] flex flex-nowrap gap-2 overflow-x-auto p-[3px] [overscroll-behavior-x:contain] [scrollbar-width:none] md:m-0 md:flex-wrap md:overflow-visible md:p-0 [&::-webkit-scrollbar]:hidden">
-        {list.modifiers.map((modifier) => {
-          const checked = selectedIds.includes(modifier.id);
-          const disabled = multiple && !checked && list.maxSelected > 0 && selectedIds.length >= list.maxSelected;
-          const hex = showColours ? colourFor(modifier.name) : null;
-          return (
-            <label key={modifier.id} className="relative flex-none cursor-pointer md:flex-initial">
-              <input
-                type={multiple ? "checkbox" : "radio"}
-                name={list.id}
-                checked={checked}
-                disabled={disabled}
-                onChange={() => onChange(toggleModifier(list, selectedIds, modifier.id))}
-                className="peer absolute size-px opacity-0"
-              />
-              <span
-                className={`flex items-center gap-[7px] whitespace-nowrap rounded-full border border-[#dacfb9] px-[15px] py-2 text-[13px] transition-[background,color] duration-150 peer-checked:border-primary peer-checked:bg-primary peer-checked:text-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[3px] peer-focus-visible:outline-primary peer-disabled:cursor-not-allowed peer-disabled:opacity-45 motion-reduce:transition-none ${hex ? "peer-checked:bg-primary/12 peer-checked:text-primary" : ""} ${small ? "px-[11px] py-1.5 text-[11px]" : ""}`}
-              >
-                {hex ? <i className="size-[11px] rounded-full shadow-[0_0_0_1px_#46424810]" style={{ background: hex }} /> : null}
-                {modifier.name}
-                {modifier.price > 0 ? ` +${money(modifier.price, currency)}` : ""}
-              </span>
-            </label>
-          );
-        })}
-      </div>
+      {showDropdown ? (
+        <select
+          aria-label={list.name}
+          required={list.minSelected > 0}
+          value={selectedValue}
+          onChange={(event) =>
+            onChange(event.target.value ? [event.target.value] : [])
+          }
+          className="min-h-10 w-full rounded-lg border border-[#ddd0b9] bg-[#f5f0e7] px-3 py-2 text-[13px] text-accent-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:text-sm"
+        >
+          <option value="" disabled={list.minSelected > 0}>
+            {list.minSelected > 0 ? `Choose ${list.name}` : "No selection"}
+          </option>
+          {list.modifiers.map((modifier) => (
+            <option key={modifier.id} value={modifier.id}>
+              {modifier.name}
+              {modifier.price > 0
+                ? ` +${money(modifier.price, currency)}`
+                : ""}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <div className="-m-[3px] flex flex-nowrap gap-2 overflow-x-auto p-[3px] [overscroll-behavior-x:contain] [scrollbar-width:none] md:m-0 md:flex-wrap md:overflow-visible md:p-0 [&::-webkit-scrollbar]:hidden">
+          {list.modifiers.map((modifier) => {
+            const checked = selectedIds.includes(modifier.id);
+            const disabled = multiple && !checked && list.maxSelected > 0 && selectedIds.length >= list.maxSelected;
+            const hex = showColours ? colourFor(modifier.name) : null;
+            return (
+              <label key={modifier.id} className="relative flex-none cursor-pointer md:flex-initial">
+                <input
+                  type={multiple ? "checkbox" : "radio"}
+                  name={list.id}
+                  checked={checked}
+                  disabled={disabled}
+                  onChange={() => onChange(toggleModifier(list, selectedIds, modifier.id))}
+                  className="peer absolute size-px opacity-0"
+                />
+                <span
+                  className={`flex items-center gap-[7px] whitespace-nowrap rounded-full border border-[#dacfb9] px-[15px] py-2 text-[13px] transition-[background,color] duration-150 peer-checked:border-primary peer-checked:bg-primary peer-checked:text-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[3px] peer-focus-visible:outline-primary peer-disabled:cursor-not-allowed peer-disabled:opacity-45 motion-reduce:transition-none ${hex ? "peer-checked:bg-primary/12 peer-checked:text-primary" : ""} ${small ? "px-[11px] py-1.5 text-[11px]" : ""}`}
+                >
+                  {hex ? <i className="size-[11px] rounded-full shadow-[0_0_0_1px_#46424810]" style={{ background: hex }} /> : null}
+                  {modifier.name}
+                  {modifier.price > 0 ? ` +${money(modifier.price, currency)}` : ""}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
     </fieldset>
   );
 }
@@ -112,14 +151,19 @@ export function CakeCustomiser({
   return (
     <main className={`${pageShell} pb-[30px]`}>
       <div className={container}>
-        <button className="inline-flex min-h-6 items-center border-0 bg-none p-0 pt-4 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
-          ← <span>Back to Design</span>
-        </button>
-        <div className={`${topbar}`}>
+        <div className="flex items-center justify-between gap-3 pt-4 md:block">
+          <button className="inline-flex min-h-6 items-center border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
+            ← <span>Back to Design</span>
+          </button>
+          <Link href="/custom-cakes/from-scratch" className={`${modeLink} md:hidden`}>
+            <span aria-hidden="true" className={modeIcon}>✨</span> From Scratch
+          </Link>
+        </div>
+        <div className={`${topbar} max-md:mt-5`}>
           <div className={progressInTopbar}>
             <CakeProgress current={1} onBack={onBack} />
           </div>
-          <Link href="/custom-cakes/from-scratch" className={modeLink}>
+          <Link href="/custom-cakes/from-scratch" className={`${modeLink} max-md:hidden`}>
             <span aria-hidden="true" className={modeIcon}>✨</span> From Scratch
           </Link>
         </div>
@@ -129,7 +173,7 @@ export function CakeCustomiser({
           <section className="min-w-0" aria-label={`${design.name} gallery`}>
             <div className="relative aspect-square overflow-hidden rounded-[10px] bg-[#eee8db] md:rounded-xl">
               {heroImage ? (
-                <Image src={heroImage} alt={design.name} fill unoptimized priority className="object-contain" />
+                <Image src={heroImage} alt={design.name} fill unoptimized preload sizes="(min-width: 768px) 32vw, 100vw" className="object-contain" />
               ) : (
                 <div className="grid size-full place-items-center text-[13px] text-accent-dark/40"><span>Photo coming soon</span></div>
               )}
@@ -165,7 +209,7 @@ export function CakeCustomiser({
                     onClick={() => setActiveImage(index)}
                     className="relative size-[50px] shrink-0 rounded-lg border border-transparent bg-accent/35 aria-pressed:border-primary md:size-[54px]"
                   >
-                    <Image src={image} alt="" fill unoptimized className="object-contain" />
+                    <Image src={image} alt="" fill unoptimized sizes="54px" className="object-contain" />
                   </button>
                 ))}
               </div>

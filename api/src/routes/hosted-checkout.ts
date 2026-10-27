@@ -3,6 +3,10 @@ import { json } from "../http/json.js";
 import { CakeError, getPricedCake, pickupInstant, rushFee } from "./cake-checkout.js";
 import type { ApiEnv } from "../types/env.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
+import {
+  normalizeSquarePhone,
+  upsertSquareCustomer,
+} from "../services/square-customer.js";
 
 export async function handleHostedCheckout(request: Request, env: ApiEnv): Promise<Response> {
   if (request.method !== "POST") return json({error:"Method not allowed"},405);
@@ -15,9 +19,12 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
     body=JSON.parse(raw);
     if(!body || typeof body!=="object" || Array.isArray(body))throw new CakeError("Invalid request");
     if(body.termsAccepted!==true)throw new CakeError("Accept the terms and conditions.");
+    if(body.allergenAccepted!==true)throw new CakeError("Accept the allergen and food safety information.");
     const name = typeof body.name === "string" ? body.name.trim() : "";
-    const email = typeof body.email === "string" ? body.email.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const phone = normalizeSquarePhone(typeof body.phone === "string" ? body.phone.trim() : "");
     if(!name || name.length>100 || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new CakeError("Enter a valid full name and email.");
+    if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new CakeError("Enter a valid phone number, including its country code.");
     if(typeof body.idempotencyKey!=="string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey))throw new CakeError("Invalid checkout request");
     const priced=await getPricedCake(env, body.cake);
     const subtotal=priced.subtotal;
@@ -27,6 +34,12 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
     const total=subtotal+fee;
     // Expected total is only a change guard, never the source of the price.
     if(body.expectedTotal!==total)return json({error:"The total changed. Return to Summary to review the updated price."},409);
+    let customerId: string;
+    try {
+      customerId=await upsertSquareCustomer(env,name,email,phone,body.idempotencyKey);
+    } catch (error) {
+      throw new CakeError(error instanceof Error ? error.message : "Square could not save the customer details.");
+    }
     const message = priced.cake.message.trim();
     // Square receives the real catalogue item and its modifiers so the receipt
     // and reports show the chosen options instead of a single text note.
@@ -53,6 +66,7 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
       idempotency_key:body.idempotencyKey,
       order:{
         location_id:env.SQUARE_LOCATION_ID,
+        customer_id:customerId,
         reference_id:body.idempotencyKey,
         line_items:[
           lineItem,
@@ -60,7 +74,7 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
         ],
         fulfillments:[{type:"PICKUP",state:"PROPOSED",pickup_details:{
           schedule_type:"SCHEDULED",pickup_at:new Date(instant).toISOString(),
-          recipient:{display_name:name,email_address:email},
+          recipient:{display_name:name,email_address:email,phone_number:phone,customer_id:customerId},
         }}],
         metadata:{cc_expected:expected,cc_signature:await signValue(env,expected),cc_status:"pending",pickup_local:String(body.pickup),time_zone:env.SQUARE_TIMEZONE || "Australia/Perth"},
       },

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -12,8 +11,7 @@ import { draftText } from "./draft-storage";
 const inputClass =
   "min-h-9 w-full rounded-lg border border-[#ddd0b9] bg-[#faf7f0]/90 px-3 py-2 font-signika text-sm text-accent-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
 
-const labelClass =
-  "mb-1.5 block font-signika text-sm text-accent-dark";
+const labelClass = "mb-1.5 block font-signika text-sm text-accent-dark";
 
 function BackLink() {
   return (
@@ -38,34 +36,25 @@ function InstagramSection() {
         Discover our latest creations and browse our portfolio for inspiration.
       </p>
 
-      <div className="mt-2 flex min-h-[300px] items-start justify-center overflow-hidden bg-white/40 md:min-h-[315px]">
+      <div
+        className="relative mt-2 min-h-[430px] w-full min-w-0 overflow-hidden md:min-h-[460px]"
+      >
         <blockquote
           className="instagram-media"
           data-instgrm-permalink="https://www.instagram.com/cakecloudau/"
           data-instgrm-version="14"
           style={{
-            background: "#fff",
+            background: "transparent",
             border: 0,
             borderRadius: "4px",
             boxShadow: "none",
             margin: "0 auto",
             maxWidth: "100%",
-            minWidth: "0",
+            minWidth: 0,
             padding: 0,
             width: "100%",
           }}
-        >
-          <div className="p-5 text-center font-signika text-sm text-[#88857d]">
-            <a
-              href="https://www.instagram.com/cakecloudau/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary underline underline-offset-4"
-            >
-              View Cake Cloud on Instagram
-            </a>
-          </div>
-        </blockquote>
+        />
       </div>
 
       <Script
@@ -77,50 +66,33 @@ function InstagramSection() {
 }
 
 export function CakeBriefForm() {
-  const [
-    description,
-    setDescription,
-  ] = useDraftState(
+  const [description, setDescription] = useDraftState(
     "briefDescription",
     "",
-    (value): value is string =>
-      draftText(value) && value.length <= 2000,
+    (value): value is string => draftText(value) && value.length <= 2000,
   );
 
-  const [
-    inspiration,
-    setInspiration,
-  ] = useDraftState(
+  const [inspiration, setInspiration] = useDraftState(
     "briefInspiration",
     "",
-    (value): value is string =>
-      draftText(value) && value.length <= 1000,
+    (value): value is string => draftText(value) && value.length <= 1000,
   );
 
-  const [
-    pickupDate,
-    setPickupDate,
-  ] = useDraftState("briefPickupDate", "", draftText);
+  const [pickupDate, setPickupDate] = useDraftState(
+    "briefPickupDate",
+    "",
+    draftText,
+  );
 
-  const [
-    name,
-    setName,
-  ] = useDraftState(
+  const [name, setName] = useDraftState(
     "briefName",
     "",
-    (value): value is string =>
-      draftText(value) && value.length <= 100,
+    (value): value is string => draftText(value) && value.length <= 100,
   );
 
-  const [
-    email,
-    setEmail,
-  ] = useDraftState("briefEmail", "", draftText);
+  const [email, setEmail] = useDraftState("briefEmail", "", draftText);
 
-  const [
-    phone,
-    setPhone,
-  ] = useDraftState("briefPhone", "", draftText);
+  const [phone, setPhone] = useDraftState("briefPhone", "", draftText);
 
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -131,9 +103,7 @@ export function CakeBriefForm() {
   const [minimumDate, setMinimumDate] = useState("");
 
   useEffect(() => {
-    setMinimumDate(
-      new Date(Date.now() + 86400000).toISOString().slice(0, 10),
-    );
+    setMinimumDate(new Date(Date.now() + 86400000).toISOString().slice(0, 10));
   }, []);
 
   const canSubmit =
@@ -150,17 +120,12 @@ export function CakeBriefForm() {
         <div className="mx-auto w-full max-w-[700px]">
           <BackLink />
 
-          <section className="mx-auto flex min-h-[430px] max-w-xl flex-col items-center justify-start pt-14 text-center md:pt-20">
+          <section className="mx-auto flex min-h-[430px] max-w-xl flex-col items-center justify-start pt-14 text-center md:pt-20" role="status" aria-live="polite">
             <span
               className="grid size-20 place-items-center rounded-full bg-[#faf7f0]/75 text-primary"
               aria-hidden="true"
             >
-              <svg
-                width="35"
-                height="35"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
+              <svg width="35" height="35" viewBox="0 0 24 24" fill="none">
                 <circle
                   cx="12"
                   cy="12"
@@ -169,9 +134,9 @@ export function CakeBriefForm() {
                   strokeWidth="1.4"
                 />
                 <path
-                  d="M12 7v5l3 2"
+                  d="m8.5 12 2.25 2.25L15.75 9"
                   stroke="currentColor"
-                  strokeWidth="1.4"
+                  strokeWidth="1.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -179,12 +144,13 @@ export function CakeBriefForm() {
             </span>
 
             <h1 className="mt-7 font-kalnia text-3xl font-medium md:text-4xl">
-              Brief Under Review
+              Thank You!
             </h1>
 
-            <p className="mt-3 font-signika text-base text-[#77716f]">
-              Our team is reviewing your brief and will reach out within 24
-              hours.
+            <p className="mt-3 max-w-md font-signika text-base leading-7 text-[#77716f]">
+              Your custom cake brief has been received. Our team will review
+              the details and contact you within 24 hours to discuss the next
+              steps.
             </p>
 
             <p className="mt-2 font-signika text-sm text-[#a8976d]">
@@ -204,7 +170,7 @@ export function CakeBriefForm() {
   }
 
   return (
-    <main className="-mt-16 min-h-screen bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y px-5 pb-8  text-accent-dark md:px-8 md:pb-12 pt-16 lg:px-12">
+    <main className="-mt-16 min-h-screen overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y px-5 pb-8 pt-16 text-accent-dark md:px-8 md:pb-12 lg:px-12">
       <div className="mx-auto w-full max-w-[1240px]">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
           {/* Left: Cake brief form */}
@@ -240,13 +206,10 @@ export function CakeBriefForm() {
                     form.append("images", file);
                   });
 
-                  const response = await fetch(
-                    apiUrl("/api/cake/brief"),
-                    {
-                      method: "POST",
-                      body: form,
-                    },
-                  );
+                  const response = await fetch(apiUrl("/api/cake/brief"), {
+                    method: "POST",
+                    body: form,
+                  });
 
                   const data = await response.json();
 
@@ -276,39 +239,30 @@ export function CakeBriefForm() {
               }}
             >
               <label className={labelClass}>
-                Describe your cake{" "}
-                <span className="text-[#b5483e]">*</span>
-
+                Describe your cake <span className="text-[#b5483e]">*</span>
                 <textarea
                   className={`${inputClass} mt-1.5 min-h-[95px] resize-y`}
                   required
                   maxLength={2000}
                   value={description}
-                  onChange={(event) =>
-                    setDescription(event.target.value)
-                  }
+                  onChange={(event) => setDescription(event.target.value)}
                   placeholder="Tell us about your dream cake — flavours, style, occasion, number of tiers…"
                 />
               </label>
 
               <label className={labelClass}>
                 Design inspiration (optional)
-
                 <textarea
                   className={`${inputClass} mt-1.5 min-h-[56px] resize-y`}
                   maxLength={1000}
                   value={inspiration}
-                  onChange={(event) =>
-                    setInspiration(event.target.value)
-                  }
+                  onChange={(event) => setInspiration(event.target.value)}
                   placeholder="Links, notes, colours…"
                 />
               </label>
 
               <div>
-                <span className={labelClass}>
-                  Reference images (optional)
-                </span>
+                <span className={labelClass}>Reference images (optional)</span>
 
                 <input
                   ref={fileInput}
@@ -317,18 +271,13 @@ export function CakeBriefForm() {
                   accept="image/jpeg,image/png,image/webp"
                   multiple
                   onChange={(event) => {
-                    const selected = Array.from(
-                      event.target.files || [],
-                    ).slice(0, 3);
+                    const selected = Array.from(event.target.files || []).slice(
+                      0,
+                      3,
+                    );
 
-                    if (
-                      selected.some(
-                        (file) => file.size > 5 * 1024 * 1024,
-                      )
-                    ) {
-                      setError(
-                        "Each image must be 5 MB or smaller.",
-                      );
+                    if (selected.some((file) => file.size > 5 * 1024 * 1024)) {
+                      setError("Each image must be 5 MB or smaller.");
                       event.target.value = "";
                       setFiles([]);
                       return;
@@ -359,7 +308,6 @@ export function CakeBriefForm() {
                       strokeLinejoin="round"
                     />
                   </svg>
-
                   Upload image
                 </button>
 
@@ -371,9 +319,7 @@ export function CakeBriefForm() {
               </div>
 
               <label className={labelClass}>
-                Preferred Pickup Date{" "}
-                <span className="text-[#b5483e]">*</span>
-
+                Preferred Pickup Date <span className="text-[#b5483e]">*</span>
                 <input
                   className={`${inputClass} mt-1.5`}
                   style={{
@@ -383,15 +329,12 @@ export function CakeBriefForm() {
                   min={minimumDate}
                   required
                   value={pickupDate}
-                  onChange={(event) =>
-                    setPickupDate(event.target.value)
-                  }
+                  onChange={(event) => setPickupDate(event.target.value)}
                 />
               </label>
 
               <label className={labelClass}>
                 Your Name <span className="text-[#b5483e]">*</span>
-
                 <input
                   className={`${inputClass} mt-1.5`}
                   autoComplete="name"
@@ -404,7 +347,6 @@ export function CakeBriefForm() {
 
               <label className={labelClass}>
                 Email <span className="text-[#b5483e]">*</span>
-
                 <input
                   className={`${inputClass} mt-1.5`}
                   type="email"
@@ -418,7 +360,6 @@ export function CakeBriefForm() {
 
               <label className={labelClass}>
                 Phone <span className="text-[#b5483e]">*</span>
-
                 <input
                   className={`${inputClass} mt-1.5`}
                   type="tel"
@@ -432,18 +373,11 @@ export function CakeBriefForm() {
 
               <label className="sr-only" aria-hidden="true">
                 Website
-                <input
-                  tabIndex={-1}
-                  autoComplete="off"
-                  name="website"
-                />
+                <input tabIndex={-1} autoComplete="off" name="website" />
               </label>
 
               {error && (
-                <p
-                  className="font-signika text-sm text-[#a0443c]"
-                  role="alert"
-                >
+                <p className="font-signika text-sm text-[#a0443c]" role="alert">
                   {error}
                 </p>
               )}

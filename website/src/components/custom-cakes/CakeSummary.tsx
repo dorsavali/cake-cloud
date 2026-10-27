@@ -55,7 +55,7 @@ export function CakeSummaryDetails({ summary, pickup, availability, fee, quote, 
         {showTotal && (
           <div className="mt-2.5 flex items-center justify-between gap-3 border-t border-[#ece4d6] pt-3 md:mt-3 md:gap-6 md:pt-3.5">
             <dt className="shrink-0 text-sm text-accent-dark md:text-[15px]">Total</dt>
-            <dd className="min-w-0 break-words text-right font-kalnia text-xl text-primary md:text-[21px]">{quote ? money(quote.total) : "…"}</dd>
+            <dd className="min-w-0 break-words text-right font-signika text-xl text-primary md:text-[21px]">{quote ? money(quote.total) : "…"}</dd>
           </div>
         )}
       </dl>
