@@ -150,17 +150,24 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
     <span>
       I have read and agree to Cake Cloud&apos;s{" "}
       <Link
-        href="/terms-and-conditions"
+        href="/about#terms-and-conditions"
         className="font-semibold text-accent-dark underline underline-offset-2"
       >
         Terms &amp; Conditions
       </Link>{" "}
       and{" "}
       <Link
-        href="/cancellation-refund-policy"
+        href="/about#cancellation-refund-policy"
         className="font-semibold text-accent-dark underline underline-offset-2"
       >
         Cancellation &amp; Refund Policy
+      </Link>
+      , and{" "}
+      <Link
+        href="/about#privacy-policy"
+        className="font-semibold text-accent-dark underline underline-offset-2"
+      >
+        Privacy Policy
       </Link>
       . I understand that orders cannot be cancelled, modified or refunded
       within 48 hours of the scheduled collection time, except as required
@@ -180,7 +187,7 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
     <span>
       I have read Cake Cloud&apos;s{" "}
       <Link
-        href="/allergen-food-safety"
+        href="/about#allergen-food-safety"
         className="font-semibold text-accent-dark underline underline-offset-2"
       >
         Allergen &amp; Food Safety Information
