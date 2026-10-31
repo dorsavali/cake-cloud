@@ -25,6 +25,7 @@ export function HostEnquiryForm() {
     const form = event.currentTarget;
     const data = new FormData(form);
     data.set("termsAccepted", data.has("termsAccepted") ? "true" : "false");
+    data.set("allergenAccepted", data.has("allergenAccepted") ? "true" : "false");
     setBusy(true);
     setError("");
     try {
@@ -80,7 +81,24 @@ export function HostEnquiryForm() {
             </button>
             <p className="mt-1 text-xs text-accent-dark/45">JPG, PNG or WebP · maximum 5 MB</p>
           </div>
-          <label className="flex items-start gap-2 text-xs text-accent-dark/55"><input className="mt-0.5 size-4 shrink-0 accent-primary" name="termsAccepted" type="checkbox" required /><span>I have read and agree to the terms and conditions.</span></label>
+          <div className="space-y-4">
+            <label className="flex items-start gap-2 text-xs leading-5 text-accent-dark/55">
+              <input className="mt-0.5 size-4 shrink-0 accent-primary" name="termsAccepted" type="checkbox" required />
+              <span>
+                I have read and agree to Cake Cloud&apos;s{" "}
+                <Link href="/about#terms-and-conditions" className="font-semibold text-accent-dark underline underline-offset-2">terms &amp; conditions</Link>,{" "}
+                <Link href="/about#cancellation-refund-policy" className="font-semibold text-accent-dark underline underline-offset-2">cancellation &amp; refund policy</Link>, and{" "}
+                <Link href="/about#privacy-policy" className="font-semibold text-accent-dark underline underline-offset-2">privacy policy</Link>.
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-xs leading-5 text-accent-dark/55">
+              <input className="mt-0.5 size-4 shrink-0 accent-primary" name="allergenAccepted" type="checkbox" required />
+              <span>
+                I have read and agree to Cake Cloud&apos;s{" "}
+                <Link href="/about#allergen-food-safety" className="font-semibold text-accent-dark underline underline-offset-2">allergens &amp; food safety information</Link>.
+              </span>
+            </label>
+          </div>
           {error ? <p className="text-sm text-[#a83831]" role="alert">{error}</p> : null}
           <button className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-primary px-6 font-kalnia text-lg text-white transition-opacity disabled:cursor-wait disabled:opacity-45" disabled={busy}>{busy ? "Submitting…" : "Submit Request"}</button>
         </form>

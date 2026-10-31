@@ -41,6 +41,7 @@ export async function handleHostEnquiry(request: Request, env: ApiEnv): Promise<
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email.");
     if (!/^[+()\d\s.-]{7,30}$/.test(phone)) throw new Error("Enter a valid phone number.");
     if (form.get("termsAccepted") !== "true") throw new Error("Accept the terms and conditions.");
+    if (form.get("allergenAccepted") !== "true") throw new Error("Accept the allergen and food safety information.");
     const date = new Date(`${preferredDate}T00:00:00Z`);
     const tomorrow = new Date();
     tomorrow.setUTCHours(0, 0, 0, 0);

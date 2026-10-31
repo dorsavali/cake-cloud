@@ -34,7 +34,11 @@ export async function handleHostPackages(
   if (request.method !== "GET") return methodNotAllowed();
 
   try {
-    const products = await getCachedCatalogItems(env);
+    const products = await getCachedCatalogItems(env, {
+      includeInventory: false,
+      includePopularity: false,
+      variant: "host",
+    });
     const packages = products
       .filter((product) => {
         const section = normalize(

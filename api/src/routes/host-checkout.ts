@@ -46,6 +46,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email.");
     if (!/^\+[1-9]\d{7,14}$/.test(phone)) throw new Error("Enter a valid phone number, including its country code.");
     if (form.get("termsAccepted") !== "true") throw new Error("Accept the terms and conditions.");
+    if (form.get("allergenAccepted") !== "true") throw new Error("Accept the allergen and food safety information.");
     const parsedDate = new Date(`${eventDate}T00:00:00Z`);
     const tomorrow = new Date();
     tomorrow.setUTCHours(0, 0, 0, 0);
@@ -58,7 +59,10 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
 
     // Client storage supplies only identifiers and counts. Names, prices and
     // limits are always reloaded from the authoritative Square catalog here.
-    const products = await getCatalogItems(env);
+    const products = await getCatalogItems(env, {
+      includeInventory: false,
+      includePopularity: false,
+    });
     const hostProducts = products.filter((product) => {
       const section = normalize(String(product.customAttributes.site_section ?? ""));
       return section === "host" || product.categories.some((category) => normalize(category) === "host packages");

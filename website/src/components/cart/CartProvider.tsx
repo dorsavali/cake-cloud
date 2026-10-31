@@ -28,6 +28,12 @@ export type CartItem = {
 
 type AddCartItem = Omit<CartItem, "quantity"> & { quantity?: number };
 
+type CheckoutCustomer = {
+  name: string;
+  email: string;
+  phone: string;
+};
+
 type CartContextValue = {
   items: CartItem[];
   isOpen: boolean;
@@ -37,7 +43,12 @@ type CartContextValue = {
   setItemQuantity: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
   cartReady: boolean;
-  checkout: (orderNumber: string, termsAccepted: boolean) => void;
+  checkout: (
+    orderNumber: string,
+    customer: CheckoutCustomer,
+    termsAccepted: boolean,
+    allergenAccepted: boolean,
+  ) => void;
   checkoutBusy: boolean;
   checkoutError: string;
 };
@@ -254,14 +265,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem(cartStorageKey, JSON.stringify(items)); } catch { /* Keep cart usable without persistence. */ }
   }, [cartReady, items]);
 
-  const checkout = useCallback(async (orderNumber: string, termsAccepted: boolean) => {
-    if (!items.length || checkoutBusy || !termsAccepted) return;
+  const checkout = useCallback(async (
+    orderNumber: string,
+    customer: CheckoutCustomer,
+    termsAccepted: boolean,
+    allergenAccepted: boolean,
+  ) => {
+    if (!items.length || checkoutBusy || !termsAccepted || !allergenAccepted) return;
     setCheckoutBusy(true); setCheckoutError("");
     try {
       const sessionResponse = await fetch(apiUrl("/api/cake/checkout-session"), { method: "POST" });
       if (!sessionResponse.ok) throw new Error("Could not start checkout.");
       const session = await sessionResponse.json();
-      const response = await fetch(apiUrl("/api/cart/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: session.idempotencyKey, orderNumber, termsAccepted, items: items.map(({ variationId, quantity, options }) => ({ variationId, quantity, options })) }) });
+      const response = await fetch(apiUrl("/api/cart/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: session.idempotencyKey, orderNumber, ...customer, termsAccepted, allergenAccepted, items: items.map(({ variationId, quantity, options }) => ({ variationId, quantity, options })) }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not start checkout.");
       const destination = new URL(data.url);

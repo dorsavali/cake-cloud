@@ -320,6 +320,10 @@ async function getPopularityByVariation(env: ApiEnv): Promise<Map<string, number
 
 export async function getCatalogItems(
   env: ApiEnv,
+  options: {
+    includeInventory?: boolean;
+    includePopularity?: boolean;
+  } = {},
 ): Promise<StorefrontProduct[]> {
   if (!env.SQUARE_ACCESS_TOKEN) {
     console.error("[square] Catalog request cannot start", {
@@ -385,22 +389,28 @@ export async function getCatalogItems(
       }
     }
   }
-  let popularityByVariation = new Map<string, number>();
-  try {
-    popularityByVariation = await getPopularityByVariation(env);
-  } catch (error) {
-    console.warn("[square] Popularity lookup failed; using zero scores", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    // Catalog browsing must stay available if Orders or Locations permissions
-    // are missing. Popularity safely falls back to zero in that case.
-  }
   const variationIds = objects
     .filter((object) => object.type === "ITEM")
     .flatMap((item) => item.item_data?.variations ?? [])
     .map((variation) => variation.id)
     .filter((id): id is string => Boolean(id));
-  const inventoryByVariation = await getInventoryByVariation(env, variationIds);
+  const popularityRequest = options.includePopularity === false
+    ? Promise.resolve(new Map<string, number>())
+    : getPopularityByVariation(env).catch((error) => {
+        console.warn("[square] Popularity lookup failed; using zero scores", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Catalog browsing must stay available if Orders or Locations
+        // permissions are missing. Popularity safely falls back to zero.
+        return new Map<string, number>();
+      });
+  const inventoryRequest = options.includeInventory === false
+    ? Promise.resolve(null)
+    : getInventoryByVariation(env, variationIds);
+  const [popularityByVariation, inventoryByVariation] = await Promise.all([
+    popularityRequest,
+    inventoryRequest,
+  ]);
 
   return objects
     .filter((object) => object.type === "ITEM" && object.id)

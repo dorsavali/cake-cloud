@@ -153,25 +153,21 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
         href="/about#terms-and-conditions"
         className="font-semibold text-accent-dark underline underline-offset-2"
       >
-        Terms &amp; Conditions
-      </Link>{" "}
-      and{" "}
+        terms &amp; conditions
+      </Link>,{" "}
       <Link
         href="/about#cancellation-refund-policy"
         className="font-semibold text-accent-dark underline underline-offset-2"
       >
-        Cancellation &amp; Refund Policy
+        cancellation &amp; refund policy
       </Link>
       , and{" "}
       <Link
         href="/about#privacy-policy"
         className="font-semibold text-accent-dark underline underline-offset-2"
       >
-        Privacy Policy
-      </Link>
-      . I understand that orders cannot be cancelled, modified or refunded
-      within 48 hours of the scheduled collection time, except as required
-      by Australian Consumer Law.
+        privacy policy
+      </Link>.
     </span>
   </label>
 
@@ -185,15 +181,13 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
       className="mt-1 size-4 shrink-0 accent-primary"
     />
     <span>
-      I have read Cake Cloud&apos;s{" "}
+      I have read and agree to Cake Cloud&apos;s{" "}
       <Link
         href="/about#allergen-food-safety"
         className="font-semibold text-accent-dark underline underline-offset-2"
       >
-        Allergen &amp; Food Safety Information
-      </Link>{" "}
-      and understand that products may contain allergens and cannot be
-      guaranteed allergen-free.
+        allergens &amp; food safety information
+      </Link>.
     </span>
   </label>
 </div>

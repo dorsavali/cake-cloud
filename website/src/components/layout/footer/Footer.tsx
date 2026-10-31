@@ -6,6 +6,14 @@ import { Fragment } from "react";
 import { desktopNavigation } from "@/components/layout/header/navigation";
 import { UberEatsIcon } from "@/components/ui";
 
+const policyNavigation = [
+  { href: "/about#terms-and-conditions", label: "Terms & Conditions" },
+  { href: "/about#custom-cake-ordering-policy", label: "Custom Cake Ordering Policy" },
+  { href: "/about#cancellation-refund-policy", label: "Cancellation & Refund Policy" },
+  { href: "/about#allergen-food-safety", label: "Allergen & Food Safety Information" },
+  { href: "/about#privacy-policy", label: "Privacy Policy" },
+] as const;
+
 function LocationIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -144,92 +152,148 @@ export function Footer() {
           </ul>
         </nav>
 
-        <div className="mt-5 flex w-fit max-w-full flex-col items-stretch gap-4 font-signika font-light text-accent">
-          <a
-            href="https://www.google.com/maps/search/?api=1&query=1%2F180+Royal+St+East+Perth+WA+6004"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-3 text-sm leading-5 tracking-[0.02em] transition-opacity hover:opacity-70 lg:text-md lg:leading-7"
-          >
-            <span className="size-5 shrink-0 lg:size-6">
-              <LocationIcon />
-            </span>
-            1/180 Royal St, East Perth WA 6004
-          </a>
+        <div className="mt-5 flex w-full flex-col items-center gap-5 lg:grid lg:max-w-[720px] lg:grid-cols-2 lg:items-start lg:gap-x-16">
+          <nav aria-label="Policies" className="order-1 justify-self-center text-center font-signika font-light text-accent lg:order-2 lg:self-stretch lg:text-left">
+            <ul className="flex flex-col items-center gap-1 text-xs leading-5 lg:h-full lg:items-start lg:justify-between lg:gap-0 lg:text-sm lg:leading-6">
+              {policyNavigation.map((item, index) => (
+                <li
+                  key={item.href}
+                  className={
+                    index === 0
+                      ? "order-5 lg:order-none"
+                      : index === 1
+                        ? "order-4 lg:order-none"
+                        : index === 2
+                          ? "order-2 lg:order-none"
+                          : index === 3
+                            ? "order-3 lg:order-none"
+                            : "order-1 lg:order-none"
+                  }
+                >
+                  <Link
+                    href={item.href}
+                    className="transition-opacity hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-          <div className="flex items-start gap-3 text-center text-sm leading-tight tracking-[0.02em] lg:text-md">
-            <span className="mt-1 size-5 shrink-0 lg:size-6">
-              <ClockIcon />
-            </span>
+          <div className="order-2 flex flex-col items-center justify-self-center lg:order-1">
+            <div className="flex w-fit max-w-full flex-col items-stretch gap-4 font-signika font-light text-accent">
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=1%2F180+Royal+St+East+Perth+WA+6004"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 text-sm leading-5 tracking-[0.02em] transition-opacity hover:opacity-70 lg:text-md lg:leading-7"
+              >
+                <span className="size-5 shrink-0 lg:size-6">
+                  <LocationIcon />
+                </span>
+                1/180 Royal St, East Perth WA 6004
+              </a>
 
-            <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-3 lg:gap-5">
-              <span>
-                <span className="block">Mon - Fri</span>
-                <span className="block whitespace-nowrap">6:30 Am - 5 PM</span>
-              </span>
+              <div className="flex items-start gap-3 text-center text-sm leading-tight tracking-[0.02em] lg:text-md">
+                <span className="mt-1 size-5 shrink-0 lg:size-6">
+                  <ClockIcon />
+                </span>
 
-              <span aria-hidden="true" className="text-accent/70">
-                |
-              </span>
+                <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-3 lg:gap-5">
+                  <span>
+                    <span className="block">Mon - Fri</span>
+                    <span className="block whitespace-nowrap">6:30 Am - 5 PM</span>
+                  </span>
 
-              <span>
-                <span className="block">Sat - Sun</span>
-                <span className="block whitespace-nowrap">8 Am - 4 PM</span>
-              </span>
+                  <span aria-hidden="true" className="text-accent/70">
+                    |
+                  </span>
+
+                  <span>
+                    <span className="block">Sat - Sun</span>
+                    <span className="block whitespace-nowrap">8 Am - 4 PM</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-6">
+              <a
+                href="https://www.instagram.com/cakecloudau/"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Cake Cloud on Instagram"
+                className="size-6 text-accent transition-opacity hover:opacity-70"
+              >
+                <InstagramIcon />
+              </a>
+
+              <a
+                href="https://www.facebook.com/cakecloudau/"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Cake Cloud on Facebook"
+                className="size-6 text-accent transition-opacity hover:opacity-70"
+              >
+                <FacebookIcon />
+              </a>
+
+              <a
+                href="https://www.google.com/search?q=Cake+Cloud+East+Perth"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Find Cake Cloud on Google"
+                className="size-6 text-accent transition-opacity hover:opacity-70"
+              >
+                <GoogleIcon />
+              </a>
+
+              <a
+                href="https://wa.me/61413681344"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Contact Cake Cloud on WhatsApp"
+                className="size-6 text-accent transition-opacity hover:opacity-70"
+              >
+                <WhatsAppIcon />
+              </a>
+
+              <a
+                href="https://www.ubereats.com/au/search?q=Cake%20Cloud"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Order Cake Cloud on Uber Eats"
+                className="h-6 w-8.5 text-accent transition-opacity hover:opacity-70"
+              >
+                <UberEatsIcon />
+              </a>
+            </div>
+
+            <div className="mt-3 text-center font-signika text-xs font-light leading-5 text-accent/80 lg:text-left">
+              <p>© 2026 Cake Cloud. All rights reserved.</p>
+              <p>
+                Designed by{" "}
+                <a
+                  href="https://no-land.nl/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2 transition-opacity hover:opacity-70"
+                >
+                  No-Land
+                </a>
+                , developed by{" "}
+                <a
+                  href="https://dorsavalli.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2 transition-opacity hover:opacity-70"
+                >
+                  Dorsa Valli
+                </a>
+              </p>
             </div>
           </div>
-        </div>
-
-        <div className="mt-4 flex items-center justify-center gap-6">
-          <a
-            href="https://www.instagram.com/cakecloudau/"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Cake Cloud on Instagram"
-            className="size-6 text-accent transition-opacity hover:opacity-70"
-          >
-            <InstagramIcon />
-          </a>
-
-          <a
-            href="https://www.facebook.com/cakecloudau/"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Cake Cloud on Facebook"
-            className="size-6 text-accent transition-opacity hover:opacity-70"
-          >
-            <FacebookIcon />
-          </a>
-
-          <a
-            href="https://www.google.com/search?q=Cake+Cloud+East+Perth"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Find Cake Cloud on Google"
-            className="size-6 text-accent transition-opacity hover:opacity-70"
-          >
-            <GoogleIcon />
-          </a>
-
-          <a
-            href="https://wa.me/61413681344"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Contact Cake Cloud on WhatsApp"
-            className="size-6 text-accent transition-opacity hover:opacity-70"
-          >
-            <WhatsAppIcon />
-          </a>
-
-          <a
-            href="https://www.ubereats.com/au/search?q=Cake%20Cloud"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Order Cake Cloud on Uber Eats"
-            className="h-6 w-8.5 text-accent transition-opacity hover:opacity-70"
-          >
-            <UberEatsIcon />
-          </a>
         </div>
       </div>
     </footer>

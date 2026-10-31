@@ -4,14 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 import { Pagination } from "@/components/daily-menu/pagination";
-import { apiUrl } from "@/lib/api";
-
+import { loadHostPackages } from "./host-packages-client";
 import type { HostPackage } from "./types";
-
-type HostPackagesResponse = {
-  packages?: HostPackage[];
-  categories?: string[];
-};
 
 const currencyFormatter = new Intl.NumberFormat("en-AU", {
   style: "currency",
@@ -48,25 +42,22 @@ export function HostPackages() {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let active = true;
 
     async function loadPackages() {
       try {
-        const response = await fetch(apiUrl("/api/host/packages"), {
-          signal: controller.signal,
-        });
-        if (!response.ok) throw new Error("Host package request failed");
-        const data = (await response.json()) as HostPackagesResponse;
-        setPackages(data.packages ?? []);
-        setCategories(data.categories ?? []);
+        const data = await loadHostPackages();
+        if (!active) return;
+        setPackages(data.packages);
+        setCategories(data.categories);
         setLoadState("success");
-      } catch (error) {
-        if ((error as Error).name !== "AbortError") setLoadState("error");
+      } catch {
+        if (active) setLoadState("error");
       }
     }
 
     void loadPackages();
-    return () => controller.abort();
+    return () => { active = false; };
   }, []);
 
   const visiblePackages = useMemo(

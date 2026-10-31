@@ -2,6 +2,10 @@ import { json } from "../http/json.js";
 import { getCatalogItems } from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
+import {
+  normalizeSquarePhone,
+  upsertSquareCustomer,
+} from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 
 const drinkChoices: Record<string, readonly string[]> = {
@@ -22,11 +26,18 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
   try {
     const raw = await request.text();
     if (raw.length > 20_000) return json({ error: "Request too large" }, 413);
-    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown; orderNumber?: unknown; termsAccepted?: unknown };
+    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown; orderNumber?: unknown; name?: unknown; email?: unknown; phone?: unknown; termsAccepted?: unknown; allergenAccepted?: unknown };
     if (body.termsAccepted !== true) throw new Error("Accept the terms and conditions.");
+    if (body.allergenAccepted !== true) throw new Error("Accept the allergen and food safety information.");
     if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 30) throw new Error("Your cart is empty or too large.");
     if (typeof body.idempotencyKey !== "string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey)) throw new Error("Invalid checkout request");
     if (typeof body.orderNumber !== "string" || !/^CC-[A-Z0-9]{6,20}-[A-Z0-9]{4}$/.test(body.orderNumber)) throw new Error("Invalid order number");
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const phone = normalizeSquarePhone(typeof body.phone === "string" ? body.phone.trim() : "");
+    if (!name || name.length > 100) throw new Error("Enter your full name.");
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
+    if (!/^\+[1-9]\d{7,14}$/.test(phone)) throw new Error("Enter a valid phone number, including its country code.");
 
     // Always load authoritative products, prices, and current inventory from Square.
     const products = await getCatalogItems(env);
@@ -68,17 +79,20 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
       { name: "Estimated Shipping", quantity: "1", base_price_money: { amount: shipping, currency: "AUD" } },
     );
 
+    const customerId = await upsertSquareCustomer(env, name, email, phone, body.idempotencyKey);
+
     const expected = expectedValue(body.orderNumber, total, env.SQUARE_LOCATION_ID);
     const payload = {
       idempotency_key: body.idempotencyKey,
       order: {
         location_id: env.SQUARE_LOCATION_ID,
+        customer_id: customerId,
         reference_id: body.orderNumber,
         line_items: lineItems,
         metadata: { cc_expected: expected, cc_signature: await signValue(env, expected), cc_status: "pending" },
       },
       checkout_options: { redirect_url: new URL("/custom-cakes/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000").href, allow_tipping: false, ask_for_shipping_address: false, enable_coupon: false, enable_loyalty: false },
-      payment_note: "Cake Cloud daily menu order",
+      payment_note: `Cake Cloud daily menu order · ${name}`,
     };
     const response = await fetch("https://connect.squareupsandbox.com/v2/online-checkout/payment-links", {
       method: "POST",

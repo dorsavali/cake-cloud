@@ -12,7 +12,7 @@ export function Hero() {
       <div className="flex items-center justify-center gap-5 md:gap-8">
         <div className="hidden h-80.75 w-57.5 overflow-hidden rounded-full border-[3px] border-white/90 shadow-[0_1px_5px_rgba(70,66,72,0.22)] md:block">
           <Image
-            src="/images/hero/2 (2).jpg"
+            src="/images/hero/Hero-First-Frame2.svg"
             alt="A cake being finished by hand"
             width={204}
             height={286}
@@ -23,7 +23,7 @@ export function Hero() {
         </div>
 
         <Image
-          src="/images/hero/image logo.svg"
+          src="/images/hero/Hero-Mid-Frame3.svg"
           alt="Cake Cloud"
           width={208}
           height={292}
@@ -34,7 +34,7 @@ export function Hero() {
 
         <div className="hidden h-80.75 w-57.5 overflow-hidden rounded-full border-[3px] border-white/90 shadow-[0_1px_5px_rgba(70,66,72,0.22)] md:block">
           <Image
-            src="/images/hero/1 (2).jpg"
+            src="/images/hero/Hero-Last-Frame2.svg"
             alt="A handcrafted cake being decorated"
             width={204}
             height={286}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { apiUrl } from "@/lib/api";
+import { loadHostPackages } from "./host-packages-client";
 import { saveHostRequestItem } from "./request-storage";
 import type { HostPackage } from "./types";
 
@@ -27,14 +27,11 @@ export function HostPackageDetail() {
       return;
     }
 
-    const controller = new AbortController();
-    fetch(apiUrl("/api/host/packages"), { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Host package request failed");
-        return (await response.json()) as { packages?: HostPackage[] };
-      })
+    let active = true;
+    loadHostPackages()
       .then((data) => {
-        const selectedPackage = data.packages?.find(
+        if (!active) return;
+        const selectedPackage = data.packages.find(
           (item) => item.id === packageId,
         );
         if (!selectedPackage) throw new Error("Host package not found");
@@ -42,11 +39,11 @@ export function HostPackageDetail() {
         setGuestCount(selectedPackage.minimumGuests ?? 10);
         setLoadState("success");
       })
-      .catch((error) => {
-        if ((error as Error).name !== "AbortError") setLoadState("error");
+      .catch(() => {
+        if (active) setLoadState("error");
       });
 
-    return () => controller.abort();
+    return () => { active = false; };
   }, []);
 
   if (loadState === "loading") {

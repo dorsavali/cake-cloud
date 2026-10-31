@@ -42,6 +42,7 @@ export function HostCheckout() {
       data.set("idempotencyKey", session.idempotencyKey);
       data.set("items", JSON.stringify(items.map(({ id, guests }) => ({ id, guests }))));
       data.set("termsAccepted", data.has("termsAccepted") ? "true" : "false");
+      data.set("allergenAccepted", data.has("allergenAccepted") ? "true" : "false");
       const response = await fetch(apiUrl("/api/host/checkout"), { method: "POST", body: data });
       const result = await response.json() as { url?: string; error?: string };
       if (!response.ok || !result.url) throw new Error(result.error || "Could not start checkout.");
@@ -113,10 +114,24 @@ export function HostCheckout() {
               <p className="mt-1 text-xs text-accent-dark/45">JPG, PNG or WebP · maximum 5 MB</p>
             </div>
 
-            <label className="flex items-start gap-2 border-b border-[#ded5c7] pb-4 text-xs text-accent-dark/55">
-              <input name="termsAccepted" type="checkbox" required className="mt-0.5 size-4 shrink-0 accent-primary" />
-              <span>I have read and agree to the terms and conditions.</span>
-            </label>
+            <div className="space-y-4 border-b border-[#ded5c7] pb-4">
+              <label className="flex items-start gap-2 text-xs leading-5 text-accent-dark/55">
+                <input name="termsAccepted" type="checkbox" required className="mt-0.5 size-4 shrink-0 accent-primary" />
+                <span>
+                  I have read and agree to Cake Cloud&apos;s{" "}
+                  <Link href="/about#terms-and-conditions" className="font-semibold text-accent-dark underline underline-offset-2">terms &amp; conditions</Link>,{" "}
+                  <Link href="/about#cancellation-refund-policy" className="font-semibold text-accent-dark underline underline-offset-2">cancellation &amp; refund policy</Link>, and{" "}
+                  <Link href="/about#privacy-policy" className="font-semibold text-accent-dark underline underline-offset-2">privacy policy</Link>.
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-xs leading-5 text-accent-dark/55">
+                <input name="allergenAccepted" type="checkbox" required className="mt-0.5 size-4 shrink-0 accent-primary" />
+                <span>
+                  I have read and agree to Cake Cloud&apos;s{" "}
+                  <Link href="/about#allergen-food-safety" className="font-semibold text-accent-dark underline underline-offset-2">allergens &amp; food safety information</Link>.
+                </span>
+              </label>
+            </div>
           </div>
 
           <div className="mt-3 flex items-center justify-between"><span className="font-medium">Total</span><strong className="font-kalnia text-2xl font-normal text-primary">{money.format(total / 100)}</strong></div>

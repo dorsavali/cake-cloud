@@ -21,3 +21,45 @@
   border-color: #718d7f;
   opacity: 1;
 }
+
+.productImage {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
+.slideFromRight {
+  animation-name: slide-from-right;
+}
+
+.slideFromLeft {
+  animation-name: slide-from-left;
+}
+
+@keyframes slide-from-right {
+  from {
+    opacity: 0.35;
+    transform: translateX(4%) scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes slide-from-left {
+  from {
+    opacity: 0.35;
+    transform: translateX(-4%) scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .productImage {
+    animation: none;
+  }
+}

@@ -37,6 +37,9 @@ export function CheckoutReview() {
   } = useCart();
   const [createdAt, setCreatedAt] = useState<Date | null>(null);
   const [orderNumber, setOrderNumber] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [allergenAccepted, setAllergenAccepted] = useState(false);
   useEffect(() => {
@@ -60,6 +63,9 @@ export function CheckoutReview() {
   const shipping = 150;
   const total = subtotal + tax + shipping;
   const currency = items[0]?.currency ?? "AUD";
+  const customerValid = name.trim().length > 0
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    && /^[+()0-9\s.\-]{7,30}$/.test(phone.trim());
 
   return (
     <main className="min-h-[calc(100dvh-4rem)] px-4 pb-16 pt-5 text-accent-dark md:px-6 md:pt-6">
@@ -195,6 +201,46 @@ export function CheckoutReview() {
                   {money(total, currency)}
                 </strong>
               </div>
+              <div className="mt-5 grid gap-4 font-signika">
+                <label className="grid gap-1.5 text-sm font-medium">
+                  Full Name <span className="sr-only">required</span>
+                  <input
+                    type="text"
+                    autoComplete="name"
+                    required
+                    maxLength={100}
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    className="min-h-11 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 text-base font-normal outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="grid gap-1.5 text-sm font-medium">
+                  Email <span className="sr-only">required</span>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    required
+                    maxLength={254}
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="min-h-11 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 text-base font-normal outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="grid gap-1.5 text-sm font-medium">
+                  Phone <span className="sr-only">required</span>
+                  <input
+                    type="tel"
+                    autoComplete="tel"
+                    required
+                    minLength={7}
+                    maxLength={30}
+                    pattern="[+()0-9\s.\-]{7,30}"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    className="min-h-11 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 text-base font-normal outline-none focus:border-primary"
+                  />
+                </label>
+              </div>
               <div className="mt-5 space-y-5">
                 {/* Terms and cancellation policy */}
                 <label className="flex items-start gap-3 font-signika text-sm leading-7 text-accent-dark">
@@ -212,25 +258,21 @@ export function CheckoutReview() {
       href="/about#terms-and-conditions"
       className="font-semibold underline underline-offset-2"
     >
-      Terms &amp; Conditions
-    </Link>{" "}
-    and{" "}
+      terms &amp; conditions
+    </Link>,{" "}
     <Link
       href="/about#cancellation-refund-policy"
       className="font-semibold underline underline-offset-2"
     >
-      Cancellation &amp; Refund Policy
+      cancellation &amp; refund policy
     </Link>
     , and{" "}
     <Link
       href="/about#privacy-policy"
       className="font-semibold underline underline-offset-2"
     >
-      Privacy Policy
-    </Link>
-    . I understand that orders cannot be cancelled, modified or refunded
-    within 48 hours of the scheduled collection time, except as required
-    by Australian Consumer Law.
+      privacy policy
+    </Link>.
   </span>
 </label>
 
@@ -245,15 +287,13 @@ export function CheckoutReview() {
   />
 
   <span>
-    I have read Cake Cloud&apos;s{" "}
+    I have read and agree to Cake Cloud&apos;s{" "}
     <Link
       href="/about#allergen-food-safety"
       className="font-semibold underline underline-offset-2"
     >
-      Allergen &amp; Food Safety Information
-    </Link>{" "}
-    and understand that products may contain allergens and cannot be
-    guaranteed allergen-free.
+      allergens &amp; food safety information
+    </Link>.
   </span>
 </label>
               </div>
@@ -272,10 +312,16 @@ export function CheckoutReview() {
                 disabled={
                   checkoutBusy ||
                   !orderNumber ||
+                  !customerValid ||
                   !termsAccepted ||
                   !allergenAccepted
                 }
-                onClick={() => checkout(orderNumber, termsAccepted)}
+                onClick={() => checkout(
+                  orderNumber,
+                  { name: name.trim(), email: email.trim(), phone: phone.trim() },
+                  termsAccepted,
+                  allergenAccepted,
+                )}
                 className={`${styles.reviewCheckoutButton} mt-6 flex min-h-14 w-full items-center justify-center rounded-full border border-[#b9a36e] bg-[#faf7f0] px-6 font-kalnia text-lg transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {checkoutBusy ? "Opening Square…" : "Pay & Place Order"}

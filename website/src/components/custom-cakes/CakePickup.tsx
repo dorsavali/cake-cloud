@@ -28,6 +28,23 @@ function parseDate(value: string) {
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-4">
+      <path d="M20.1 11.6a8.1 8.1 0 0 1-12 7.1L3 20l1.3-4.9a8.1 8.1 0 1 1 15.8-3.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.1 7.7c-.2-.4-.4-.4-.7-.4h-.6c-.2 0-.6.1-.9.4-.3.4-1 1-1 2.4s1 2.8 1.2 3c.2.2 2 3.2 5 4.3 2.5 1 3 .8 3.6.7.5-.1 1.7-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.4l-2-1c-.3-.1-.5-.2-.7.2-.2.3-.7 1-1 1.1-.1.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2Z" fill="currentColor" transform="translate(2.2 1.5) scale(.85)" />
+    </svg>
+  );
+}
+
+function PhoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-4">
+      <path d="M7.2 3.5 10 7.8 8.2 9.6c1.2 2.5 3.2 4.5 5.7 5.7l1.8-1.8 4.3 2.8-.8 3.2c-.2.8-1 1.3-1.8 1.2C9.8 19.8 4 14 3.1 6.4 3 5.6 3.5 4.8 4.3 4.6l2.9-1.1Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function CakePickup({ date, time, quote, quoteError, onDateChange, onTimeChange, onBack, onContinue }: {
   date: string;
   time: string;
@@ -39,7 +56,9 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
   onContinue: () => void;
 }) {
   const calendar = useRef<HTMLDialogElement>(null);
+  const contact = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const contactTrigger = useRef<HTMLButtonElement>(null);
   const [month, setMonth] = useState(parseDate(date) ?? new Date());
   const [touched, setTouched] = useState(false);
   const [input, setInput] = useState([date, time].filter(Boolean).join(" "));
@@ -65,6 +84,11 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
   const closeCalendar = () => {
     calendar.current?.close();
     trigger.current?.focus();
+  };
+
+  const closeContact = () => {
+    contact.current?.close();
+    contactTrigger.current?.focus();
   };
 
   return (
@@ -127,6 +151,18 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
                 </div>
               </div>
             )}
+          </div>
+          <div className="flex flex-col gap-2 text-xs text-accent-dark md:flex-row md:items-center md:justify-between md:gap-4">
+            <span>Need Your Cake in Less Than 48 Hours?</span>
+            <button
+              ref={contactTrigger}
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => contact.current?.showModal()}
+              className="min-h-9 rounded-full border border-primary bg-accent px-4 py-2 font-signika text-xs text-accent-dark transition-colors hover:bg-primary hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              Contact us directly to check availability.
+            </button>
           </div>
           {quoteError && <p className={errorText} role="alert">{quoteError}</p>}
           <button className={primaryButton} disabled={!valid}>Review Order</button>
@@ -193,6 +229,41 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
           >
             Done
           </button>
+        </dialog>
+
+        <dialog
+          ref={contact}
+          className="m-auto w-[min(330px,calc(100vw-32px))] rounded-[14px] border border-[#e3d7c2] bg-accent p-6 text-accent-dark shadow-[0_18px_60px_#46424826] backdrop:bg-[#46424866]"
+          aria-labelledby="contact-title"
+          onClose={() => contactTrigger.current?.focus()}
+          onClick={(event) => { if (event.target === event.currentTarget) closeContact(); }}
+        >
+          <h2 id="contact-title" className="sr-only">Contact Cake Cloud</h2>
+          <div className="grid gap-3">
+            <a
+              href="https://wa.me/61413681344"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-primary px-5 font-kalnia text-sm text-accent transition-colors hover:bg-[#5e796c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <WhatsAppIcon />
+              WhatsApp Us
+            </a>
+            <a
+              href="tel:+61413681344"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-primary px-5 font-kalnia text-sm text-accent transition-colors hover:bg-[#5e796c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <PhoneIcon />
+              Call Us
+            </a>
+            <button
+              type="button"
+              onClick={closeContact}
+              className="mx-auto min-h-8 px-4 font-signika text-xs text-accent-dark/60 transition-colors hover:text-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              Cancel
+            </button>
+          </div>
         </dialog>
       </div>
     </main>

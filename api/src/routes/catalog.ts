@@ -4,25 +4,42 @@ import type { ApiEnv } from "../types/env.js";
 
 type CatalogItems = Awaited<ReturnType<typeof getCatalogItems>>;
 
+type CatalogOptions = {
+  includeInventory?: boolean;
+  includePopularity?: boolean;
+  variant?: string;
+};
+
 const catalogCache = new Map<
   string,
   { expiresAt: number; items: CatalogItems }
 >();
 const catalogRequests = new Map<string, Promise<CatalogItems>>();
 const catalogCacheDurationMs = 24 * 60 * 60 * 1000;
+const hostCatalogCacheDurationMs = 5 * 60 * 1000;
 
-export async function getCachedCatalogItems(env: ApiEnv): Promise<CatalogItems> {
-  const cacheKey = `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}`;
+const catalogCacheKey = (env: ApiEnv, variant = "full") =>
+  `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${variant}`;
+
+export async function getCachedCatalogItems(
+  env: ApiEnv,
+  options: CatalogOptions = {},
+): Promise<CatalogItems> {
+  const cacheKey = catalogCacheKey(env, options.variant);
   const cached = catalogCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.items;
 
   const existingRequest = catalogRequests.get(cacheKey);
   if (existingRequest) return existingRequest;
 
-  const request = getCatalogItems(env)
+  const request = getCatalogItems(env, options)
     .then((items) => {
       catalogCache.set(cacheKey, {
-        expiresAt: Date.now() + catalogCacheDurationMs,
+        expiresAt:
+          Date.now() +
+          (options.variant === "host"
+            ? hostCatalogCacheDurationMs
+            : catalogCacheDurationMs),
         items,
       });
       return items;
@@ -34,12 +51,14 @@ export async function getCachedCatalogItems(env: ApiEnv): Promise<CatalogItems> 
 }
 
 export function invalidateCatalogCache(env: ApiEnv): void {
-  const cacheKey = `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}`;
-  catalogCache.delete(cacheKey);
+  const cachePrefix = `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:`;
+  for (const cacheKey of catalogCache.keys()) {
+    if (cacheKey.startsWith(cachePrefix)) catalogCache.delete(cacheKey);
+  }
 }
 
 export async function refreshCatalogCache(env: ApiEnv): Promise<void> {
-  const cacheKey = `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}`;
+  const cacheKey = catalogCacheKey(env);
   const existingRequest = catalogRequests.get(cacheKey);
   if (existingRequest) {
     await existingRequest;

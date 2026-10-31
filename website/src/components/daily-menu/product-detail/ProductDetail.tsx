@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
 import { getProductById } from "@/lib/productCatalog";
@@ -17,6 +17,7 @@ const storageInstructions =
   "Best enjoyed fresh. Keep at room temperature and consume within 24 hours.";
 const preparationNotes =
   "Baked fresh daily; quantity subject to production capacity.";
+const swipeThreshold = 40;
 
 function formatPrice(product: DailyMenuProduct, amount = product.price.amount) {
   return new Intl.NumberFormat("en-AU", {
@@ -61,8 +62,10 @@ export function ProductDetail() {
   const [loadState, setLoadState] = useState<"loading" | "success" | "error">("loading");
   const [resolvedProductId, setResolvedProductId] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
+  const [imageDirection, setImageDirection] = useState<1 | -1>(1);
   const [quantity, setQuantity] = useState(0);
   const [drinkSelection, setDrinkSelection] = useState<DrinkSelection>(defaultDrinkSelection);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -138,7 +141,21 @@ export function ProductDetail() {
 
   const moveImage = (direction: number) => {
     if (images.length < 2) return;
+    setImageDirection(direction < 0 ? -1 : 1);
     setActiveImage((current) => (current + direction + images.length) % images.length);
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || images.length < 2) return;
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < swipeThreshold || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+
+    moveImage(deltaX < 0 ? 1 : -1);
   };
 
   const addToCart = () => {
@@ -165,9 +182,27 @@ export function ProductDetail() {
 
       <div className="mt-3 grid grid-cols-1 items-start gap-4 lg:mt-2 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-6">
         <section aria-label="Product images" className="min-w-0">
-          <div className="relative aspect-square overflow-hidden rounded-xl border border-luxury-accent/55 bg-[#eee8dc] lg:rounded-2xl">
+          <div
+            className="relative aspect-square touch-pan-y overflow-hidden rounded-xl border border-luxury-accent/55 bg-[#eee8dc] lg:rounded-2xl"
+            onTouchStart={(event) => {
+              const touch = event.touches[0];
+              touchStart.current = { x: touch.clientX, y: touch.clientY };
+            }}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={() => {
+              touchStart.current = null;
+            }}
+          >
             {selectedImage ? (
-              <Image src={selectedImage} alt={product.name} fill priority unoptimized className="object-cover" />
+              <Image
+                key={`${selectedImage}-${activeImage}`}
+                src={selectedImage}
+                alt={product.name}
+                fill
+                priority
+                unoptimized
+                className={`${styles.productImage} ${imageDirection === 1 ? styles.slideFromRight : styles.slideFromLeft} object-cover`}
+              />
             ) : (
               <div className="flex h-full items-center justify-center font-signika text-accent-dark/45">No image</div>
             )}
@@ -181,7 +216,10 @@ export function ProductDetail() {
           {images.length > 0 && (
             <div className="mt-1 flex justify-center gap-2 overflow-x-auto px-1 pb-1 lg:mt-3 lg:justify-start lg:gap-2.5">
               {images.map((image, index) => (
-                <button key={`${image}-${index}`} type="button" onClick={() => setActiveImage(index)} aria-label={`Show image ${index + 1}`} className={`${styles.thumbnail} relative size-11 shrink-0 overflow-hidden rounded-lg border-2 lg:size-16 lg:rounded-xl ${index === activeImage ? "border-primary opacity-100" : "border-transparent opacity-70"}`}>
+                <button key={`${image}-${index}`} type="button" onClick={() => {
+                  setImageDirection(index < activeImage ? -1 : 1);
+                  setActiveImage(index);
+                }} aria-label={`Show image ${index + 1}`} className={`${styles.thumbnail} relative size-11 shrink-0 overflow-hidden rounded-lg border-2 lg:size-16 lg:rounded-xl ${index === activeImage ? "border-primary opacity-100" : "border-transparent opacity-70"}`}>
                   <Image src={image} alt="" fill unoptimized className="object-cover" />
                 </button>
               ))}
