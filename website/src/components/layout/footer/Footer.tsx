@@ -5,6 +5,8 @@ import { Fragment } from "react";
 
 import { desktopNavigation } from "@/components/layout/header/navigation";
 import { UberEatsIcon } from "@/components/ui";
+import { publicContactEmail } from "@/lib/contact";
+import { uberEatsUrl } from "@/lib/externalLinks";
 
 const policyNavigation = [
   { href: "/about#terms-and-conditions", label: "Terms & Conditions" },
@@ -37,6 +39,15 @@ function ClockIcon() {
         strokeWidth="1.8"
         strokeLinecap="round"
       />
+    </svg>
+  );
+}
+
+function MailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="m4.5 7 7.5 6 7.5-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -195,6 +206,16 @@ export function Footer() {
                 1/180 Royal St, East Perth WA 6004
               </a>
 
+              <a
+                href={`mailto:${publicContactEmail}`}
+                className="flex items-center gap-3 text-sm leading-5 tracking-[0.02em] transition-opacity hover:opacity-70 lg:text-md lg:leading-7"
+              >
+                <span className="size-5 shrink-0 lg:size-6">
+                  <MailIcon />
+                </span>
+                {publicContactEmail}
+              </a>
+
               <div className="flex items-start gap-3 text-center text-sm leading-tight tracking-[0.02em] lg:text-md">
                 <span className="mt-1 size-5 shrink-0 lg:size-6">
                   <ClockIcon />
@@ -260,7 +281,7 @@ export function Footer() {
               </a>
 
               <a
-                href="https://www.ubereats.com/au/search?q=Cake%20Cloud"
+                href={uberEatsUrl}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Order Cake Cloud on Uber Eats"

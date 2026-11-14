@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+
+import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 
 import { CakeProgress } from "./CakeProgress";
 import {
@@ -26,20 +28,45 @@ import {
   topbar,
 } from "./cake-ui";
 
+const cakeShapes = [
+  { value: "heart", label: "Heart" },
+  { value: "square", label: "Square" },
+  { value: "round", label: "Round" },
+] as const;
+
+const fieldLabelClassName =
+  "text-[9px] uppercase tracking-[.15em] text-[#88857d] md:text-[10px]";
+const fieldControlClassName =
+  "min-h-10 w-full min-w-0 rounded-lg border border-[#ddd0b9] bg-[#f5f0e7] px-3 py-2 text-[13px] text-accent-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:text-sm";
+const selectControlClassName = `${fieldControlClassName} appearance-none pr-11`;
+
+function SelectChevron() {
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute right-4 top-1/2 size-2 -translate-y-[70%] rotate-45 border-b border-r border-accent-dark"
+    />
+  );
+}
+
 function ModifierGroup({
   list,
+  label,
   selectedIds,
   currency,
   onChange,
 }: {
   list: CakeModifierList;
+  label?: string;
   selectedIds: string[];
   currency: string;
   onChange: (modifierIds: string[]) => void;
 }) {
+  const labelId = useId();
+  const displayLabel = label ?? list.name;
   const multiple = list.selectionType === "MULTIPLE";
   const showColours = isColourList(list.name);
-  const showDropdown = /\b(sponge|frosting)\b/i.test(list.name);
+  const showDropdown = /\b(size|sponge|frosting)\b/i.test(list.name);
   const small = list.modifiers.length > 6;
   const selectedValue = list.modifiers.some(
     (modifier) => modifier.id === selectedIds[0],
@@ -48,36 +75,43 @@ function ModifierGroup({
     : "";
 
   return (
-    <fieldset className="m-0 min-w-0 border-0 p-0">
-      <legend className="mb-[9px] text-[9px] uppercase tracking-[.15em] text-[#88857d] md:text-[10px]">
-        {list.name}
+    <div className="flex min-w-0 flex-col gap-[5px]">
+      <div id={labelId} className={fieldLabelClassName}>
+        {displayLabel}
         {list.minSelected > 0 ? <span className="text-[#b05249]"> · Required</span> : null}
-        {multiple && !showDropdown && list.maxSelected > 0 ? <span className="normal-case tracking-[.02em] text-[#88857d]"> · up to {list.maxSelected}</span> : null}
-      </legend>
+        {multiple && !showDropdown && list.maxSelected > 0 ? <span className="text-[#88857d]"> · up to {list.maxSelected}</span> : null}
+      </div>
       {showDropdown ? (
-        <select
-          aria-label={list.name}
-          required={list.minSelected > 0}
-          value={selectedValue}
-          onChange={(event) =>
-            onChange(event.target.value ? [event.target.value] : [])
-          }
-          className="min-h-10 w-full rounded-lg border border-[#ddd0b9] bg-[#f5f0e7] px-3 py-2 text-[13px] text-accent-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:text-sm"
-        >
-          <option value="" disabled={list.minSelected > 0}>
-            {list.minSelected > 0 ? `Choose ${list.name}` : "No selection"}
-          </option>
-          {list.modifiers.map((modifier) => (
-            <option key={modifier.id} value={modifier.id}>
-              {modifier.name}
-              {modifier.price > 0
-                ? ` +${money(modifier.price, currency)}`
-                : ""}
+        <div className="relative min-w-0">
+          <select
+            aria-labelledby={labelId}
+            required={list.minSelected > 0}
+            value={selectedValue}
+            onChange={(event) =>
+              onChange(event.target.value ? [event.target.value] : [])
+            }
+            className={selectControlClassName}
+          >
+            <option className="py-2 leading-7" value="" disabled={list.minSelected > 0}>
+              {list.minSelected > 0 ? `Choose ${displayLabel}` : "No selection"}
             </option>
-          ))}
-        </select>
+            {list.modifiers.map((modifier) => (
+              <option className="py-2 leading-7" key={modifier.id} value={modifier.id}>
+                {modifier.name}
+                {modifier.price > 0
+                  ? ` +${money(modifier.price, currency)}`
+                  : ""}
+              </option>
+            ))}
+          </select>
+          <SelectChevron />
+        </div>
       ) : (
-        <div className="-m-[3px] flex flex-nowrap gap-2 overflow-x-auto p-[3px] [overscroll-behavior-x:contain] [scrollbar-width:none] md:m-0 md:flex-wrap md:overflow-visible md:p-0 [&::-webkit-scrollbar]:hidden">
+        <div
+          role={multiple ? "group" : "radiogroup"}
+          aria-labelledby={labelId}
+          className="flex flex-nowrap gap-2 overflow-x-auto pb-[3px] [overscroll-behavior-x:contain] [scrollbar-width:none] md:flex-wrap md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
+        >
           {list.modifiers.map((modifier) => {
             const checked = selectedIds.includes(modifier.id);
             const disabled = multiple && !checked && list.maxSelected > 0 && selectedIds.length >= list.maxSelected;
@@ -104,7 +138,7 @@ function ModifierGroup({
           })}
         </div>
       )}
-    </fieldset>
+    </div>
   );
 }
 
@@ -130,7 +164,7 @@ export function CakeCustomiser({
   onNext: () => void;
 }) {
   const [activeImage, setActiveImage] = useState(0);
-  const guide = useRef<HTMLDialogElement>(null);
+  const [shape, setShape] = useState<(typeof cakeShapes)[number]["value"]>("round");
   const defaultsApplied = useRef(false);
 
   useEffect(() => {
@@ -175,7 +209,7 @@ export function CakeCustomiser({
               {heroImage ? (
                 <Image src={heroImage} alt={design.name} fill unoptimized preload sizes="(min-width: 768px) 32vw, 100vw" className="object-contain" />
               ) : (
-                <div className="grid size-full place-items-center text-[13px] text-accent-dark/40"><span>Photo coming soon</span></div>
+                <ProductImagePlaceholder />
               )}
               {images.length > 1 ? (
                 <>
@@ -218,30 +252,53 @@ export function CakeCustomiser({
           </section>
 
           <section aria-label="Cake customisation" className="flex min-w-0 flex-col gap-6 md:gap-[18px]">
+            <label className={`flex min-w-0 flex-col gap-[5px] ${fieldLabelClassName}`}>
+              Shape
+              <span className="relative min-w-0">
+                <select
+                  value={shape}
+                  onChange={(event) =>
+                    setShape(event.target.value as (typeof cakeShapes)[number]["value"])
+                  }
+                  className={selectControlClassName}
+                >
+                  {cakeShapes.map((option) => (
+                    <option className="py-2 leading-7" key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <SelectChevron />
+              </span>
+            </label>
             {sizeList ? (
-              <div className="-mb-3 flex justify-end">
-                <button type="button" className="border-0 bg-none p-0 text-[11px] text-primary underline" onClick={() => guide.current?.showModal()}>
-                  Size Guide
-                </button>
-              </div>
-            ) : null}
-            {design.modifierLists.map((list) => (
               <ModifierGroup
-                key={list.id}
-                list={list}
-                selectedIds={selections[list.id] ?? []}
+                list={sizeList}
+                label="Size"
+                selectedIds={selections[sizeList.id] ?? []}
                 currency={currency}
-                onChange={(modifierIds) => onSelectionsChange({ ...selections, [list.id]: modifierIds })}
+                onChange={(modifierIds) => onSelectionsChange({ ...selections, [sizeList.id]: modifierIds })}
               />
-            ))}
-            <label className="flex flex-col gap-[5px] text-[13px] md:text-sm">
+            ) : null}
+            {design.modifierLists
+              .filter((list) => list.id !== sizeList?.id)
+              .map((list) => (
+                <ModifierGroup
+                  key={list.id}
+                  list={list}
+                  selectedIds={selections[list.id] ?? []}
+                  currency={currency}
+                  onChange={(modifierIds) => onSelectionsChange({ ...selections, [list.id]: modifierIds })}
+                />
+              ))}
+            <label className={`flex min-w-0 flex-col gap-[5px] ${fieldLabelClassName}`}>
               Message on Cake (optional)
               <input
                 value={message}
                 onChange={(event) => onMessageChange(event.target.value)}
                 placeholder="Happy Birthday!"
                 maxLength={80}
-                className="w-full min-w-0 rounded-[7px] border border-[#e3d7c2] bg-[#f5f0e7] px-3 py-2 text-accent-dark placeholder:text-[#99949a] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary max-md:min-h-9"
+                className={`${fieldControlClassName} placeholder:text-[#99949a]`}
               />
             </label>
             {priceError && <p role="alert" className="text-xs text-[#a0443c]">{priceError}</p>}
@@ -261,14 +318,6 @@ export function CakeCustomiser({
             </div>
           </section>
         </div>
-        {sizeList ? (
-          <dialog ref={guide} className="m-auto max-w-[min(420px,calc(100%-40px))] rounded-2xl border border-luxury-accent bg-accent p-7 text-accent-dark backdrop:bg-[#46424866] backdrop:backdrop-blur-[4px]">
-            <h2 className="mb-4 font-kalnia text-[23px]">Size Guide</h2>
-            <p className="my-3.5 text-sm leading-[1.7]">Approximate servings for each cake diameter.</p>
-            <ul className="my-3.5 list-disc pl-[18px] text-sm leading-[1.7]">{sizeList.modifiers.map((modifier) => <li key={modifier.id}>{modifier.name}</li>)}</ul>
-            <form method="dialog"><button className={primaryButtonInline}>Close</button></form>
-          </dialog>
-        ) : null}
       </div>
     </main>
   );

@@ -6,6 +6,10 @@ type SquareCustomer = {
   given_name?: string;
   email_address?: string;
   phone_number?: string;
+  address?: {
+    address_line_1?: string;
+    country?: string;
+  };
 };
 
 export function normalizeSquarePhone(value: string): string {
@@ -13,6 +17,14 @@ export function normalizeSquarePhone(value: string): string {
   if (/^04\d{8}$/.test(compact)) return `+61${compact.slice(1)}`;
   if (/^4\d{8}$/.test(compact)) return `+61${compact}`;
   return compact;
+}
+
+export function normalizeSquareAddress(value: unknown): string {
+  if (value === undefined || value === null || value === "") return "";
+  if (typeof value !== "string") throw new Error("Enter a valid address.");
+  const address = value.trim().replace(/\s+/g, " ");
+  if (address.length > 500) throw new Error("Address must be 500 characters or fewer.");
+  return address;
 }
 
 async function squareCustomerRequest<T>(
@@ -69,6 +81,7 @@ export async function upsertSquareCustomer(
   fullName: string,
   email: string,
   phone: string,
+  address: string,
   idempotencyKey: string,
   updateExisting = true,
 ): Promise<string> {
@@ -84,11 +97,15 @@ export async function upsertSquareCustomer(
   const existing = search.customers?.[0];
 
   if (existing?.id) {
-    if (!updateExisting) return existing.id;
+    const addressChanged = Boolean(
+      address && existing.address?.address_line_1 !== address,
+    );
+    if (!updateExisting && !addressChanged) return existing.id;
     if (
       existing.given_name === fullName &&
       existing.email_address?.toLowerCase() === email.toLowerCase() &&
-      existing.phone_number === phone
+      existing.phone_number === phone &&
+      !addressChanged
     ) {
       return existing.id;
     }
@@ -100,9 +117,16 @@ export async function upsertSquareCustomer(
       `/v2/customers/${encodeURIComponent(existing.id)}`,
       "PUT",
       {
-        given_name: fullName,
-        email_address: email,
-        phone_number: phone,
+        ...(updateExisting
+          ? {
+              given_name: fullName,
+              email_address: email,
+              phone_number: phone,
+            }
+          : {}),
+        ...(address
+          ? { address: { address_line_1: address, country: "AU" } }
+          : {}),
         version: existing.version,
       },
     );
@@ -121,6 +145,9 @@ export async function upsertSquareCustomer(
       given_name: fullName,
       email_address: email,
       phone_number: phone,
+      ...(address
+        ? { address: { address_line_1: address, country: "AU" } }
+        : {}),
     },
   );
   if (!created.customer?.id) {

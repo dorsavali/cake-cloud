@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 import { Pagination } from "@/components/daily-menu/pagination";
+import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { loadHostPackages } from "./host-packages-client";
 import type { HostPackage } from "./types";
 
@@ -32,7 +33,7 @@ export function HostPackages() {
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
     const updatePageSize = () => {
-      setPageSize(mediaQuery.matches ? 6 : 9);
+      setPageSize(mediaQuery.matches ? 6 : 12);
       setCurrentPage(1);
     };
 
@@ -89,11 +90,8 @@ export function HostPackages() {
   };
 
   return (
-    <section className="mx-auto w-full max-w-[1050px] px-4 pb-24 pt-12 lg:px-0">
+    <section className="mx-auto w-full max-w-[1476px] px-4 py-5 lg:py-7 lg:px-8 ">
       <div className="mb-4 pl-0.5">
-        <p className="font-signika text-[10px] font-medium uppercase tracking-[0.24em] text-accent-dark/55">
-          Packages &amp; events
-        </p>
         <h1 className="mt-2 font-kalnia text-[32px] font-medium leading-none tracking-[-0.025em] text-accent-dark md:text-[38px]">
           Host with Cake Cloud
         </h1>
@@ -154,7 +152,7 @@ export function HostPackages() {
         </p>
       ) : (
         <div ref={packagesStartRef} className="scroll-mt-24">
-          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
           {paginatedPackages.map((hostPackage) => (
             <article
               key={hostPackage.id}
@@ -175,9 +173,7 @@ export function HostPackages() {
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center font-kalnia text-sm text-accent-dark/45">
-                    Cake Cloud
-                  </div>
+                  <ProductImagePlaceholder />
                 )}
               </div>
 

@@ -10,10 +10,12 @@ function lineId(item: {
   id: string;
   variationId: string | null;
   options?: Record<string, string>;
+  modifierIds?: string[];
 }) {
   return JSON.stringify([
     item.id,
     item.variationId,
+    [...(item.modifierIds ?? [])].sort(),
     Object.entries(item.options ?? {}).sort(([a], [b]) => a.localeCompare(b)),
   ]);
 }
@@ -40,6 +42,7 @@ export function CheckoutReview() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [allergenAccepted, setAllergenAccepted] = useState(false);
   useEffect(() => {
@@ -240,6 +243,20 @@ export function CheckoutReview() {
                     className="min-h-11 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 text-base font-normal outline-none focus:border-primary"
                   />
                 </label>
+                <label className="grid gap-1.5 text-sm font-medium">
+                  <span>
+                    Address{" "}
+                    <span className="font-normal text-accent-dark/55">(optional)</span>
+                  </span>
+                  <input
+                    type="text"
+                    autoComplete="street-address"
+                    maxLength={500}
+                    value={address}
+                    onChange={(event) => setAddress(event.target.value)}
+                    className="min-h-11 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 text-base font-normal outline-none focus:border-primary"
+                  />
+                </label>
               </div>
               <div className="mt-5 space-y-5">
                 {/* Terms and cancellation policy */}
@@ -318,7 +335,12 @@ export function CheckoutReview() {
                 }
                 onClick={() => checkout(
                   orderNumber,
-                  { name: name.trim(), email: email.trim(), phone: phone.trim() },
+                  {
+                    name: name.trim(),
+                    email: email.trim(),
+                    phone: phone.trim(),
+                    address: address.trim(),
+                  },
                   termsAccepted,
                   allergenAccepted,
                 )}

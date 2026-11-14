@@ -1,10 +1,17 @@
 import { reconcilePayment } from "../services/payment-verification.js";
 import { json, methodNotAllowed } from "../http/json.js";
-import { invalidateCatalogCache } from "./catalog.js";
-import { invalidateCakeCatalogCache } from "./cake-catalog.js";
+import {
+  invalidateCatalogCache,
+  refreshDailyMenuCatalogCache,
+} from "./catalog.js";
+import {
+  invalidateCakeCatalogCache,
+  refreshCakeCatalogCache,
+} from "./cake-catalog.js";
 import type { ApiEnv } from "../types/env.js";
+import { sendPaidOrderNotifications } from "../email/order-notifications.js";
 
-const supportedEvents = new Set([
+const catalogRefreshEvents = new Set([
   "catalog.version.updated",
   "inventory.count.updated",
 ]);
@@ -14,7 +21,12 @@ const processedEventDurationMs = 24 * 60 * 60 * 1000;
 type SquareWebhookEvent = {
   event_id?: string;
   type?: string;
-  data?: { object?: { payment?: { id?: string }; refund?: { payment_id?: string } } };
+  data?: {
+    object?: {
+      payment?: { id?: string };
+      refund?: { payment_id?: string };
+    };
+  };
 };
 
 function decodeBase64(value: string): Uint8Array<ArrayBuffer> | null {
@@ -84,7 +96,9 @@ export async function handleSquareWebhook(
   let event: SquareWebhookEvent;
   try {
     event = JSON.parse(rawBody) as SquareWebhookEvent;
-    if (!event || typeof event !== "object" || Array.isArray(event)) return json({ error: "Invalid webhook payload" }, 400);
+    if (!event || typeof event !== "object" || Array.isArray(event)) {
+      return json({ error: "Invalid webhook payload" }, 400);
+    }
   } catch {
     return json({ error: "Invalid webhook payload" }, 400);
   }
@@ -95,18 +109,49 @@ export async function handleSquareWebhook(
   }
 
   try {
-    if(event.type==="payment.created" || event.type==="payment.updated" || event.type==="refund.created" || event.type==="refund.updated"){
-      const paymentId=event.data?.object?.payment?.id ?? event.data?.object?.refund?.payment_id;
-      if(!paymentId)return json({error:"Missing payment ID"},400);
-      await reconcilePayment(env,paymentId);
+    if (
+      event.type === "payment.created" ||
+      event.type === "payment.updated" ||
+      event.type === "refund.created" ||
+      event.type === "refund.updated"
+    ) {
+      const paymentId =
+        event.data?.object?.payment?.id ??
+        event.data?.object?.refund?.payment_id;
+      if (!paymentId) return json({ error: "Missing payment ID" }, 400);
+      const result = await reconcilePayment(env, paymentId);
+      if (result?.status === "paid") {
+        await sendPaidOrderNotifications(env, result.orderId);
+      }
     }
   } catch {
     // Do not mark failed deliveries as processed: Square must retry them.
-    return json({error:"Payment verification temporarily unavailable"},503);
+    return json({ error: "Payment verification temporarily unavailable" }, 503);
   }
-  if(event.event_id)processedEvents.set(event.event_id,Date.now()+processedEventDurationMs);  if (event.type && supportedEvents.has(event.type)) {
+
+  if (event.type && catalogRefreshEvents.has(event.type)) {
     invalidateCatalogCache(env);
     invalidateCakeCatalogCache(env);
+
+    try {
+      const refreshes: Promise<void>[] = [refreshDailyMenuCatalogCache(env)];
+      if (event.type === "catalog.version.updated") {
+        refreshes.push(refreshCakeCatalogCache(env));
+      }
+      await Promise.all(refreshes);
+    } catch (error) {
+      console.error("[square] Webhook cache refresh failed", {
+        eventId: event.event_id,
+        eventType: event.type,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Let Square retry the delivery instead of accepting a stale cache.
+      return json({ error: "Catalog refresh temporarily unavailable" }, 503);
+    }
+  }
+
+  if (event.event_id) {
+    processedEvents.set(event.event_id, Date.now() + processedEventDurationMs);
   }
 
   return json({ received: true });

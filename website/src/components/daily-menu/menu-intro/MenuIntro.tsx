@@ -1,8 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
 import { UberEatsIcon } from "@/components/ui";
+import { uberEatsUrl } from "@/lib/externalLinks";
 
 import styles from "./MenuIntro.module.css";
 
@@ -22,42 +19,34 @@ function StoreIcon() {
 }
 
 export function MenuIntro() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const update = () => setScrolled(window.scrollY > 80);
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    return () => window.removeEventListener("scroll", update);
-  }, []);
-
   return (
     <section
       dir="ltr"
       aria-labelledby="daily-menu-heading"
-      className="px-4 pb-7 pt-8 md:px-8 md:pt-10"
+      className="px-4 py-5 lg:py-7 lg:px-8 "
     >
       <div className="mx-auto max-w-[1476px]">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between ">
           <h1
             id="daily-menu-heading"
-            className="max-w-[180px] font-kalnia text-[34px] font-medium leading-[1.16] text-accent-dark max-[380px]:max-w-[150px] max-[380px]:text-[31px] md:max-w-none md:text-[48px] md:leading-[1.1]"
+            className="max-w-[180px] font-kalnia text-[30px] font-medium leading-[1.16] text-accent-dark max-[380px]:max-w-[150px] max-[380px]:text-[31px] md:max-w-none md:text-[48px] md:leading-[1.1]"
           >
-            Today&apos;s Selection
+            Daily Menu
           </h1>
 
-          <button
-            type="button"
-            className={`${styles.deliveryButton} inline-flex h-12 items-center justify-center overflow-hidden rounded-full border border-luxury-accent bg-[#FAF7F0] font-signika text-base font-medium text-accent-dark transition-[width,padding,gap,color,background-color,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${scrolled ? "w-12 gap-0 px-0" : "w-[145px] gap-2 px-4 max-[420px]:w-[135px] md:w-[242px] md:gap-3 md:px-8"}`}
+          <a
+            href={uberEatsUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Order Cake Cloud delivery on Uber Eats"
+            className={`${styles.deliveryButton} inline-flex h-12 w-[145px] items-center justify-center gap-2 overflow-hidden rounded-full border border-luxury-accent bg-[#FAF7F0] px-4 font-signika text-base font-medium text-accent-dark transition-[color,background-color,border-color] duration-300 max-[420px]:w-[135px] md:w-[242px] md:gap-3 md:px-8`}
           >
             <UberEatsIcon className="h-6 w-auto shrink-0" />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-300 motion-reduce:transition-none ${scrolled ? "max-w-0 translate-x-2 opacity-0" : "max-w-24 translate-x-0 opacity-100"}`}>
-              Delivery
-            </span>
-          </button>
+            <span className="whitespace-nowrap">Delivery</span>
+          </a>
         </div>
 
-        <div className="mt-6 flex min-h-[100px] items-center gap-3 rounded-2xl border border-[#ddd3be] bg-[#eee8da]/90 px-5 py-4 font-signika text-sm font-normal leading-5 text-accent-dark shadow-[0_2px_8px_rgb(70_66_72_/_6%)] md:mt-4 md:min-h-12 md:py-3 md:text-base md:leading-normal">
+        <div className="mt-2 lg:mt-6 flex min-h-[100px] items-center gap-3 rounded-2xl border border-[#ddd3be] bg-[#eee8da]/90 px-5 py-4 font-signika text-sm font-normal leading-5 text-accent-dark shadow-[0_2px_8px_rgb(70_66_72_/_6%)] md:mt-4 md:min-h-12 md:py-3 md:text-base md:leading-normal">
           <span className="text-primary">
             <StoreIcon />
           </span>

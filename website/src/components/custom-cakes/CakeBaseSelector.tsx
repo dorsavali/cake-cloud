@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+
 import { useDraftState } from "./useDraftState";
 import { clearCakeDraft, draftText } from "./draft-storage";
 import { useCakeCatalog } from "./useCakeCatalog";
@@ -34,6 +36,113 @@ import {
 } from "./cake-ui";
 import { Footer } from "../layout/footer";
 
+function SkeletonBlock({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse bg-[#ded6c8]/75 ${className}`} />;
+}
+
+function CakeDesignGridLoading() {
+  return (
+    <div role="status" aria-label="Loading cake designs">
+      <ul
+        aria-hidden="true"
+        className="m-0 grid list-none grid-cols-2 gap-3 p-0 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-6"
+      >
+        {Array.from({ length: 4 }, (_, index) => (
+          <li
+            key={index}
+            className="min-w-0 overflow-hidden rounded-2xl border border-luxury-accent/25 bg-accent"
+          >
+            <SkeletonBlock className="aspect-[4/4.2] w-full bg-[#e5ddcf]/80" />
+            <div className="flex min-h-[78px] items-end px-3 py-2.5 lg:min-h-[112px] lg:px-4 lg:py-4">
+              <div className="w-full space-y-2">
+                <SkeletonBlock className="h-4 w-2/3 rounded-full lg:h-5" />
+                <SkeletonBlock className="h-3 w-5/6 rounded-full" />
+                <SkeletonBlock className="h-3 w-1/3 rounded-full" />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <span className="sr-only">Loading cake designs…</span>
+    </div>
+  );
+}
+
+function CakeDesignPageLoading() {
+  return (
+    <main className={pageShell} aria-busy="true">
+      <div className={container}>
+        <SkeletonBlock className="mt-4 h-4 w-28 rounded-full" />
+        <div className={`${topbar} max-md:mt-5`}>
+          <SkeletonBlock className={`${progressInTopbar} h-9 rounded-full md:h-11`} />
+          <SkeletonBlock className="h-8 w-32 rounded-full max-md:hidden md:h-12 md:w-44" />
+        </div>
+        <SkeletonBlock className="my-5 h-9 w-56 max-w-full rounded-full" />
+        <CakeDesignGridLoading />
+      </div>
+    </main>
+  );
+}
+
+function CakeCustomiserLoading() {
+  return (
+    <main
+      className={`${pageShell} pb-[30px]`}
+      role="status"
+      aria-label="Loading cake customisation"
+      aria-busy="true"
+    >
+      <div className={container} aria-hidden="true">
+        <SkeletonBlock className="mt-4 h-4 w-28 rounded-full" />
+        <div className={`${topbar} max-md:mt-5`}>
+          <SkeletonBlock className={`${progressInTopbar} h-9 rounded-full md:h-11`} />
+          <SkeletonBlock className="h-8 w-32 rounded-full max-md:hidden md:h-12 md:w-44" />
+        </div>
+
+        <SkeletonBlock className="my-5 h-9 w-64 max-w-full rounded-full" />
+        <div className="grid grid-cols-1 items-start gap-7 md:grid-cols-[minmax(0,.94fr)_minmax(0,2fr)] md:gap-[30px]">
+          <div className="min-w-0">
+            <SkeletonBlock className="aspect-square w-full rounded-[10px] border border-luxury-accent/25 bg-[#e5ddcf]/80 md:rounded-xl" />
+            <div className="mt-3 flex gap-2.5">
+              {Array.from({ length: 3 }, (_, index) => (
+                <SkeletonBlock key={index} className="size-[50px] shrink-0 rounded-lg md:size-[54px]" />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-6 md:gap-[18px]">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div key={index} className="flex min-w-0 flex-col gap-[5px]">
+                <SkeletonBlock className="h-2.5 w-20 rounded-full" />
+                <SkeletonBlock className="h-10 w-full rounded-lg" />
+              </div>
+            ))}
+            {Array.from({ length: 2 }, (_, index) => (
+              <div key={index} className="flex min-w-0 flex-col gap-[5px]">
+                <SkeletonBlock className="h-2.5 w-28 rounded-full" />
+                <div className="flex gap-2 overflow-hidden">
+                  <SkeletonBlock className="h-9 w-24 shrink-0 rounded-full" />
+                  <SkeletonBlock className="h-9 w-28 shrink-0 rounded-full" />
+                  <SkeletonBlock className="h-9 w-20 shrink-0 rounded-full" />
+                </div>
+              </div>
+            ))}
+            <div className="flex min-w-0 flex-col gap-[5px]">
+              <SkeletonBlock className="h-2.5 w-36 rounded-full" />
+              <SkeletonBlock className="h-10 w-full rounded-lg" />
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-[#e3d7c250] pt-4">
+              <SkeletonBlock className="h-9 w-24 rounded-full" />
+              <SkeletonBlock className="h-10 w-40 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <span className="sr-only">Loading cake customisation…</span>
+    </main>
+  );
+}
+
 export function CakeBaseSelector() {
   const [ready, setReady] = useState(false);
   const [resetRevision, setResetRevision] = useState(0);
@@ -52,18 +161,18 @@ export function CakeBaseSelector() {
   }, [shouldStartOver]);
 
   if (!ready) {
-    return (
-      <main className={pageShell} aria-busy="true">
-        <div className={container}>Loading your cake…</div>
-      </main>
-    );
+    return <CakeDesignPageLoading />;
   }
   return <CakeDraftFlow key={resetRevision} designs={designs} error={error} onRetry={retry} />;
 }
 
 function CakeDraftFlow({ designs, error, onRetry }: { designs?: CakeDesign[]; error?: string; onRetry: () => void }) {
-  const [designId, setDesignId] = useDraftState<string | null>("design", null, (value): value is string | null => value === null || (typeof value === "string" && value.length <= 200));
+  const [designId, setDesignId, designHydrated] = useDraftState<string | null>("design", null, (value): value is string | null => value === null || (typeof value === "string" && value.length <= 200));
   const design = designs?.find((item) => item.id === designId);
+
+  if (!designHydrated) {
+    return <CakeDesignPageLoading />;
+  }
 
   if (design) {
     return (
@@ -76,6 +185,10 @@ function CakeDraftFlow({ designs, error, onRetry }: { designs?: CakeDesign[]; er
         }}
       />
     );
+  }
+
+  if (designId && !designs && !error) {
+    return <CakeCustomiserLoading />;
   }
 
   return (
@@ -116,9 +229,7 @@ function CakeDraftFlow({ designs, error, onRetry }: { designs?: CakeDesign[]; er
               </button>
             </div>
           ) : !designs ? (
-            <p className="m-0 rounded-2xl border border-luxury-accent/25 bg-accent px-4 py-[18px] text-sm leading-[1.6]" aria-live="polite">
-              Loading cake designs…
-            </p>
+            <CakeDesignGridLoading />
           ) : designs.length === 0 ? (
             <p className="m-0 rounded-2xl border border-luxury-accent/25 bg-accent px-4 py-[18px] text-sm leading-[1.6]">
               No custom cake designs are available right now.
@@ -145,7 +256,7 @@ function CakeDraftFlow({ designs, error, onRetry }: { designs?: CakeDesign[]; er
                           className="object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.025] motion-reduce:transition-none"
                         />
                       ) : (
-                        <span className="grid size-full place-items-center text-xs text-accent-dark/40">No image</span>
+                        <ProductImagePlaceholder />
                       )}
                     </span>
                     <span className="flex min-h-[78px] items-end justify-between gap-2.5 px-3 py-2.5 lg:min-h-[112px] lg:px-4 lg:py-4">

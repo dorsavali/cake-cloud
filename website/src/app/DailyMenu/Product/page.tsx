@@ -8,14 +8,20 @@ import { DesktopHeader, MobileHeader } from "@/components/layout/header";
 
 export default function ProductPage() {
   return (
-    <>
-      <DesktopHeader />
-      <MobileHeader />
-      <main className="-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y pt-16">
-        <Suspense fallback={<ProductDetailLoading />}>
-          <ProductDetail />
-        </Suspense>
-      </main>
-    </>
+    <div className="relative min-h-screen bg-accent">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0 bg-accent bg-[url('/images/pattern/background.webp')] bg-cover bg-center bg-no-repeat"
+      />
+      <div className="relative z-10 min-h-screen">
+        <DesktopHeader />
+        <MobileHeader />
+        <main className="-mt-16 min-h-screen overflow-x-clip pb-20 pt-16">
+          <Suspense fallback={<ProductDetailLoading />}>
+            <ProductDetail />
+          </Suspense>
+        </main>
+      </div>
+    </div>
   );
 }

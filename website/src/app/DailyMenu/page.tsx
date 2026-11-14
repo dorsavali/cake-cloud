@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { DailyMenuCatalog } from "@/components/daily-menu/catalog";
 import { MenuIntro } from "@/components/daily-menu/menu-intro";
 import { Footer } from "@/components/layout/footer";
@@ -10,7 +12,9 @@ export default function DailyMenuPage() {
       <MobileHeader />
       <main className="-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y pb-12 pt-16 md:pb-16">
         <MenuIntro />
-        <DailyMenuCatalog />
+        <Suspense fallback={null}>
+          <DailyMenuCatalog />
+        </Suspense>
       </main>
       <Footer />
     </>

@@ -14,6 +14,7 @@ type ProductsResponse = {
     name: string;
     price: { amount: number; currency: string };
     image: string | null;
+    available: boolean;
   }>;
 };
 
@@ -31,7 +32,7 @@ export function ProductRecommendations() {
         setProducts(
           (data.items ?? []).map((item) => ({
             ...item,
-            image: item.image ?? "/images/homeCakes/1-720.webp",
+            image: item.image,
             imageAlt: item.name,
             href: `/DailyMenu/Product?id=${encodeURIComponent(item.id)}`,
           })),

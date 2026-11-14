@@ -7,7 +7,13 @@
   "vars": {
     "SQUARE_ENVIRONMENT": "sandbox",
     "SQUARE_TIMEZONE": "Australia/Perth",
-    "WEBSITE_ORIGIN": "https://cake-cloud.dorsavalli.com"
+    "WEBSITE_ORIGIN": "https://cake-cloud.dorsavalli.com",
+    "EMAIL_ENABLED": "false",
+    "EMAIL_PREVIEW_ENABLED": "false",
+    "SMTP_HOST": "mail.cake-cloud.com.au",
+    "SMTP_PORT": "465",
+    "SMTP_SECURITY": "tls",
+    "SMTP_HELLO_USERNAME": "hello-noreply@cake-cloud.com.au"
   },
   "secrets": {
     "required": [
@@ -15,7 +21,10 @@
       "SQUARE_LOCATION_ID",
       "SQUARE_APPLICATION_ID",
       "SQUARE_WEBHOOK_SIGNATURE_KEY",
-      "SQUARE_WEBHOOK_NOTIFICATION_URL"
+      "SQUARE_WEBHOOK_NOTIFICATION_URL",
+      "SMTP_HELLO_PASSWORD",
+      "SMTP_ORDERS_USERNAME",
+      "SMTP_ORDERS_PASSWORD"
     ]
   },
   "triggers": {

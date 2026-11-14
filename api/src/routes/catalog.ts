@@ -21,6 +21,40 @@ const hostCatalogCacheDurationMs = 5 * 60 * 1000;
 const catalogCacheKey = (env: ApiEnv, variant = "full") =>
   `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${variant}`;
 
+function setCatalogCache(
+  env: ApiEnv,
+  items: CatalogItems,
+  options: CatalogOptions = {},
+): void {
+  catalogCache.set(catalogCacheKey(env, options.variant), {
+    expiresAt:
+      Date.now() +
+      (options.variant === "host"
+        ? hostCatalogCacheDurationMs
+        : catalogCacheDurationMs),
+    items,
+  });
+}
+
+async function refreshCatalogVariant(
+  env: ApiEnv,
+  options: CatalogOptions = {},
+): Promise<CatalogItems> {
+  const cacheKey = catalogCacheKey(env, options.variant);
+  const existingRequest = catalogRequests.get(cacheKey);
+  if (existingRequest) await existingRequest;
+
+  const request = getCatalogItems(env, options)
+    .then((items) => {
+      setCatalogCache(env, items, options);
+      return items;
+    })
+    .finally(() => catalogRequests.delete(cacheKey));
+
+  catalogRequests.set(cacheKey, request);
+  return request;
+}
+
 export async function getCachedCatalogItems(
   env: ApiEnv,
   options: CatalogOptions = {},
@@ -34,14 +68,7 @@ export async function getCachedCatalogItems(
 
   const request = getCatalogItems(env, options)
     .then((items) => {
-      catalogCache.set(cacheKey, {
-        expiresAt:
-          Date.now() +
-          (options.variant === "host"
-            ? hostCatalogCacheDurationMs
-            : catalogCacheDurationMs),
-        items,
-      });
+      setCatalogCache(env, items, options);
       return items;
     })
     .finally(() => catalogRequests.delete(cacheKey));
@@ -58,25 +85,23 @@ export function invalidateCatalogCache(env: ApiEnv): void {
 }
 
 export async function refreshCatalogCache(env: ApiEnv): Promise<void> {
-  const cacheKey = catalogCacheKey(env);
-  const existingRequest = catalogRequests.get(cacheKey);
-  if (existingRequest) {
-    await existingRequest;
-    return;
-  }
+  const items = await refreshCatalogVariant(env);
 
-  const request = getCatalogItems(env)
-    .then((items) => {
-      catalogCache.set(cacheKey, {
-        expiresAt: Date.now() + catalogCacheDurationMs,
-        items,
-      });
-      return items;
-    })
-    .finally(() => catalogRequests.delete(cacheKey));
+  // The scheduled full refresh can also warm the lightweight daily-menu
+  // variant without making a second request to Square.
+  setCatalogCache(env, items, {
+    includePopularity: false,
+    variant: "daily-menu",
+  });
+}
 
-  catalogRequests.set(cacheKey, request);
-  await request;
+export async function refreshDailyMenuCatalogCache(
+  env: ApiEnv,
+): Promise<void> {
+  await refreshCatalogVariant(env, {
+    includePopularity: false,
+    variant: "daily-menu",
+  });
 }
 
 export async function handleCatalogItems(

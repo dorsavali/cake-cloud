@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+
 import { loadHostPackages } from "./host-packages-client";
 import { saveHostRequestItem } from "./request-storage";
 import type { HostPackage } from "./types";
@@ -98,7 +100,7 @@ export function HostPackageDetail() {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={hostPackage.image} alt={hostPackage.name} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full min-h-64 items-center justify-center font-kalnia text-xl text-accent-dark/45">Cake Cloud</div>
+            <ProductImagePlaceholder className="min-h-64" />
           )}
         </div>
 

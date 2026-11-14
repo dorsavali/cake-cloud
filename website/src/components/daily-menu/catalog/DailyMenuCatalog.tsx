@@ -1,26 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { apiUrl } from "@/lib/api";
 
-import type { AllergenOption } from "../allergens";
-import { CategoryTabs, type DailyMenuCategory } from "../category-tabs";
+import { formatAllergenLabel, type AllergenOption } from "../allergens";
+import {
+  buildDailyMenuCategories,
+  CategoryTabs,
+  type DailyMenuCategory,
+  type DailyMenuCategoryOption,
+} from "../category-tabs";
 import { Pagination } from "../pagination";
 import { ProductGrid } from "../product-grid";
 import { ResultsToolbar, type SortOption } from "../results-toolbar";
 import type { DailyMenuProductCard } from "../types";
 
-const categoryNames: Record<DailyMenuCategory, string> = {
-  "cakes-and-pastries": "Cakes & Pastries",
-  drinks: "Drinks",
-  "whole-cakes": "Whole Cakes",
-  packages: "Packages",
-  "pet-treats": "Pet Treats",
-};
+const drinkTypeOptions = [
+  { value: "hot drinks website", label: "Hot Drinks" },
+  { value: "cold drinks website", label: "Cold Drinks" },
+] as const;
 
 const sortValues: Record<SortOption, string> = {
-  "Most Popular": "popular",
+  Recommended: "recommended",
   "Price: Low to High": "price-asc",
   "Price: High to Low": "price-desc",
   "A–Z": "az",
@@ -33,13 +36,23 @@ type ProductsResponse = {
   allergenOptions?: AllergenOption[];
 };
 
+type CategoriesResponse = {
+  categories?: string[];
+};
+
 export function DailyMenuCatalog() {
-  const [activeCategory, setActiveCategory] =
-    useState<DailyMenuCategory>("cakes-and-pastries");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedCategory = searchParams.get("category");
+  const [categories, setCategories] = useState<DailyMenuCategoryOption[]>([]);
+  const [activeCategory, setActiveCategory] = useState<DailyMenuCategory>("");
+  const [categoryLoadState, setCategoryLoadState] =
+    useState<"loading" | "success" | "error">("loading");
   const [products, setProducts] = useState<DailyMenuProductCard[]>([]);
   const [allergens, setAllergens] = useState<string[]>([]);
   const [allergenOptions, setAllergenOptions] = useState<AllergenOption[]>([]);
-  const [sortBy, setSortBy] = useState<SortOption>("Most Popular");
+  const [productType, setProductType] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("Recommended");
   const [loadState, setLoadState] =
     useState<"loading" | "success" | "error">("loading");
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,6 +60,50 @@ export function DailyMenuCatalog() {
   const [totalResults, setTotalResults] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const productsStartRef = useRef<HTMLDivElement>(null);
+  const category =
+    categories.find((item) => item.id === activeCategory);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let isActive = true;
+
+    const loadCategories = async () => {
+      try {
+        const response = await fetch(apiUrl("/api/categories"), {
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Categories request failed");
+        const data = (await response.json()) as CategoriesResponse;
+        if (!isActive) return;
+
+        setCategories(buildDailyMenuCategories(data.categories ?? []));
+        setCategoryLoadState("success");
+      } catch (error) {
+        if (isActive && (error as Error).name !== "AbortError") {
+          setCategoryLoadState("error");
+        }
+      }
+    };
+
+    void loadCategories();
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      setActiveCategory("");
+      return;
+    }
+
+    setActiveCategory((current) =>
+      categories.find((item) => item.id === requestedCategory)?.id ??
+      categories.find((item) => item.id === current)?.id ??
+      categories[0].id,
+    );
+  }, [categories, requestedCategory]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -58,6 +115,8 @@ export function DailyMenuCatalog() {
   }, []);
 
   useEffect(() => {
+    if (!category) return;
+
     const controller = new AbortController();
     let isActive = true;
 
@@ -65,12 +124,17 @@ export function DailyMenuCatalog() {
       setLoadState("loading");
       const params = new URLSearchParams({
         view: "cards",
-        category: categoryNames[activeCategory],
+        category: category.squareName,
         sort: sortValues[sortBy],
         page: String(currentPage),
         limit: String(pageSize),
       });
-      allergens.forEach((value) => params.append("allergen", value));
+      if (category.filter === "drink-types" && productType) {
+        params.set("productType", productType);
+      }
+      if (category.filter === "allergens") {
+        allergens.forEach((value) => params.append("allergen", value));
+      }
 
       try {
         const response = await fetch(apiUrl(`/api/products?${params}`), {
@@ -83,7 +147,9 @@ export function DailyMenuCatalog() {
         setProducts(data.items ?? []);
         setTotalResults(data.total ?? 0);
         setTotalPages(data.totalPages ?? 1);
-        setAllergenOptions(data.allergenOptions ?? []);
+        setAllergenOptions(
+          category.filter === "allergens" ? (data.allergenOptions ?? []) : [],
+        );
         setLoadState("success");
       } catch (error) {
         if (isActive && (error as Error).name !== "AbortError") {
@@ -97,13 +163,17 @@ export function DailyMenuCatalog() {
       isActive = false;
       controller.abort();
     };
-  }, [activeCategory, allergens, currentPage, pageSize, sortBy]);
+  }, [activeCategory, allergens, category, currentPage, pageSize, productType, sortBy]);
 
   const handleCategoryChange = (category: DailyMenuCategory) => {
     setCurrentPage(1);
     setActiveCategory(category);
     setAllergens([]);
-    setSortBy("Most Popular");
+    setProductType("");
+    setSortBy("Recommended");
+    router.replace(`/DailyMenu?category=${encodeURIComponent(category)}`, {
+      scroll: false,
+    });
   };
 
   const handleAllergensChange = useCallback((nextAllergens: string[]) => {
@@ -124,6 +194,7 @@ export function DailyMenuCatalog() {
   return (
     <>
       <CategoryTabs
+        categories={categories}
         activeCategory={activeCategory}
         onCategoryChange={handleCategoryChange}
       />
@@ -132,22 +203,55 @@ export function DailyMenuCatalog() {
           resultCount={totalResults}
           sortBy={sortBy}
           onSortChange={handleSortChange}
-          allergenOptions={allergenOptions}
-          selectedAllergens={allergens}
-          onAllergensChange={handleAllergensChange}
+          filter={
+            category?.filter === "allergens"
+              ? {
+                  label: "Allergens",
+                  heading: "Show products free from:",
+                  emptyMessage: "No allergens recorded yet",
+                  options: allergenOptions.map((option) => ({
+                    ...option,
+                    label: formatAllergenLabel(option.value),
+                  })),
+                  selectedValues: allergens,
+                  onChange: handleAllergensChange,
+                  multiple: true,
+                }
+              : category?.filter === "drink-types"
+                ? {
+                    label: "Drinks",
+                    heading: "Choose a drink type:",
+                    emptyMessage: "No drink types available",
+                    options: [...drinkTypeOptions],
+                    selectedValues: productType ? [productType] : [],
+                    onChange: (values) => {
+                      setCurrentPage(1);
+                      setProductType(values[0] ?? "");
+                    },
+                  }
+                : undefined
+          }
         />
         <div ref={productsStartRef} className="mt-5 scroll-mt-24">
-          {loadState === "loading" ? (
+          {categoryLoadState === "loading" ||
+          (categoryLoadState === "success" && category && loadState === "loading") ? (
             <p className="py-20 text-center font-signika text-base text-accent-dark/65">
               Loading products...
             </p>
-          ) : loadState === "error" ? (
+          ) : categoryLoadState === "error" || loadState === "error" ? (
             <p className="py-20 text-center font-signika text-base text-accent-dark">
               Products are temporarily unavailable.
             </p>
+          ) : categories.length === 0 ? (
+            <p className="py-20 text-center font-signika text-base text-accent-dark/65">
+              No Daily Menu products are available right now.
+            </p>
           ) : (
             <>
-              <ProductGrid products={products} />
+              <ProductGrid
+                products={products}
+                returnCategory={activeCategory}
+              />
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}

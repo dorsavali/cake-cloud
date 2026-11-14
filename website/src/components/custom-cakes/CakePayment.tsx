@@ -39,6 +39,7 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
   const [name, setName] = useDraftState("name", "", draftText);
   const [email, setEmail] = useDraftState("email", "", draftText);
   const [phone, setPhone] = useDraftState("phone", "", draftText);
+  const [address, setAddress] = useDraftState("address", "", draftText);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [url, setUrl] = useState("");
@@ -63,7 +64,7 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
       const parsed = JSON.parse(value);
       return !!parsed && typeof parsed.idempotencyKey === "string" && /^[a-f0-9-]{36}$/i.test(parsed.idempotencyKey)
         && JSON.stringify(parsed.cake) === JSON.stringify(cake) && parsed.pickup === pickup
-        && parsed.name === name.trim() && parsed.email === email.trim() && parsed.phone === phone.trim() && parsed.expectedTotal === quote.total
+        && parsed.name === name.trim() && parsed.email === email.trim() && parsed.phone === phone.trim() && parsed.address === address.trim() && parsed.expectedTotal === quote.total
         && parsed.termsAccepted === true && parsed.allergenAccepted === true;
     } catch { return false; }
   });
@@ -97,7 +98,7 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
                   if (!sessionResponse.ok) throw new Error("Could not start checkout. Please try again.");
                   const session = await sessionResponse.json();
                   if (typeof session.idempotencyKey !== "string" || !/^[a-f0-9-]{36}$/i.test(session.idempotencyKey)) throw new Error("Could not start checkout. Please try again.");
-                  attempt.current = JSON.stringify({ cake, pickup, name: name.trim(), email: email.trim(), phone: phone.trim(), expectedTotal: quote.total, idempotencyKey: session.idempotencyKey, termsAccepted: true, allergenAccepted: true });
+                  attempt.current = JSON.stringify({ cake, pickup, name: name.trim(), email: email.trim(), phone: phone.trim(), address: address.trim(), expectedTotal: quote.total, idempotencyKey: session.idempotencyKey, termsAccepted: true, allergenAccepted: true });
                   saveAttempt(attempt.current);
                 }
                 const response = await fetch(apiUrl("/api/cake/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: attempt.current, signal: request.current.signal });
@@ -132,6 +133,10 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
               <label htmlFor="payer-phone" className={fieldLabel}>Phone <span className={requiredMark}>*</span></label>
               <input className={inputClass} id="payer-phone" type="tel" autoComplete="tel" required minLength={7} maxLength={30} pattern="[+()0-9\s.\-]{7,30}" value={phone} disabled={busy || !!attempt.current} onChange={(event) => setPhone(event.target.value)} />
               <p className="mt-1 text-[11px] text-accent-dark/50">Saved to your Square customer profile for order management.</p>
+            </div>
+            <div>
+              <label htmlFor="payer-address" className={fieldLabel}>Address <span className="font-normal text-accent-dark/55">(optional)</span></label>
+              <input className={inputClass} id="payer-address" type="text" autoComplete="street-address" maxLength={500} value={address} disabled={busy || !!attempt.current} onChange={(event) => setAddress(event.target.value)} />
             </div>
             <div className="flex items-center justify-between border-t border-[#e3d7c2] pt-3">
               <span className="text-xs text-accent-dark md:text-sm">Total</span>

@@ -1,0 +1,80 @@
+.trigger {
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.trigger:hover,
+.trigger[aria-expanded="true"] {
+  border-color: #718d7f;
+  background-color: #faf7f0;
+}
+
+.chevron {
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  max-height: 300px;
+  padding: 6px 0;
+  visibility: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgb(185 164 122 / 28%);
+  border-radius: 18px;
+  background: #faf7f0;
+  box-shadow: 0 12px 30px rgb(70 66 72 / 12%);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    visibility 0s linear 240ms,
+    opacity 240ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.menuOpen {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0s;
+}
+
+.option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  text-align: left;
+  font-size: 14px;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.option:hover,
+.option:focus-visible {
+  background: rgb(113 141 127 / 10%);
+  color: #718d7f;
+  outline: none;
+}
+
+.selected {
+  color: #718d7f;
+  font-weight: 500;
+}
+
+@media (min-width: 1024px) {
+  .option {
+    font-size: 16px;
+  }
+}

@@ -1,5 +1,5 @@
 import { handlePaymentStatus } from "./services/payment-verification.js";
-import { handleHostedCheckout } from "./routes/hosted-checkout.js";
+import { handleCustomCakeCheckout } from "./routes/custom-cake-checkout.js";
 import { handleCheckoutSession } from "./routes/checkout-session.js";
 import { handleCakeBrief } from "./routes/cake-brief.js";
 import { handleCakeCatalog } from "./routes/cake-catalog.js";
@@ -13,6 +13,7 @@ import { handleSquareWebhook } from "./routes/square-webhook.js";
 import { handleHostPackages } from "./routes/host-packages.js";
 import { handleHostCheckout } from "./routes/host-checkout.js";
 import { handleHostEnquiry } from "./routes/host-enquiry.js";
+import { handleEmailPreview } from "./routes/email-preview.js";
 import {
   handleCategories,
   handleProductCards,
@@ -36,7 +37,7 @@ export async function handleApiRequest(
     return applyPublicApiRateLimit(request) ?? handlePaymentStatus(request,env);
   }
   if (url.pathname === "/api/cake/checkout") {
-    return applyPublicApiRateLimit(request) ?? handleHostedCheckout(request,env);
+    return applyPublicApiRateLimit(request) ?? handleCustomCakeCheckout(request,env);
   }
   if (url.pathname === "/api/cart/checkout") {
     return applyPublicApiRateLimit(request) ?? handleCartCheckout(request, env);
@@ -69,6 +70,11 @@ export async function handleApiRequest(
 
   if (url.pathname === "/api/health") {
     return handleHealth(request);
+  }
+
+  const emailPreviewMatch = url.pathname.match(/^\/api\/email-preview\/(customer|internal)$/);
+  if (emailPreviewMatch) {
+    return handleEmailPreview(request, emailPreviewMatch[1], env);
   }
 
   if (url.pathname === "/api/products") {

@@ -30,7 +30,7 @@ export function HostRequestBar() {
 
   return (
     <aside className="fixed inset-x-0 bottom-0 z-30 border-t border-[#ded4c3] bg-[#fbf8f1]/95 px-4 py-3 shadow-[0_-8px_24px_rgb(70_66_72_/_8%)] backdrop-blur-sm md:px-6">
-      <div className="mx-auto flex max-w-[1060px] items-center justify-between gap-4">
+      <div className="mx-auto flex max-w-[1476px] items-center justify-between gap-4 md:px-2">
         <div className="min-w-0">
           <p className="truncate font-kalnia text-sm text-accent-dark">
             Your Request · {items.length} {packageLabel}

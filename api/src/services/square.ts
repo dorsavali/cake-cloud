@@ -89,7 +89,10 @@ type SquareCatalogObject = {
     }>;
   };
   image_data?: { url?: string };
-  category_data?: { name?: string };
+  category_data?: {
+    name?: string;
+    parent_category?: { id?: string; ordinal?: number };
+  };
   custom_attribute_definition_data?: {
     name?: string;
     selection_config?: {
@@ -111,13 +114,34 @@ type StorefrontProduct = {
   description: string;
   variationName: string;
   price: { amount: number; currency: string };
+  variations: Array<{
+    id: string;
+    name: string;
+    price: { amount: number; currency: string };
+    stock: number | null;
+    available: boolean;
+  }>;
+  modifierLists: Array<{
+    id: string;
+    name: string;
+    minSelected: number;
+    maxSelected: number;
+    modifiers: Array<{
+      id: string;
+      name: string;
+      price: number;
+      defaultSelected: boolean;
+    }>;
+  }>;
   image: string | null;
   images: string[];
   categories: string[];
+  dailyMenuCategories: string[];
   ingredients: string;
   dietaryPreferences: string[];
   allergens: string[];
   stock: number | null;
+  available: boolean;
   popularityScore: number;
   customAttributes: Record<string, string | number | boolean | string[]>;
 };
@@ -318,6 +342,19 @@ async function getPopularityByVariation(env: ApiEnv): Promise<Map<string, number
   return quantities;
 }
 
+const variationSizeRank = (name: string) => {
+  const normalized = name.toLowerCase().replace(/[_-]+/g, " ").trim();
+  if (/\b(extra small|x small|xs)\b/.test(normalized)) return 0;
+  if (/\bsmall\b/.test(normalized)) return 1;
+  if (/\b(medium|regular)\b/.test(normalized)) return 2;
+  if (/\b(extra large|x large|xl)\b/.test(normalized)) return 4;
+  if (/\blarge\b/.test(normalized)) return 3;
+  return Number.POSITIVE_INFINITY;
+};
+
+const normalizeCategoryName = (name: string) =>
+  name.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+
 export async function getCatalogItems(
   env: ApiEnv,
   options: {
@@ -341,7 +378,7 @@ export async function getCatalogItems(
 
   do {
     const params = new URLSearchParams({
-      types: "ITEM,IMAGE,CATEGORY,CUSTOM_ATTRIBUTE_DEFINITION",
+      types: "ITEM,IMAGE,CATEGORY,CUSTOM_ATTRIBUTE_DEFINITION,MODIFIER_LIST",
     });
     if (cursor) params.set("cursor", cursor);
 
@@ -372,11 +409,38 @@ export async function getCatalogItems(
       .filter((object) => object.type === "IMAGE" && object.id)
       .map((object) => [object.id as string, object.image_data?.url]),
   );
-  const categoryNames = new Map(
+  const categoriesById = new Map(
     objects
       .filter((object) => object.type === "CATEGORY" && object.id)
-      .map((object) => [object.id as string, object.category_data?.name]),
+      .map((object) => [object.id as string, object]),
   );
+  const modifierListsById = new Map<string, SquareCatalogObject>();
+  const modifierObjectsById = new Map<string, SquareCatalogObject>();
+  for (const object of objects) {
+    if (object.type === "MODIFIER" && object.id) {
+      modifierObjectsById.set(object.id, object);
+    }
+    if (object.type !== "MODIFIER_LIST" || !object.id) continue;
+    modifierListsById.set(object.id, object);
+    for (const modifier of object.modifier_list_data?.modifiers ?? []) {
+      if (modifier.id) modifierObjectsById.set(modifier.id, modifier);
+    }
+  }
+  const categoryPath = (categoryId: string) => {
+    const names: string[] = [];
+    const visited = new Set<string>();
+    let currentId: string | undefined = categoryId;
+
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
+      const category = categoriesById.get(currentId);
+      if (!category) break;
+      if (category.category_data?.name) names.push(category.category_data.name);
+      currentId = category.category_data?.parent_category?.id;
+    }
+
+    return names;
+  };
   const customAttributeSelections = new Map<string, string>();
   for (const object of objects.filter(
     (object) => object.type === "CUSTOM_ATTRIBUTE_DEFINITION",
@@ -415,16 +479,58 @@ export async function getCatalogItems(
   return objects
     .filter((object) => object.type === "ITEM" && object.id)
     .map((item) => {
+      const variations = (item.item_data?.variations ?? [])
+        .flatMap((variation) => {
+          const data = variation.item_variation_data;
+          const location = data?.location_overrides?.find(
+            (override) => override.location_id === env.SQUARE_LOCATION_ID,
+          );
+          const money = location?.price_money ?? data?.price_money;
+          const pricingType = location?.pricing_type ?? data?.pricing_type;
+          if (
+            !variation.id ||
+            pricingType === "VARIABLE_PRICING" ||
+            typeof money?.amount !== "number"
+          ) {
+            return [];
+          }
+
+          const stock =
+            data?.track_inventory && inventoryByVariation
+              ? (inventoryByVariation.get(variation.id) ?? 0)
+              : null;
+
+          return [
+            {
+              id: variation.id,
+              name: data?.name ?? "Regular",
+              price: {
+                amount: money.amount,
+                currency: money.currency ?? "AUD",
+              },
+              stock,
+              available:
+                location?.sold_out !== true && (stock === null || stock > 0),
+            },
+          ];
+        })
+        .sort(
+          (left, right) =>
+            variationSizeRank(left.name) - variationSizeRank(right.name),
+        );
+      const primaryVariation =
+        variations.find((candidate) => candidate.available) ?? variations[0];
       const variation = item.item_data?.variations?.find(
-        (variation) => variation.item_variation_data?.price_money?.amount != null,
+        (candidate) => candidate.id === primaryVariation?.id,
       );
-      const money = variation?.item_variation_data?.price_money;
       const imageId =
         item.item_data?.image_ids?.[0] ??
         variation?.item_variation_data?.image_ids?.[0];
       const imageIds = [
         ...(item.item_data?.image_ids ?? []),
-        ...(variation?.item_variation_data?.image_ids ?? []),
+        ...(item.item_data?.variations ?? []).flatMap(
+          (candidate) => candidate.item_variation_data?.image_ids ?? [],
+        ),
       ];
       const foodDetails = item.item_data?.food_and_beverage_details;
       const customAttributes = Object.entries(
@@ -460,28 +566,115 @@ export async function getCatalogItems(
           }
       }
 
+      const modifierLists = (item.item_data?.modifier_list_info ?? [])
+        .flatMap((info, index) => {
+          const list = info.modifier_list_id
+            ? modifierListsById.get(info.modifier_list_id)
+            : undefined;
+          const data = list?.modifier_list_data;
+          if (!list?.id || !data || info.enabled === false) return [];
+
+          const overrides = new Map(
+            (info.modifier_overrides ?? [])
+              .filter((override) => override.modifier_id)
+              .map((override) => [override.modifier_id as string, override]),
+          );
+          const modifiers = (data.modifiers ?? []).flatMap((modifier) => {
+            const modifierData =
+              modifier.modifier_data ??
+              (modifier.id
+                ? modifierObjectsById.get(modifier.id)?.modifier_data
+                : undefined);
+            if (!modifier.id || !modifierData) return [];
+            const override = overrides.get(modifier.id);
+            const hiddenOnline =
+              override?.hidden_online_override === "YES" ||
+              (override?.hidden_online_override !== "NO" &&
+                modifierData.hidden_online === true);
+            const location = modifierData.location_overrides?.find(
+              (entry) => entry.location_id === env.SQUARE_LOCATION_ID,
+            );
+            if (hiddenOnline || location?.sold_out === true) return [];
+
+            return [
+              {
+                id: modifier.id,
+                name: modifierData.name ?? "Option",
+                price:
+                  location?.price_money?.amount ??
+                  modifierData.price_money?.amount ??
+                  0,
+                defaultSelected:
+                  override?.on_by_default_override === "YES" ||
+                  (override?.on_by_default_override !== "NO" &&
+                    (override?.on_by_default ??
+                      modifierData.on_by_default ??
+                      false)),
+              },
+            ];
+          });
+          if (modifiers.length === 0) return [];
+
+          const selectionLimit = (value: unknown, fallback: number) =>
+            typeof value === "number" && Number.isInteger(value) && value >= 0
+              ? value
+              : fallback;
+          return [
+            {
+              id: list.id,
+              name: data.name ?? "Options",
+              minSelected: selectionLimit(
+                info.min_selected_modifiers,
+                selectionLimit(data.min_selected_modifiers, 0),
+              ),
+              maxSelected: selectionLimit(
+                info.max_selected_modifiers,
+                selectionLimit(data.max_selected_modifiers, 0),
+              ),
+              ordinal: info.ordinal ?? data.ordinal ?? index,
+              modifiers,
+            },
+          ];
+        })
+        .sort((left, right) => left.ordinal - right.ordinal)
+        .map(({ ordinal: _ordinal, ...list }) => list);
+      const categoryPaths = (item.item_data?.categories ?? []).flatMap(
+        (category) => {
+          if (!category.id) return [];
+          const path = categoryPath(category.id);
+          return path.length > 0 ? [path] : [];
+        },
+      );
+      const categories = [...new Set(categoryPaths.flat())];
+      const dailyMenuCategories = [
+        ...new Set(
+          categoryPaths.flatMap((path) => {
+            const dailyMenuIndex = path.findIndex(
+              (name) => normalizeCategoryName(name) === "daily menu",
+            );
+            return dailyMenuIndex > 0 ? [path[dailyMenuIndex - 1]] : [];
+          }),
+        ),
+      ];
+
       return {
         id: item.id as string,
-        variationId: variation?.id ?? null,
+        variationId: primaryVariation?.id ?? null,
         name: item.item_data?.name ?? "Untitled product",
         description:
           item.item_data?.description_plaintext ??
           item.item_data?.description ??
           "",
-        variationName: variation?.item_variation_data?.name ?? "",
-        price: {
-          amount: money?.amount ?? 0,
-          currency: money?.currency ?? "AUD",
-        },
+        variationName: primaryVariation?.name ?? "",
+        price: primaryVariation?.price ?? { amount: 0, currency: "AUD" },
+        variations,
+        modifierLists,
         image: imageId ? (imageUrls.get(imageId) ?? null) : null,
         images: [...new Set(imageIds)]
           .map((id) => imageUrls.get(id))
           .filter((url): url is string => Boolean(url)),
-        categories: (item.item_data?.categories ?? [])
-          .map((category) =>
-            category.id ? categoryNames.get(category.id) : undefined,
-          )
-          .filter((name): name is string => Boolean(name)),
+        categories,
+        dailyMenuCategories,
         ingredients,
         dietaryPreferences: (foodDetails?.dietary_preferences ?? [])
           .map((preference) => preference.standard_name ?? preference.custom_name)
@@ -489,10 +682,8 @@ export async function getCatalogItems(
         allergens: (foodDetails?.ingredients ?? [])
           .map((ingredient) => ingredient.standard_name ?? ingredient.custom_name)
           .filter((name): name is string => Boolean(name)),
-        stock:
-          variation?.item_variation_data?.track_inventory && inventoryByVariation
-            ? (inventoryByVariation.get(variation.id as string) ?? 0)
-            : null,
+        stock: primaryVariation?.stock ?? null,
+        available: variations.some((candidate) => candidate.available),
         popularityScore: (item.item_data?.variations ?? []).reduce(
           (total, itemVariation) =>
             total +

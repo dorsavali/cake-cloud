@@ -3,20 +3,22 @@ import { getCatalogItems } from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import {
+  normalizeSquareAddress,
   normalizeSquarePhone,
   upsertSquareCustomer,
 } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 
 const drinkChoices: Record<string, readonly string[]> = {
-  size: ["Small (240ml)", "Regular (350ml)", "Large (450ml)"],
   temperature: ["Hot", "Cold"],
-  milk: ["Whole Milk", "Oat Milk", "Almond Milk"],
-  syrup: ["Standard (2 Pumps)", "Less Sweet (1 Pump)", "Sugar-Free"],
-  caffeine: ["Regular (Double Shot)", "Decaf"],
 };
 
-type CartLine = { variationId?: unknown; quantity?: unknown; options?: unknown };
+type CartLine = {
+  variationId?: unknown;
+  quantity?: unknown;
+  options?: unknown;
+  modifierIds?: unknown;
+};
 
 export async function handleCartCheckout(request: Request, env: ApiEnv): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -26,7 +28,7 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
   try {
     const raw = await request.text();
     if (raw.length > 20_000) return json({ error: "Request too large" }, 413);
-    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown; orderNumber?: unknown; name?: unknown; email?: unknown; phone?: unknown; termsAccepted?: unknown; allergenAccepted?: unknown };
+    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown; orderNumber?: unknown; name?: unknown; email?: unknown; phone?: unknown; address?: unknown; termsAccepted?: unknown; allergenAccepted?: unknown };
     if (body.termsAccepted !== true) throw new Error("Accept the terms and conditions.");
     if (body.allergenAccepted !== true) throw new Error("Accept the allergen and food safety information.");
     if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 30) throw new Error("Your cart is empty or too large.");
@@ -35,6 +37,7 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const phone = normalizeSquarePhone(typeof body.phone === "string" ? body.phone.trim() : "");
+    const address = normalizeSquareAddress(body.address);
     if (!name || name.length > 100) throw new Error("Enter your full name.");
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
     if (!/^\+[1-9]\d{7,14}$/.test(phone)) throw new Error("Enter a valid phone number, including its country code.");
@@ -43,33 +46,116 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
     const products = await getCatalogItems(env);
     const lineItems: Array<Record<string, unknown>> = [];
     let total = 0;
-    let largeUpgrades = 0;
     for (const rawLine of body.items as CartLine[]) {
       if (!rawLine || typeof rawLine !== "object") throw new Error("Invalid cart item");
       const quantity = rawLine.quantity;
       if (!Number.isInteger(quantity) || (quantity as number) < 1 || (quantity as number) > 99) throw new Error("Invalid quantity");
       if (typeof rawLine.variationId !== "string") throw new Error("This item is unavailable.");
-      const product = products.find((item) => item.variationId === rawLine.variationId);
-      if (!product || product.price.currency !== "AUD" || product.price.amount < 1) throw new Error("This item is unavailable.");
-      if (product.stock !== null && quantity as number > product.stock) throw new Error(`${product.name} no longer has enough stock.`);
+      const product = products.find((item) =>
+        item.variations.some((variation) => variation.id === rawLine.variationId),
+      );
+      const variation = product?.variations.find(
+        (candidate) => candidate.id === rawLine.variationId,
+      );
+      if (!product || !variation || !variation.available || variation.price.currency !== "AUD" || variation.price.amount < 1) throw new Error("This item is unavailable.");
+      if (variation.stock !== null && quantity as number > variation.stock) throw new Error(`${product.name} no longer has enough stock.`);
 
-      const isDrink = product.categories.some((category) => category.trim().toLowerCase() === "drinks");
+      const isDrink = product.categories.some((category) => {
+        const normalized = category.trim().toLowerCase();
+        return normalized === "drinks" || normalized === "drinks website";
+      });
+      const isWholeCake = product.categories.some((category) => {
+        const normalized = category.trim().toLowerCase();
+        return normalized === "whole cakes" || normalized === "whole cakes website";
+      });
       let note: string | undefined;
+      let selectedModifiers: Array<{ id: string; name: string; price: number }> = [];
       if (isDrink) {
         if (!rawLine.options || typeof rawLine.options !== "object" || Array.isArray(rawLine.options)) throw new Error("Choose valid drink options.");
         const options = rawLine.options as Record<string, unknown>;
-        if (Object.keys(options).length !== Object.keys(drinkChoices).length || Object.entries(drinkChoices).some(([key, choices]) => typeof options[key] !== "string" || !choices.includes(options[key] as string))) throw new Error("Choose valid drink options.");
+        if (
+          !Array.isArray(rawLine.modifierIds) ||
+          rawLine.modifierIds.length > product.modifierLists.length
+        ) throw new Error("Choose valid drink options.");
+        const modifierIds = rawLine.modifierIds.map((id) => {
+          if (typeof id !== "string") throw new Error("Choose valid drink options.");
+          return id;
+        });
+        if (new Set(modifierIds).size !== modifierIds.length) throw new Error("Choose valid drink options.");
+        const drinkModifierLists = product.modifierLists;
+        selectedModifiers = drinkModifierLists.flatMap((list) =>
+          list.modifiers.filter((modifier) => modifierIds.includes(modifier.id)),
+        );
+        if (selectedModifiers.length !== modifierIds.length) throw new Error("Choose valid drink options.");
+        for (const list of drinkModifierLists) {
+          const selectedCount = list.modifiers.filter((modifier) =>
+            modifierIds.includes(modifier.id),
+          ).length;
+          if (
+            selectedCount < list.minSelected ||
+            (list.maxSelected > 0 && selectedCount > list.maxSelected)
+          ) throw new Error("Choose valid drink options.");
+        }
+        const expectedOptions: Record<string, unknown> = {
+          size: variation.name,
+          temperature: options.temperature,
+          ...Object.fromEntries(
+            drinkModifierLists.map((list) => {
+              const selectedName = list.modifiers.find((modifier) =>
+                modifierIds.includes(modifier.id),
+              )?.name;
+              return [list.name, selectedName ?? "None"];
+            }),
+          ),
+        };
+        if (
+          Object.entries(drinkChoices).some(
+            ([key, choices]) =>
+              typeof options[key] !== "string" ||
+              !choices.includes(options[key] as string),
+          ) ||
+          Object.keys(options).length !== Object.keys(expectedOptions).length ||
+          Object.entries(expectedOptions).some(
+            ([key, value]) => options[key] !== value,
+          )
+        ) throw new Error("Choose valid drink options.");
         note = Object.entries(options).map(([key, value]) => `${key}: ${value}`).join("\n");
-        if (options.size === "Large (450ml)") largeUpgrades += quantity as number;
+      } else if (isWholeCake) {
+        if (
+          !rawLine.options ||
+          typeof rawLine.options !== "object" ||
+          Array.isArray(rawLine.options)
+        ) throw new Error("Choose a valid cake size.");
+        const options = rawLine.options as Record<string, unknown>;
+        if (
+          Object.keys(options).length !== 1 ||
+          options.size !== variation.name
+        ) throw new Error("Choose a valid cake size.");
+        if (rawLine.modifierIds !== undefined) {
+          throw new Error("Invalid item modifiers.");
+        }
+        note = `Size: ${variation.name}`;
       } else if (rawLine.options !== undefined) {
         throw new Error("Invalid item options.");
+      } else if (rawLine.modifierIds !== undefined) {
+        throw new Error("Invalid item modifiers.");
       }
-      total += product.price.amount * (quantity as number);
-      lineItems.push({ catalog_object_id: product.variationId, quantity: String(quantity), ...(note ? { note } : {}) });
-    }
-    if (largeUpgrades) {
-      total += largeUpgrades * 100;
-      lineItems.push({ name: "Large drink upgrade", quantity: String(largeUpgrades), base_price_money: { amount: 100, currency: "AUD" } });
+      total +=
+        (variation.price.amount +
+          selectedModifiers.reduce((sum, modifier) => sum + modifier.price, 0)) *
+        (quantity as number);
+      lineItems.push({
+        catalog_object_id: variation.id,
+        quantity: String(quantity),
+        ...(selectedModifiers.length > 0
+          ? {
+              modifiers: selectedModifiers.map((modifier) => ({
+                catalog_object_id: modifier.id,
+              })),
+            }
+          : {}),
+        ...(note ? { note } : {}),
+      });
     }
     const tax = Math.round(total * 0.1);
     const shipping = 150;
@@ -79,7 +165,14 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
       { name: "Estimated Shipping", quantity: "1", base_price_money: { amount: shipping, currency: "AUD" } },
     );
 
-    const customerId = await upsertSquareCustomer(env, name, email, phone, body.idempotencyKey);
+    const customerId = await upsertSquareCustomer(
+      env,
+      name,
+      email,
+      phone,
+      address,
+      body.idempotencyKey,
+    );
 
     const expected = expectedValue(body.orderNumber, total, env.SQUARE_LOCATION_ID);
     const payload = {

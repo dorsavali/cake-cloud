@@ -19,6 +19,7 @@ export type CartItem = {
   id: string;
   variationId: string | null;
   options?: Record<string, string>;
+  modifierIds?: string[];
   name: string;
   unitPrice: number;
   currency: string;
@@ -32,6 +33,7 @@ type CheckoutCustomer = {
   name: string;
   email: string;
   phone: string;
+  address: string;
 };
 
 type CartContextValue = {
@@ -66,13 +68,14 @@ function validStoredCart(value: unknown): value is CartItem[] {
     && typeof item.id === "string" && (typeof item.variationId === "string" || item.variationId === null)
     && typeof item.name === "string" && typeof item.unitPrice === "number" && typeof item.currency === "string"
     && Number.isInteger(item.quantity) && item.quantity > 0 && (item.maxQuantity === null || (typeof item.maxQuantity === "number" && item.maxQuantity >= item.quantity))
-    && (item.options === undefined || (item.options && typeof item.options === "object" && !Array.isArray(item.options))));
+    && (item.options === undefined || (item.options && typeof item.options === "object" && !Array.isArray(item.options)))
+    && (item.modifierIds === undefined || (Array.isArray(item.modifierIds) && item.modifierIds.every((id: unknown) => typeof id === "string"))));
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function cartLineId(item: Pick<CartItem, "id" | "variationId" | "options">) {
-  return JSON.stringify([item.id, item.variationId, Object.entries(item.options ?? {}).sort(([a], [b]) => a.localeCompare(b))]);
+function cartLineId(item: Pick<CartItem, "id" | "variationId" | "options" | "modifierIds">) {
+  return JSON.stringify([item.id, item.variationId, [...(item.modifierIds ?? [])].sort(), Object.entries(item.options ?? {}).sort(([a], [b]) => a.localeCompare(b))]);
 }
 
 function availableQuantity(items: CartItem[], target: AddCartItem) {
@@ -277,7 +280,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const sessionResponse = await fetch(apiUrl("/api/cake/checkout-session"), { method: "POST" });
       if (!sessionResponse.ok) throw new Error("Could not start checkout.");
       const session = await sessionResponse.json();
-      const response = await fetch(apiUrl("/api/cart/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: session.idempotencyKey, orderNumber, ...customer, termsAccepted, allergenAccepted, items: items.map(({ variationId, quantity, options }) => ({ variationId, quantity, options })) }) });
+      const response = await fetch(apiUrl("/api/cart/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: session.idempotencyKey, orderNumber, ...customer, termsAccepted, allergenAccepted, items: items.map(({ variationId, quantity, options, modifierIds }) => ({ variationId, quantity, options, modifierIds })) }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not start checkout.");
       const destination = new URL(data.url);

@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+
 import type { DailyMenuProductCard } from "../types";
 import styles from "./ProductGrid.module.css";
 
@@ -12,7 +14,13 @@ function formatPrice(product: DailyMenuProductCard) {
   }).format(product.price.amount / 100);
 }
 
-export function ProductGrid({ products }: { products: DailyMenuProductCard[] }) {
+export function ProductGrid({
+  products,
+  returnCategory,
+}: {
+  products: DailyMenuProductCard[];
+  returnCategory: string;
+}) {
   if (products.length === 0) {
     return (
       <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-luxury-accent/20 bg-accent/20 px-6 text-center font-signika text-base text-accent-dark/65">
@@ -23,15 +31,24 @@ export function ProductGrid({ products }: { products: DailyMenuProductCard[] }) 
 
   return (
     <ul className="grid w-full min-w-0 grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-6">
-      {products.map((product) => (
+      {products.map((product) => {
+        const unavailable = product.available === false;
+        const productHref = `/DailyMenu/Product?id=${encodeURIComponent(product.id)}&category=${encodeURIComponent(returnCategory)}`;
+
+        return (
         <li key={product.id} id={product.id} className="min-w-0">
-          <article className="relative min-w-0 overflow-hidden rounded-2xl border border-luxury-accent/25 bg-accent shadow-[0_3px_14px_rgb(70_66_72_/_6%)]">
-            <Link
-              href={`/DailyMenu/Product?id=${encodeURIComponent(product.id)}`}
-              prefetch={false}
-              aria-label={`View ${product.name}`}
-              className="absolute inset-0 z-10 rounded-2xl"
-            />
+          <article
+            aria-disabled={unavailable || undefined}
+            className={`relative min-w-0 overflow-hidden rounded-2xl border border-luxury-accent/25 bg-accent shadow-[0_3px_14px_rgb(70_66_72_/_6%)] ${unavailable ? "cursor-not-allowed opacity-55 grayscale-[35%]" : ""}`}
+          >
+            {!unavailable && (
+              <Link
+                href={productHref}
+                prefetch={false}
+                aria-label={`View ${product.name}`}
+                className="absolute inset-0 z-10 rounded-2xl"
+              />
+            )}
             <div className="relative aspect-[4/4.2] overflow-hidden bg-[#eee8dc]">
               {product.image ? (
                 <Image
@@ -43,9 +60,12 @@ export function ProductGrid({ products }: { products: DailyMenuProductCard[] }) 
                   className="object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[1.025]"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center font-signika text-sm text-accent-dark/40">
-                  No image
-                </div>
+                <ProductImagePlaceholder />
+              )}
+              {unavailable && (
+                <span className="absolute left-3 top-3 rounded-full bg-accent/95 px-3 py-1.5 font-signika text-xs font-medium text-[#b44a55] shadow-sm">
+                  Sold Out
+                </span>
               )}
             </div>
 
@@ -62,18 +82,25 @@ export function ProductGrid({ products }: { products: DailyMenuProductCard[] }) 
                 <span className="text-sm text-accent-dark/65">
                   {formatPrice(product)}
                 </span>
-                <Link
-                  href={`/DailyMenu/Product?id=${encodeURIComponent(product.id)}`}
-                  prefetch={false}
-                  className={`${styles.viewLink} relative z-20 inline-flex items-center gap-1 text-sm font-medium text-primary`}
-                >
-                  View <span aria-hidden="true">→</span>
-                </Link>
+                {unavailable ? (
+                  <span className="text-sm font-medium text-accent-dark/50">
+                    Unavailable
+                  </span>
+                ) : (
+                  <Link
+                    href={productHref}
+                    prefetch={false}
+                    className={`${styles.viewLink} relative z-20 inline-flex items-center gap-1 text-sm font-medium text-primary`}
+                  >
+                    View <span aria-hidden="true">→</span>
+                  </Link>
+                )}
               </div>
             </div>
           </article>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

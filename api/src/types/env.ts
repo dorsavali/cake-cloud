@@ -7,6 +7,15 @@ export interface ApiEnv {
   SQUARE_ENVIRONMENT: "sandbox" | "production";
   SQUARE_WEBHOOK_SIGNATURE_KEY: string;
   SQUARE_WEBHOOK_NOTIFICATION_URL: string;
+  EMAIL_ENABLED?: string;
+  EMAIL_PREVIEW_ENABLED?: string;
+  SMTP_HOST?: string;
+  SMTP_PORT?: string;
+  SMTP_SECURITY?: "starttls" | "tls";
+  SMTP_HELLO_USERNAME?: string;
+  SMTP_HELLO_PASSWORD?: string;
+  SMTP_ORDERS_USERNAME?: string;
+  SMTP_ORDERS_PASSWORD?: string;
   CAKE_BRIEFS?: {
     put(key: string, value: ReadableStream | ArrayBuffer | string, options?: { httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }): Promise<unknown>;
     delete(keys: string | string[]): Promise<void>;

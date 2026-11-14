@@ -36,6 +36,22 @@ export function invalidateCakeCatalogCache(env: ApiEnv): void {
   cache.delete(cacheKey(env));
 }
 
+export async function refreshCakeCatalogCache(env: ApiEnv): Promise<void> {
+  const key = cacheKey(env);
+  const existingRequest = requests.get(key);
+  if (existingRequest) await existingRequest;
+
+  const request = getCakeDesigns(env)
+    .then((designs) => {
+      cache.set(key, { expiresAt: Date.now() + cacheDurationMs, designs });
+      return designs;
+    })
+    .finally(() => requests.delete(key));
+
+  requests.set(key, request);
+  await request;
+}
+
 export async function handleCakeCatalog(
   request: Request,
   env: ApiEnv,

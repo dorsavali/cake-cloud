@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
+import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { apiUrl } from "@/lib/api";
 import { readHostRequest, type HostRequestItem } from "./request-storage";
 
@@ -73,7 +74,7 @@ export function HostCheckout() {
             <p className="mb-4 text-xs tracking-[0.18em] text-accent-dark/55">REQUEST SUMMARY</p>
             <ul className="space-y-4">
               {items.map((item) => <li key={item.id} className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3">
-                <span className="size-9 overflow-hidden rounded-full border border-[#d8cdb8] bg-[#ddd4c5]">{item.image ? <img src={item.image} alt="" className="h-full w-full object-cover" /> : null}</span>
+                <span className="size-9 overflow-hidden rounded-full border border-[#d8cdb8] bg-[#ddd4c5]">{item.image ? <img src={item.image} alt="" className="h-full w-full object-cover" /> : <ProductImagePlaceholder compact />}</span>
                 <span className="min-w-0 text-sm font-medium">{item.name}</span>
                 <span className="text-sm text-accent-dark/60">× {item.guests}</span>
               </li>)}
@@ -96,11 +97,14 @@ export function HostCheckout() {
             <label className="block text-sm font-medium">Phone <span className="text-[#a83831]">*</span>
               <input name="phone" type="tel" required minLength={7} maxLength={30} autoComplete="tel" className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />
             </label>
+            <label className="block text-sm font-medium">Address <span className="font-normal text-accent-dark/55">(optional)</span>
+              <input name="address" type="text" maxLength={500} autoComplete="street-address" className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />
+            </label>
             <label className="block text-sm font-medium">Event Date <span className="text-[#a83831]">*</span>
               <input name="eventDate" type="date" required min={tomorrow} className="mt-2 min-h-12 w-full min-w-0 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />
             </label>
             <label className="block text-sm font-medium">Additional Notes
-              <textarea name="notes" maxLength={1500} rows={3} placeholder="Dietary requirements, delivery address, headcount..." className="mt-2 w-full resize-y rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 py-3 text-base outline-none placeholder:text-sm placeholder:text-accent-dark/35 focus:border-primary" />
+              <textarea name="notes" maxLength={1500} rows={3} placeholder="Dietary requirements, headcount, or other details..." className="mt-2 w-full resize-y rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 py-3 text-base outline-none placeholder:text-sm placeholder:text-accent-dark/35 focus:border-primary" />
             </label>
 
             <div>

@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+
 import type { RecommendedProduct } from "./data";
 
 type ProductCardProps = {
@@ -12,21 +14,27 @@ function formatPrice({ amount, currency }: RecommendedProduct["price"]) {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  return (
-    <Link
-      href={product.href}
-      prefetch={false}
-      className="group/product block w-[168px] shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:w-full"
-    >
+  const unavailable = product.available === false;
+  const content = (
+    <>
       <div className="relative aspect-[334/280] overflow-hidden rounded-lg border border-luxury-accent bg-accent">
-        <Image
-          src={product.image}
-          alt={product.imageAlt}
-          fill
-          sizes="(min-width: 1024px) 247px, 168px"
-          unoptimized
-          className="object-contain p-3 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/product:scale-[1.035] lg:object-cover lg:p-0"
-        />
+        {product.image ? (
+          <Image
+            src={product.image}
+            alt={product.imageAlt}
+            fill
+            sizes="(min-width: 1024px) 247px, 168px"
+            unoptimized
+            className="object-contain p-3 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/product:scale-[1.035] lg:object-cover lg:p-0"
+          />
+        ) : (
+          <ProductImagePlaceholder />
+        )}
+        {unavailable && (
+          <span className="absolute left-2.5 top-2.5 rounded-full bg-accent/95 px-2.5 py-1 font-signika text-xs font-medium text-[#b44a55] shadow-sm">
+            Sold Out
+          </span>
+        )}
       </div>
 
       <div className="mt-1.5 rounded-lg border border-luxury-accent bg-accent/35 px-2.5 py-2 font-signika text-accent-dark transition-colors duration-200 group-hover/product:border-primary group-hover/product:bg-accent/70">
@@ -35,6 +43,27 @@ export function ProductCard({ product }: ProductCardProps) {
           {formatPrice(product.price)}
         </p>
       </div>
+    </>
+  );
+
+  if (unavailable) {
+    return (
+      <div
+        aria-disabled="true"
+        className="block w-[168px] shrink-0 cursor-not-allowed rounded-lg opacity-55 grayscale-[35%] lg:w-full"
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={product.href}
+      prefetch={false}
+      className="group/product block w-[168px] shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:w-full"
+    >
+      {content}
     </Link>
   );
 }

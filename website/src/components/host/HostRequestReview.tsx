@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+
 import {
   readHostRequest,
   saveHostRequest,
@@ -88,7 +90,9 @@ export function HostRequestReview() {
                     {item.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.image} alt="" className="h-full w-full object-cover" />
-                    ) : null}
+                    ) : (
+                      <ProductImagePlaceholder compact />
+                    )}
                   </div>
                   <div className="min-w-0 self-start md:self-center">
                     <h2 className="font-kalnia text-[18px] font-medium leading-tight text-accent-dark lg:text-[22px]">

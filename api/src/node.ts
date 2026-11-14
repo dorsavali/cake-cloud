@@ -29,6 +29,16 @@ const env: ApiEnv = {
   SQUARE_WEBHOOK_NOTIFICATION_URL:
     process.env.SQUARE_WEBHOOK_NOTIFICATION_URL ??
     `http://${hostname}:${port}/api/webhooks/square`,
+  EMAIL_ENABLED: process.env.EMAIL_ENABLED ?? "false",
+  EMAIL_PREVIEW_ENABLED: process.env.EMAIL_PREVIEW_ENABLED ?? "true",
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: process.env.SMTP_PORT,
+  SMTP_SECURITY:
+    process.env.SMTP_SECURITY === "tls" ? "tls" : "starttls",
+  SMTP_HELLO_USERNAME: process.env.SMTP_HELLO_USERNAME,
+  SMTP_HELLO_PASSWORD: process.env.SMTP_HELLO_PASSWORD,
+  SMTP_ORDERS_USERNAME: process.env.SMTP_ORDERS_USERNAME,
+  SMTP_ORDERS_PASSWORD: process.env.SMTP_ORDERS_PASSWORD,
 };
 
 async function toRequest(request: IncomingMessage): Promise<Request> {

@@ -23,13 +23,26 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
+*.key
+*.p12
+*.pfx
 
 # debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# local tool caches
+**/.cache/
+.eslintcache
+
+# local email preview and manual SMTP testing
+/website/src/app/email-preview/
+/api/src/email/send-test-node.ts
 
 # local environment files
 .env*

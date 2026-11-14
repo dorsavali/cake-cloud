@@ -3,6 +3,7 @@ import { getCatalogItems } from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import {
+  normalizeSquareAddress,
   normalizeSquarePhone,
   upsertSquareCustomer,
 } from "../services/square-customer.js";
@@ -39,6 +40,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     const fullName = text(form, "fullName", 100, true);
     const email = text(form, "email", 254, true).toLowerCase();
     const phone = normalizeSquarePhone(text(form, "phone", 30, true));
+    const address = normalizeSquareAddress(form.get("address"));
     const eventDate = text(form, "eventDate", 10, true);
     const notes = text(form, "notes", 1500);
     const idempotencyKey = text(form, "idempotencyKey", 36, true);
@@ -87,7 +89,15 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
       summary.push({ id: product.id, name: product.name, guests: guests as number, unitPrice: product.price.amount, priceUnit: fixed ? "package" : "head" });
     }
 
-    const customerId = await upsertSquareCustomer(env, fullName, email, phone, idempotencyKey, false);
+    const customerId = await upsertSquareCustomer(
+      env,
+      fullName,
+      email,
+      phone,
+      address,
+      idempotencyKey,
+      false,
+    );
 
     const reference = crypto.randomUUID();
     const file = form.get("logo");
@@ -103,7 +113,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
       stored.push(logoKey);
     }
 
-    const record = { reference, fullName, email, phone, eventDate, notes, logoKey: logoKey || null, items: summary, total, submittedAt: new Date().toISOString() };
+    const record = { reference, fullName, email, phone, address: address || null, eventDate, notes, logoKey: logoKey || null, items: summary, total, submittedAt: new Date().toISOString() };
     if (env.CAKE_BRIEFS) {
       const recordKey = `host-requests/${reference}/request.json`;
       await env.CAKE_BRIEFS.put(recordKey, JSON.stringify(record), { httpMetadata: { contentType: "application/json" } });
@@ -111,7 +121,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     }
 
     const expected = expectedValue(reference, total, env.SQUARE_LOCATION_ID);
-    const orderNote = [`Event date: ${eventDate}`, `Contact: ${fullName} · ${email} · ${phone}`, notes ? `Notes: ${notes}` : "", logoKey ? `Logo/design reference: ${reference}` : ""].filter(Boolean).join("\n");
+    const orderNote = [`Event date: ${eventDate}`, `Contact: ${fullName} · ${email} · ${phone}`, address ? `Address: ${address}` : "", notes ? `Notes: ${notes}` : "", logoKey ? `Logo/design reference: ${reference}` : ""].filter(Boolean).join("\n");
     lineItems[0] = { ...lineItems[0], note: [lineItems[0].note, orderNote].filter(Boolean).join("\n") };
     const returnUrl = new URL("/events/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000");
     const pickupAt = new Date(`${eventDate}T12:00:00+08:00`).toISOString();

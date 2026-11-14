@@ -4,11 +4,12 @@ import { CakeError, getPricedCake, pickupInstant, rushFee } from "./cake-checkou
 import type { ApiEnv } from "../types/env.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import {
+  normalizeSquareAddress,
   normalizeSquarePhone,
   upsertSquareCustomer,
 } from "../services/square-customer.js";
 
-export async function handleHostedCheckout(request: Request, env: ApiEnv): Promise<Response> {
+export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): Promise<Response> {
   if (request.method !== "POST") return json({error:"Method not allowed"},405);
   // This integration is explicitly Sandbox-only until production is requested.
   if (env.SQUARE_ENVIRONMENT !== "sandbox" || !env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) return json({error:"Square Sandbox checkout is not configured."},503);
@@ -23,6 +24,7 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const phone = normalizeSquarePhone(typeof body.phone === "string" ? body.phone.trim() : "");
+    const address = normalizeSquareAddress(body.address);
     if(!name || name.length>100 || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new CakeError("Enter a valid full name and email.");
     if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new CakeError("Enter a valid phone number, including its country code.");
     if(typeof body.idempotencyKey!=="string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey))throw new CakeError("Invalid checkout request");
@@ -36,7 +38,7 @@ export async function handleHostedCheckout(request: Request, env: ApiEnv): Promi
     if(body.expectedTotal!==total)return json({error:"The total changed. Return to Summary to review the updated price."},409);
     let customerId: string;
     try {
-      customerId=await upsertSquareCustomer(env,name,email,phone,body.idempotencyKey);
+      customerId=await upsertSquareCustomer(env,name,email,phone,address,body.idempotencyKey);
     } catch (error) {
       throw new CakeError(error instanceof Error ? error.message : "Square could not save the customer details.");
     }

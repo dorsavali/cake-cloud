@@ -15,6 +15,18 @@ const toPublicProduct = <T extends { customAttributes: unknown }>(product: T) =>
 };
 
 type CatalogProduct = Awaited<ReturnType<typeof getCachedCatalogItems>>[number];
+const dailyMenuCatalogOptions = {
+  includePopularity: false,
+  variant: "daily-menu",
+} as const;
+
+const recommendedRank = (product: CatalogProduct) => {
+  const raw = product.customAttributes.recommended_rank;
+  const rank = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(rank) && rank >= 0
+    ? rank
+    : Number.POSITIVE_INFINITY;
+};
 
 const toCard = (product: CatalogProduct) => ({
   id: product.id,
@@ -24,23 +36,16 @@ const toCard = (product: CatalogProduct) => ({
   price: product.price,
   image: product.image,
   stock: product.stock,
+  available: product.available,
 });
 
-// Home "Our Recommends" row: best sellers from the main menu plus one
-// signature item from drinks and pet treats.
-const homeRecommendationPlan = [
-  { category: "cakes & pastries", count: 2 },
-  { category: "drinks", count: 1 },
-  { category: "pet treats", count: 1 },
-] as const;
-
-const homeRecommendationTotal = homeRecommendationPlan.reduce(
-  (total, step) => total + step.count,
-  0,
-);
-
-const byPopularity = (left: CatalogProduct, right: CatalogProduct) =>
-  right.popularityScore - left.popularityScore;
+const homeRecommendationRank = (product: CatalogProduct) => {
+  const raw =
+    product.customAttributes.home_recommend ??
+    product.customAttributes.home_recommend_rank;
+  const rank = typeof raw === "number" ? raw : Number(raw);
+  return Number.isInteger(rank) && rank >= 1 && rank <= 4 ? rank : null;
+};
 
 export async function handleCategories(
   request: Request,
@@ -49,8 +54,8 @@ export async function handleCategories(
   if (request.method !== "GET") return methodNotAllowed();
 
   try {
-    const products = await getCachedCatalogItems(env);
-    const categories = [...new Set(products.flatMap((product) => product.categories))]
+    const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
+    const categories = [...new Set(products.flatMap((product) => product.dailyMenuCategories))]
       .filter(Boolean)
       .sort((left, right) => left.localeCompare(right));
     return json({ categories }, 200, responseCacheHeaders);
@@ -70,7 +75,7 @@ export async function handleProductDetail(
   if (request.method !== "GET") return methodNotAllowed();
 
   try {
-    const products = await getCachedCatalogItems(env);
+    const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
     const product = products.find((item) => item.id === productId);
     if (!product) return json({ error: "Product not found" }, 404);
     return json({ product: toPublicProduct(product) }, 200, responseCacheHeaders);
@@ -95,10 +100,10 @@ export async function handleProductCards(
     const productType = normalize(url.searchParams.get("productType") ?? "");
     const dietaryFilters = url.searchParams.getAll("dietary").map(normalize);
     const allergenFilters = url.searchParams.getAll("allergen").map(normalize);
-    const sort = url.searchParams.get("sort") ?? "popular";
+    const sort = url.searchParams.get("sort") ?? "recommended";
     const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
     const limit = Math.min(24, Math.max(1, Number.parseInt(url.searchParams.get("limit") ?? "9", 10) || 9));
-    const products = await getCachedCatalogItems(env);
+    const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
     const categoryProducts = products.filter(
       (product) =>
         !category || product.categories.some((name) => normalize(name) === category),
@@ -130,10 +135,19 @@ export async function handleProductCards(
     });
 
     filtered.sort((left, right) => {
+      const availabilityOrder = Number(right.available) - Number(left.available);
+      if (availabilityOrder !== 0) return availabilityOrder;
+
       if (sort === "price-asc") return left.price.amount - right.price.amount;
       if (sort === "price-desc") return right.price.amount - left.price.amount;
       if (sort === "az") return left.name.localeCompare(right.name);
-      return right.popularityScore - left.popularityScore;
+      if (sort === "recommended") {
+        return (
+          recommendedRank(left) - recommendedRank(right) ||
+          left.name.localeCompare(right.name)
+        );
+      }
+      return 0;
     });
 
     const start = (page - 1) * limit;
@@ -145,6 +159,7 @@ export async function handleProductCards(
       price: product.price,
       image: product.image,
       stock: product.stock,
+      available: product.available,
     }));
 
     return json(
@@ -174,33 +189,28 @@ export async function handleRecommendations(
   if (request.method !== "GET") return methodNotAllowed();
 
   try {
-    const products = await getCachedCatalogItems(env);
-    const picks: CatalogProduct[] = [];
-
-    for (const step of homeRecommendationPlan) {
-      const matches = products
-        .filter((product) =>
-          product.categories.some((name) => normalize(name) === step.category),
-        )
-        .sort(byPopularity)
-        .slice(0, step.count);
-
-      for (const product of matches) {
-        if (!picks.some((pick) => pick.id === product.id)) picks.push(product);
-      }
-    }
-
-    // Backfill from the overall best sellers if a category has no products yet,
-    // so the home row always keeps the same number of cards.
-    if (picks.length < homeRecommendationTotal) {
-      for (const product of [...products].sort(byPopularity)) {
-        if (picks.length >= homeRecommendationTotal) break;
-        if (!picks.some((pick) => pick.id === product.id)) picks.push(product);
-      }
-    }
+    const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
+    const picks = products
+      .map((product) => ({ product, rank: homeRecommendationRank(product) }))
+      .filter(
+        (entry): entry is { product: CatalogProduct; rank: number } =>
+          entry.rank !== null,
+      )
+      .sort(
+        (left, right) =>
+          left.rank - right.rank ||
+          left.product.name.localeCompare(right.product.name),
+      )
+      .filter(
+        (entry, index, entries) =>
+          entries.findIndex((candidate) => candidate.rank === entry.rank) ===
+          index,
+      )
+      .slice(0, 4)
+      .map(({ product }) => product);
 
     return json(
-      { items: picks.slice(0, homeRecommendationTotal).map(toCard) },
+      { items: picks.map(toCard) },
       200,
       responseCacheHeaders,
     );

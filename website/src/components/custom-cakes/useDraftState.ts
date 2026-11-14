@@ -5,12 +5,14 @@ import { readDraft, writeDraft } from "./draft-storage";
 // Used within the client-mounted cake flow so server HTML never reads storage.
 export function useDraftState<T>(key: string, fallback: T, valid: (value: unknown) => value is T) {
   const [value, setValue] = useState<T>(fallback);
+  const [hydrated, setHydrated] = useState(false);
   const current = useRef(fallback);
   const initial = useRef({ key, fallback, valid });
   useEffect(() => {
     const saved = readDraft(initial.current.key, initial.current.fallback, initial.current.valid);
     current.current = saved;
     setValue(saved);
+    setHydrated(true);
   }, []);
   function update(action: SetStateAction<T>) {
     const next = typeof action === "function" ? (action as (previous: T) => T)(current.current) : action;
@@ -18,5 +20,5 @@ export function useDraftState<T>(key: string, fallback: T, valid: (value: unknow
     writeDraft(key, next);
     setValue(next);
   }
-  return [value, update] as const;
+  return [value, update, hydrated] as const;
 }
