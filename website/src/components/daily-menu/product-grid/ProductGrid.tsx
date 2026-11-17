@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 
 import type { DailyMenuProductCard } from "../types";
-import styles from "./ProductGrid.module.css";
 
 function formatPrice(product: DailyMenuProductCard) {
   return new Intl.NumberFormat("en-AU", {
@@ -49,7 +48,7 @@ export function ProductGrid({
                 className="absolute inset-0 z-10 rounded-2xl"
               />
             )}
-            <div className="relative aspect-[4/4.2] overflow-hidden bg-[#eee8dc]">
+            <div className="relative aspect-[4/4.5] overflow-hidden bg-[#eee8dc]">
               {product.image ? (
                 <Image
                   src={product.image}
@@ -69,7 +68,7 @@ export function ProductGrid({
               )}
             </div>
 
-            <div className="min-h-[112px] px-3 py-3 font-signika text-accent-dark lg:px-4 lg:py-4">
+            <div className="min-h-[104px] px-3 pb-2 pt-3 font-signika text-accent-dark lg:min-h-[108px] lg:px-4 lg:pb-3 lg:pt-4">
               <h2 className="truncate text-base font-medium leading-6 lg:text-lg">
                 {product.name}
               </h2>
@@ -78,7 +77,7 @@ export function ProductGrid({
                   {product.description || product.variationName}
                 </p>
               )}
-              <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="mt-2.5 flex items-center justify-between gap-3">
                 <span className="text-sm text-accent-dark/65">
                   {formatPrice(product)}
                 </span>
@@ -90,7 +89,7 @@ export function ProductGrid({
                   <Link
                     href={productHref}
                     prefetch={false}
-                    className={`${styles.viewLink} relative z-20 inline-flex items-center gap-1 text-sm font-medium text-primary`}
+                    className="relative z-20 inline-flex items-center gap-1 text-sm font-medium text-primary transition-[color,transform] duration-[180ms] ease-[ease] hover:translate-x-[2px] hover:text-accent-dark"
                   >
                     View <span aria-hidden="true">→</span>
                   </Link>

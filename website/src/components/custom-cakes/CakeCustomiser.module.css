@@ -1,0 +1,25 @@
+.sizeCard {
+  transition: color 300ms ease;
+}
+
+.sizeCardFill {
+  height: 42%;
+  transition: height 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sizeCard:hover,
+.sizeCard[aria-pressed="true"] {
+  color: #faf7f0;
+}
+
+.sizeCard:hover .sizeCardFill,
+.sizeCard[aria-pressed="true"] .sizeCardFill {
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sizeCard,
+  .sizeCardFill {
+    transition: none;
+  }
+}

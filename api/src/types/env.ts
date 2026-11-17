@@ -8,7 +8,6 @@ export interface ApiEnv {
   SQUARE_WEBHOOK_SIGNATURE_KEY: string;
   SQUARE_WEBHOOK_NOTIFICATION_URL: string;
   EMAIL_ENABLED?: string;
-  EMAIL_PREVIEW_ENABLED?: string;
   SMTP_HOST?: string;
   SMTP_PORT?: string;
   SMTP_SECURITY?: "starttls" | "tls";

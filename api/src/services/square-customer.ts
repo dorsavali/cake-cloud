@@ -4,13 +4,22 @@ type SquareCustomer = {
   id?: string;
   version?: number;
   given_name?: string;
+  family_name?: string;
   email_address?: string;
   phone_number?: string;
+  birthday?: string;
+  reference_id?: string;
   address?: {
     address_line_1?: string;
+    locality?: string;
+    administrative_district_level_1?: string;
+    postal_code?: string;
     country?: string;
   };
 };
+
+/** Errors returned by Square that are safe to show to the customer. */
+export class SquareCustomerError extends Error {}
 
 export function normalizeSquarePhone(value: string): string {
   const compact = value.replace(/[\s().-]/g, "");
@@ -26,6 +35,23 @@ export function normalizeSquareAddress(value: unknown): string {
   if (address.length > 500) throw new Error("Address must be 500 characters or fewer.");
   return address;
 }
+
+export type ClubMemberInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  birthday: string;
+  addressLine1: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+};
+
+export type ClubMember = {
+  customerId: string;
+  memberCode: string;
+};
 
 async function squareCustomerRequest<T>(
   env: ApiEnv,
@@ -54,10 +80,10 @@ async function squareCustomerRequest<T>(
     };
     const code = result.errors?.[0]?.code ?? `HTTP_${response.status}`;
     if (code === "INVALID_EMAIL_ADDRESS") {
-      throw new Error("Square did not accept this email address.");
+      throw new SquareCustomerError("Square did not accept this email address.");
     }
     if (code === "INVALID_PHONE_NUMBER") {
-      throw new Error(
+      throw new SquareCustomerError(
         "Square did not accept this phone number. Include its country code.",
       );
     }
@@ -66,14 +92,103 @@ async function squareCustomerRequest<T>(
       code === "FORBIDDEN" ||
       code === "REQUEST_NOT_AUTHORIZED"
     ) {
-      throw new Error(
+      throw new SquareCustomerError(
         "Square customer access is missing. Enable CUSTOMERS_READ and CUSTOMERS_WRITE permissions.",
       );
     }
-    throw new Error(`Square could not save the customer details (${code}).`);
+    throw new SquareCustomerError(`Square could not save the customer details (${code}).`);
   }
 
   return response.json() as Promise<T>;
+}
+
+async function searchSquareCustomer(
+  env: ApiEnv,
+  filter: Record<string, { exact: string }>,
+): Promise<SquareCustomer | undefined> {
+  const result = await squareCustomerRequest<{ customers?: SquareCustomer[] }>(
+    env,
+    "/v2/customers/search",
+    "POST",
+    { limit: 1, query: { filter } },
+  );
+  return result.customers?.[0];
+}
+
+async function createMemberCode(env: ApiEnv): Promise<string> {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const number = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
+    const memberCode = `CCC-${String(number).padStart(6, "0")}`;
+    const existing = await searchSquareCustomer(env, {
+      reference_id: { exact: memberCode },
+    });
+    if (!existing) return memberCode;
+  }
+  throw new SquareCustomerError("Could not allocate a club member number.");
+}
+
+/** Creates or updates a CC Club member in Square Customer Directory. */
+export async function upsertClubMember(
+  env: ApiEnv,
+  input: ClubMemberInput,
+  idempotencyKey: string,
+): Promise<ClubMember> {
+  const normalizedEmail = input.email.trim().toLowerCase();
+  const normalizedPhone = normalizeSquarePhone(input.phone);
+  const existingByEmail = await searchSquareCustomer(env, {
+    email_address: { exact: normalizedEmail },
+  });
+  const existing =
+    existingByEmail ??
+    (await searchSquareCustomer(env, {
+      phone_number: { exact: normalizedPhone },
+    }));
+  const memberCode =
+    existing?.reference_id && /^CCC-\d{6}$/.test(existing.reference_id)
+      ? existing.reference_id
+      : await createMemberCode(env);
+  const customerFields = {
+    given_name: input.firstName,
+    family_name: input.lastName,
+    email_address: normalizedEmail,
+    phone_number: normalizedPhone,
+    birthday: input.birthday,
+    reference_id: memberCode,
+    address: {
+      address_line_1: input.addressLine1,
+      locality: input.suburb,
+      administrative_district_level_1: input.state,
+      postal_code: input.postcode,
+      country: "AU",
+    },
+  };
+
+  if (existing?.id) {
+    if (typeof existing.version !== "number") {
+      throw new SquareCustomerError("Square could not update the customer details.");
+    }
+    const updated = await squareCustomerRequest<{ customer?: SquareCustomer }>(
+      env,
+      `/v2/customers/${encodeURIComponent(existing.id)}`,
+      "PUT",
+      { ...customerFields, version: existing.version },
+    );
+    if (!updated.customer?.id) {
+      throw new SquareCustomerError("Square could not update the customer details.");
+    }
+    return { customerId: updated.customer.id, memberCode };
+  }
+
+  const created = await squareCustomerRequest<{ customer?: SquareCustomer }>(
+    env,
+    "/v2/customers",
+    "POST",
+    { idempotency_key: idempotencyKey, ...customerFields },
+  );
+  if (!created.customer?.id) {
+    throw new SquareCustomerError("Square could not save the customer details.");
+  }
+  return { customerId: created.customer.id, memberCode };
 }
 
 export async function upsertSquareCustomer(
@@ -110,7 +225,7 @@ export async function upsertSquareCustomer(
       return existing.id;
     }
     if (typeof existing.version !== "number") {
-      throw new Error("Square could not update the customer details.");
+      throw new SquareCustomerError("Square could not update the customer details.");
     }
     const updated = await squareCustomerRequest<{ customer?: SquareCustomer }>(
       env,
@@ -131,7 +246,7 @@ export async function upsertSquareCustomer(
       },
     );
     if (!updated.customer?.id) {
-      throw new Error("Square could not update the customer details.");
+      throw new SquareCustomerError("Square could not update the customer details.");
     }
     return updated.customer.id;
   }
@@ -151,7 +266,7 @@ export async function upsertSquareCustomer(
     },
   );
   if (!created.customer?.id) {
-    throw new Error("Square could not save the customer details.");
+    throw new SquareCustomerError("Square could not save the customer details.");
   }
   return created.customer.id;
 }

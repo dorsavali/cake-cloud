@@ -81,7 +81,7 @@ function GoogleIcon() {
         y="18"
         textAnchor="middle"
         fill="currentColor"
-        fontFamily="Arial, sans-serif"
+        fontFamily="Signika, sans-serif"
         fontSize="19"
         fontWeight="700"
       >

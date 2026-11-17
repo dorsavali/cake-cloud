@@ -6,6 +6,7 @@ import { configureCheckoutReturn } from "../services/checkout-return.js";
 import {
   normalizeSquareAddress,
   normalizeSquarePhone,
+  SquareCustomerError,
   upsertSquareCustomer,
 } from "../services/square-customer.js";
 
@@ -40,26 +41,36 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
     try {
       customerId=await upsertSquareCustomer(env,name,email,phone,address,body.idempotencyKey);
     } catch (error) {
-      throw new CakeError(error instanceof Error ? error.message : "Square could not save the customer details.");
+      if (error instanceof SquareCustomerError) throw new CakeError(error.message);
+      throw error;
     }
     const message = priced.cake.message.trim();
     // Square receives the real catalogue item and its modifiers so the receipt
     // and reports show the chosen options instead of a single text note.
-    const appliedModifiers = priced.lines.flatMap(line =>
-      line.modifiers.map(modifier => ({ catalog_object_id: modifier.id, quantity: "1" })),
-    );
-    const lineItem = priced.design.variationId
+    const appliedModifiers = [
+      ...(priced.size.designModifier
+        ? [{ catalog_object_id: priced.size.designModifier.id, quantity: "1" }]
+        : []),
+      ...priced.lines.flatMap(line =>
+        line.modifiers.map(modifier => ({ catalog_object_id: modifier.id, quantity: "1" })),
+      ),
+    ];
+    const lineNote = [
+      `Design: ${priced.design.name}`,
+      ...(message ? [`Message on cake: ${message}`] : []),
+    ].join(" · ");
+    const lineItem = priced.size.variationId
       ? {
-          catalog_object_id: priced.design.variationId,
+          catalog_object_id: priced.size.variationId,
           quantity: "1",
           applied_modifiers: appliedModifiers,
-          ...(message ? { note: "Message on cake: " + message } : {}),
+          note: lineNote,
         }
       : {
-          name: priced.design.name,
+          name: `${priced.design.name} · ${priced.size.name}`,
           quantity: "1",
-          base_price_money: { amount: priced.design.price.amount, currency: priced.design.price.currency },
-          ...(message ? { note: "Message on cake: " + message } : {}),
+          base_price_money: { amount: priced.size.price.amount, currency: priced.size.price.currency },
+          note: lineNote,
         };
     const expected=expectedValue(body.idempotencyKey,total,env.SQUARE_LOCATION_ID);
     const returnUrl=new URL("/custom-cakes/payment-result/",env.WEBSITE_ORIGIN || "http://localhost:3000");

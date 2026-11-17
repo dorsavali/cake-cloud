@@ -6,12 +6,12 @@ type CakeDesigns = CakeDesign[];
 
 const cache = new Map<string, { expiresAt: number; designs: CakeDesigns }>();
 const requests = new Map<string, Promise<CakeDesigns>>();
-// Short enough for dashboard price edits to show up quickly; catalog webhooks
-// still invalidate the cache immediately.
-const cacheDurationMs = 5 * 60 * 1000;
+// Keep the expensive cake hierarchy warm for a day. Square catalog webhooks
+// invalidate and eagerly refresh it as soon as a catalog change is published.
+const cacheDurationMs = 24 * 60 * 60 * 1000;
 
 const cacheKey = (env: ApiEnv) =>
-  `cake:${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${env.SQUARE_LOCATION_ID ?? "all"}`;
+  `cake:v4:${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${env.SQUARE_LOCATION_ID ?? "all"}`;
 
 export async function getCachedCakeDesigns(env: ApiEnv): Promise<CakeDesigns> {
   const key = cacheKey(env);
@@ -65,7 +65,7 @@ export async function handleCakeCatalog(
       200,
       {
         "cache-control":
-          "public, max-age=30, s-maxage=60, stale-while-revalidate=120",
+          "public, max-age=30, s-maxage=60, stale-while-revalidate=60",
       },
     );
   } catch (error) {

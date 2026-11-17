@@ -40,8 +40,7 @@ yarn-error.log*
 **/.cache/
 .eslintcache
 
-# local email preview and manual SMTP testing
-/website/src/app/email-preview/
+# local manual SMTP testing
 /api/src/email/send-test-node.ts
 
 # local environment files

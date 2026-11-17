@@ -68,77 +68,72 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
         const normalized = category.trim().toLowerCase();
         return normalized === "whole cakes" || normalized === "whole cakes website";
       });
+      const modifierIds = rawLine.modifierIds === undefined
+        ? []
+        : Array.isArray(rawLine.modifierIds) && rawLine.modifierIds.length <= 50
+          ? rawLine.modifierIds.map((id) => {
+              if (typeof id !== "string") throw new Error("Choose valid item options.");
+              return id;
+            })
+          : (() => { throw new Error("Choose valid item options."); })();
+      if (new Set(modifierIds).size !== modifierIds.length) {
+        throw new Error("Choose valid item options.");
+      }
+      const selectedModifiers = product.modifierLists.flatMap((list) =>
+        list.modifiers.filter((modifier) => modifierIds.includes(modifier.id)),
+      );
+      if (selectedModifiers.length !== modifierIds.length) {
+        throw new Error("Choose valid item options.");
+      }
+      for (const list of product.modifierLists) {
+        const selectedCount = list.modifiers.filter((modifier) =>
+          modifierIds.includes(modifier.id),
+        ).length;
+        if (
+          selectedCount < list.minSelected ||
+          (list.maxSelected > 0 && selectedCount > list.maxSelected)
+        ) throw new Error("Choose valid item options.");
+      }
+
+      const modifierOptions = Object.fromEntries(
+        product.modifierLists.map((list) => {
+          const selectedNames = list.modifiers
+            .filter((modifier) => modifierIds.includes(modifier.id))
+            .map((modifier) => modifier.name);
+          return [list.name, selectedNames.join(", ") || "None"];
+        }),
+      );
+      const expectsSize = product.variations.length > 1 || isDrink || isWholeCake;
+      const expectedOptions: Record<string, string> = {
+        ...(expectsSize ? { size: variation.name } : {}),
+        ...(isDrink ? { temperature: "" } : {}),
+        ...modifierOptions,
+      };
       let note: string | undefined;
-      let selectedModifiers: Array<{ id: string; name: string; price: number }> = [];
-      if (isDrink) {
-        if (!rawLine.options || typeof rawLine.options !== "object" || Array.isArray(rawLine.options)) throw new Error("Choose valid drink options.");
+      if (Object.keys(expectedOptions).length > 0) {
+        if (!rawLine.options || typeof rawLine.options !== "object" || Array.isArray(rawLine.options)) {
+          throw new Error("Choose valid item options.");
+        }
         const options = rawLine.options as Record<string, unknown>;
-        if (
-          !Array.isArray(rawLine.modifierIds) ||
-          rawLine.modifierIds.length > product.modifierLists.length
-        ) throw new Error("Choose valid drink options.");
-        const modifierIds = rawLine.modifierIds.map((id) => {
-          if (typeof id !== "string") throw new Error("Choose valid drink options.");
-          return id;
-        });
-        if (new Set(modifierIds).size !== modifierIds.length) throw new Error("Choose valid drink options.");
-        const drinkModifierLists = product.modifierLists;
-        selectedModifiers = drinkModifierLists.flatMap((list) =>
-          list.modifiers.filter((modifier) => modifierIds.includes(modifier.id)),
-        );
-        if (selectedModifiers.length !== modifierIds.length) throw new Error("Choose valid drink options.");
-        for (const list of drinkModifierLists) {
-          const selectedCount = list.modifiers.filter((modifier) =>
-            modifierIds.includes(modifier.id),
-          ).length;
+        if (isDrink) {
           if (
-            selectedCount < list.minSelected ||
-            (list.maxSelected > 0 && selectedCount > list.maxSelected)
-          ) throw new Error("Choose valid drink options.");
+            Object.entries(drinkChoices).some(
+              ([key, choices]) =>
+                typeof options[key] !== "string" ||
+                !choices.includes(options[key] as string),
+            )
+          ) throw new Error("Choose valid item options.");
+          expectedOptions.temperature = options.temperature as string;
         }
-        const expectedOptions: Record<string, unknown> = {
-          size: variation.name,
-          temperature: options.temperature,
-          ...Object.fromEntries(
-            drinkModifierLists.map((list) => {
-              const selectedName = list.modifiers.find((modifier) =>
-                modifierIds.includes(modifier.id),
-              )?.name;
-              return [list.name, selectedName ?? "None"];
-            }),
-          ),
-        };
         if (
-          Object.entries(drinkChoices).some(
-            ([key, choices]) =>
-              typeof options[key] !== "string" ||
-              !choices.includes(options[key] as string),
-          ) ||
           Object.keys(options).length !== Object.keys(expectedOptions).length ||
-          Object.entries(expectedOptions).some(
-            ([key, value]) => options[key] !== value,
-          )
-        ) throw new Error("Choose valid drink options.");
-        note = Object.entries(options).map(([key, value]) => `${key}: ${value}`).join("\n");
-      } else if (isWholeCake) {
-        if (
-          !rawLine.options ||
-          typeof rawLine.options !== "object" ||
-          Array.isArray(rawLine.options)
-        ) throw new Error("Choose a valid cake size.");
-        const options = rawLine.options as Record<string, unknown>;
-        if (
-          Object.keys(options).length !== 1 ||
-          options.size !== variation.name
-        ) throw new Error("Choose a valid cake size.");
-        if (rawLine.modifierIds !== undefined) {
-          throw new Error("Invalid item modifiers.");
-        }
-        note = `Size: ${variation.name}`;
+          Object.entries(expectedOptions).some(([key, value]) => options[key] !== value)
+        ) throw new Error("Choose valid item options.");
+        note = Object.entries(expectedOptions)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("\n");
       } else if (rawLine.options !== undefined) {
         throw new Error("Invalid item options.");
-      } else if (rawLine.modifierIds !== undefined) {
-        throw new Error("Invalid item modifiers.");
       }
       total +=
         (variation.price.amount +
@@ -157,14 +152,6 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
         ...(note ? { note } : {}),
       });
     }
-    const tax = Math.round(total * 0.1);
-    const shipping = 150;
-    total += tax + shipping;
-    lineItems.push(
-      { name: "Tax", quantity: "1", base_price_money: { amount: tax, currency: "AUD" } },
-      { name: "Estimated Shipping", quantity: "1", base_price_money: { amount: shipping, currency: "AUD" } },
-    );
-
     const customerId = await upsertSquareCustomer(
       env,
       name,
@@ -182,9 +169,23 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
         customer_id: customerId,
         reference_id: body.orderNumber,
         line_items: lineItems,
+        fulfillments: [{
+          type: "PICKUP",
+          state: "PROPOSED",
+          pickup_details: {
+            schedule_type: "ASAP",
+            pickup_at: new Date().toISOString(),
+            recipient: {
+              display_name: name,
+              email_address: email,
+              phone_number: phone,
+              customer_id: customerId,
+            },
+          },
+        }],
         metadata: { cc_expected: expected, cc_signature: await signValue(env, expected), cc_status: "pending" },
       },
-      checkout_options: { redirect_url: new URL("/custom-cakes/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000").href, allow_tipping: false, ask_for_shipping_address: false, enable_coupon: false, enable_loyalty: false },
+      checkout_options: { redirect_url: new URL("/DailyMenu/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000").href, allow_tipping: false, ask_for_shipping_address: false, enable_coupon: false, enable_loyalty: false },
       payment_note: `Cake Cloud daily menu order · ${name}`,
     };
     const response = await fetch("https://connect.squareupsandbox.com/v2/online-checkout/payment-links", {
@@ -197,7 +198,7 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
     if (!response.ok || !data.payment_link?.id || !data.payment_link.url || !data.payment_link.order_id) return json({ error: "Square could not create the checkout page. Please retry." }, 502);
     const url = new URL(data.payment_link.url);
     if (url.protocol !== "https:" || !["square.link", "sandbox.square.link", "checkout.square.site", "sandbox.checkout.square.site"].includes(url.hostname)) return json({ error: "Square returned an unexpected checkout address." }, 502);
-    await configureCheckoutReturn(env, data.payment_link.id, data.payment_link.order_id);
+    await configureCheckoutReturn(env, data.payment_link.id, data.payment_link.order_id, "/DailyMenu/payment-result/");
     return json({ url: url.href });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Could not start checkout." }, 400);

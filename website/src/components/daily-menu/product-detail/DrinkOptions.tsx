@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import type { DailyMenuProduct } from "../types";
-import styles from "./DrinkOptions.module.css";
 
 export const drinkChoices = {
   temperature: ["Hot", "Cold"],
@@ -9,7 +8,7 @@ export const drinkChoices = {
 
 export type DrinkSelection = {
   temperature: string;
-  modifierIdsByList: Record<string, string>;
+  modifierIdsByList: Record<string, string[]>;
 };
 
 export const defaultDrinkSelection: DrinkSelection = {
@@ -36,149 +35,111 @@ function formatModifierPrice(amount: number, currency: string) {
   }).format(amount / 100);
 }
 
-function ChevronIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 12 8" className="h-2 w-3">
-      <path
-        d="m1 1.25 5 5 5-5"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.5"
-      />
-    </svg>
-  );
-}
-
 function ModifierDropdown({
   list,
   optional,
-  selectedModifierId,
+  selectedModifierIds,
   optionLabel,
   onChange,
-  onOpenChange,
 }: {
   list: ModifierList;
   optional: boolean;
-  selectedModifierId: string;
+  selectedModifierIds: string[];
   optionLabel: (modifier: ModifierList["modifiers"][number]) => string;
-  onChange: (modifierId: string) => void;
-  onOpenChange: (open: boolean) => void;
+  onChange: (modifierIds: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const selectedModifier = list.modifiers.find(
-    (modifier) => modifier.id === selectedModifierId,
+  const singleSelection = list.maxSelected === 1;
+  const selectedModifiers = list.modifiers.filter((modifier) =>
+    selectedModifierIds.includes(modifier.id),
   );
-  const selectedLabel = selectedModifier
-    ? optionLabel(selectedModifier)
+  const selectedLabel = selectedModifiers.length > 0
+    ? selectedModifiers.map(optionLabel).join(", ")
     : optional
       ? "None"
       : `Choose ${list.name}`;
 
-  useEffect(() => {
-    if (!open) return;
-
-    const closeOutside = (event: PointerEvent) => {
-      if (!dropdownRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-        onOpenChange(false);
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        onOpenChange(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", closeOutside);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOutside);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [onOpenChange, open]);
-
-  const options = [
-    ...(optional ? [{ id: "", label: "None" }] : []),
-    ...list.modifiers.map((modifier) => ({
-      id: modifier.id,
-      label: optionLabel(modifier),
-    })),
-  ];
-
-  const toggleDropdown = () => {
-    if (open) {
-      setOpen(false);
-      onOpenChange(false);
-      return;
-    }
-
-    setOpen(true);
-    onOpenChange(true);
-    window.requestAnimationFrame(() => {
-      if (menuRef.current) menuRef.current.scrollTop = 0;
-      window.requestAnimationFrame(() => {
-        const rect = triggerRef.current?.getBoundingClientRect();
-        const menuHeight = Math.min(300, menuRef.current?.scrollHeight ?? 300);
-        if (!rect) return;
-        const overflow = rect.bottom + 8 + menuHeight - (window.innerHeight - 84);
-        if (overflow > 0) {
-          window.scrollBy({ top: overflow + 12, behavior: "smooth" });
-        }
-      });
-    });
-  };
-
   return (
-    <div ref={dropdownRef} className="relative min-w-0">
+    <div className="overflow-hidden rounded-lg border border-[#ddd0b9] bg-[#f5f0e7]">
       <button
-        ref={triggerRef}
         type="button"
-        aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={toggleDropdown}
-        className={`${styles.trigger} flex min-h-11 w-full min-w-0 items-center justify-between rounded-lg border border-luxury-accent/35 bg-[#f4f0e8] px-4 py-2.5 text-left text-sm text-accent-dark outline-none focus-visible:ring-2 focus-visible:ring-primary/20 lg:text-base`}
+        onClick={() => setOpen((current) => !current)}
+        className="flex min-h-11 w-full items-center justify-between gap-3 border-0 bg-transparent px-4 py-2.5 text-left text-sm text-accent-dark outline-none transition-colors hover:bg-[#faf7f0] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/20 lg:text-base"
       >
         <span className="truncate">{selectedLabel}</span>
         <span
-          className={`${styles.chevron} ${open ? styles.chevronOpen : ""} ml-4 shrink-0`}
-        >
-          <ChevronIcon />
-        </span>
+          aria-hidden="true"
+          className={`size-2 shrink-0 rotate-45 border-b border-r border-accent-dark transition-transform ${open ? "rotate-[225deg]" : ""}`}
+        />
       </button>
       <div
-        ref={menuRef}
-        role="listbox"
-        aria-label={list.name}
-        className={`${styles.menu} ${open ? styles.menuOpen : ""}`}
+        aria-hidden={!open}
+        className={`grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none ${open ? "grid-rows-[1fr] opacity-100" : "pointer-events-none grid-rows-[0fr] opacity-0"}`}
       >
-        {options.map((option) => {
-          const selected = option.id === selectedModifierId;
-          return (
-            <button
-              key={option.id || "none"}
-              type="button"
-              role="option"
-              aria-selected={selected}
-              className={`${styles.option} ${selected ? styles.selected : ""}`}
-              onClick={() => {
-                onChange(option.id);
-                setOpen(false);
-                onOpenChange(false);
-              }}
-            >
-              <span aria-hidden="true" className="w-5 shrink-0 text-primary">
-                {selected ? "✓" : ""}
-              </span>
-              <span className="min-w-0 flex-1 text-left">{option.label}</span>
-            </button>
-          );
-        })}
+        <div className="min-h-0 overflow-hidden">
+          <div
+            role="listbox"
+            aria-label={list.name}
+            aria-multiselectable={!singleSelection}
+            className="max-h-[300px] overflow-y-auto border-t border-[#ddd0b9] py-1.5"
+          >
+            {optional ? (
+              <button
+                type="button"
+                tabIndex={open ? 0 : -1}
+                role="option"
+                aria-selected={selectedModifierIds.length === 0}
+                className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-colors hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary focus-visible:outline-none lg:text-base ${selectedModifierIds.length === 0 ? "font-medium text-primary" : "text-accent-dark"}`}
+                onClick={() => {
+                  onChange([]);
+                  if (singleSelection) setOpen(false);
+                }}
+              >
+                <span aria-hidden="true" className="w-5 shrink-0 text-primary">
+                  {selectedModifierIds.length === 0 ? "✓" : ""}
+                </span>
+                <span>None</span>
+              </button>
+            ) : null}
+            {list.modifiers.map((modifier) => {
+              const selected = selectedModifierIds.includes(modifier.id);
+              const disabled =
+                !singleSelection &&
+                !selected &&
+                list.maxSelected > 0 &&
+                selectedModifierIds.length >= list.maxSelected;
+              return (
+                <button
+                  key={modifier.id}
+                  type="button"
+                  tabIndex={open ? 0 : -1}
+                  role="option"
+                  aria-selected={selected}
+                  disabled={disabled}
+                  className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-colors hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45 lg:text-base ${selected ? "font-medium text-primary" : "text-accent-dark"}`}
+                  onClick={() => {
+                    if (singleSelection) {
+                      onChange([modifier.id]);
+                      setOpen(false);
+                      return;
+                    }
+                    onChange(
+                      selected
+                        ? selectedModifierIds.filter((id) => id !== modifier.id)
+                        : [...selectedModifierIds, modifier.id],
+                    );
+                  }}
+                >
+                  <span aria-hidden="true" className="w-5 shrink-0 text-primary">
+                    {selected ? "✓" : ""}
+                  </span>
+                  <span className="min-w-0 flex-1">{optionLabel(modifier)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -187,27 +148,26 @@ function ModifierDropdown({
 function ModifierOptions({
   list,
   currency,
-  selectedModifierId,
+  selectedModifierIds,
   onChange,
-  onOpenChange,
 }: {
   list: ModifierList;
   currency: string;
-  selectedModifierId: string;
-  onChange: (modifierId: string) => void;
-  onOpenChange: (open: boolean) => void;
+  selectedModifierIds: string[];
+  onChange: (modifierIds: string[]) => void;
 }) {
   const optional = list.minSelected === 0;
+  const singleSelection = list.maxSelected === 1;
   const labelClassName =
     "mb-2.5 block text-[11px] uppercase tracking-[0.16em] text-accent-dark/55";
   const optionLabel = (modifier: ModifierList["modifiers"][number]) =>
     `${modifier.name}${
-      modifier.price > 0
-        ? ` +${formatModifierPrice(modifier.price, currency)}`
+      modifier.price !== 0
+        ? ` ${modifier.price > 0 ? "+" : ""}${formatModifierPrice(modifier.price, currency)}`
         : ""
     }`;
 
-  if (list.modifiers.length > 3) {
+  if (list.modifiers.length >= 4) {
     return (
       <div className="block">
         <span className={labelClassName}>
@@ -217,10 +177,9 @@ function ModifierOptions({
         <ModifierDropdown
           list={list}
           optional={optional}
-          selectedModifierId={selectedModifierId}
+          selectedModifierIds={selectedModifierIds}
           optionLabel={optionLabel}
           onChange={onChange}
-          onOpenChange={onOpenChange}
         />
       </div>
     );
@@ -233,14 +192,14 @@ function ModifierOptions({
         {!optional ? <span className="text-[#b05249]"> · Required</span> : null}
       </legend>
       <div className="flex flex-wrap gap-2.5">
-        {optional ? (
+        {optional && singleSelection ? (
           <label className="cursor-pointer">
             <input
               type="radio"
               name={`modifier-${list.id}`}
               value=""
-              checked={!selectedModifierId}
-              onChange={() => onChange("")}
+              checked={selectedModifierIds.length === 0}
+              onChange={() => onChange([])}
               className="peer sr-only"
             />
             <span className="block rounded-full border border-luxury-accent px-5 py-2 text-xs transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary lg:text-sm">
@@ -251,14 +210,30 @@ function ModifierOptions({
         {list.modifiers.map((modifier) => (
           <label key={modifier.id} className="cursor-pointer">
             <input
-              type="radio"
+              type={singleSelection ? "radio" : "checkbox"}
               name={`modifier-${list.id}`}
               value={modifier.id}
-              checked={selectedModifierId === modifier.id}
-              onChange={() => onChange(modifier.id)}
+              checked={selectedModifierIds.includes(modifier.id)}
+              disabled={
+                !singleSelection &&
+                list.maxSelected > 0 &&
+                selectedModifierIds.length >= list.maxSelected &&
+                !selectedModifierIds.includes(modifier.id)
+              }
+              onChange={() => {
+                if (singleSelection) {
+                  onChange([modifier.id]);
+                  return;
+                }
+                onChange(
+                  selectedModifierIds.includes(modifier.id)
+                    ? selectedModifierIds.filter((id) => id !== modifier.id)
+                    : [...selectedModifierIds, modifier.id],
+                );
+              }}
               className="peer sr-only"
             />
-            <span className="block rounded-full border border-luxury-accent px-5 py-2 text-xs transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary lg:text-sm">
+            <span className="block rounded-full border border-luxury-accent px-5 py-2 text-xs transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary peer-disabled:cursor-not-allowed peer-disabled:opacity-45 lg:text-sm">
               {optionLabel(modifier)}
             </span>
           </label>
@@ -318,7 +293,6 @@ export function DrinkOptions({
   onVariationChange,
   value,
   onChange,
-  onMenuOpenChange,
 }: {
   variations: DrinkVariation[];
   modifierLists: ModifierList[];
@@ -327,28 +301,28 @@ export function DrinkOptions({
   onVariationChange: (variationId: string) => void;
   value: DrinkSelection;
   onChange: (value: DrinkSelection) => void;
-  onMenuOpenChange: (open: boolean) => void;
 }) {
   return (
     <div className="mt-6 space-y-3 font-signika">
-      <VariationOptions
-        variations={variations}
-        selectedVariationId={selectedVariationId}
-        onVariationChange={onVariationChange}
-      />
+      {variations.length > 1 ? (
+        <VariationOptions
+          variations={variations}
+          selectedVariationId={selectedVariationId}
+          onVariationChange={onVariationChange}
+        />
+      ) : null}
       {modifierLists.map((list) => (
         <ModifierOptions
           key={list.id}
           list={list}
           currency={currency}
-          selectedModifierId={value.modifierIdsByList[list.id] ?? ""}
-          onOpenChange={onMenuOpenChange}
-          onChange={(modifierId) =>
+          selectedModifierIds={value.modifierIdsByList[list.id] ?? []}
+          onChange={(modifierIds) =>
             onChange({
               ...value,
               modifierIdsByList: {
                 ...value.modifierIdsByList,
-                [list.id]: modifierId,
+                [list.id]: modifierIds,
               },
             })
           }

@@ -11,7 +11,9 @@ import { useDraftState } from "./useDraftState";
 import { clearCakeDraft, draftText } from "./draft-storage";
 import { useCakeCatalog } from "./useCakeCatalog";
 import {
+  incompleteLists,
   money,
+  modifierListLabel,
   sanitizeSelections,
   selectedModifiers,
   type CakeConfig,
@@ -259,16 +261,10 @@ function CakeDraftFlow({ designs, error, onRetry }: { designs?: CakeDesign[]; er
                         <ProductImagePlaceholder />
                       )}
                     </span>
-                    <span className="flex min-h-[78px] items-end justify-between gap-2.5 px-3 py-2.5 lg:min-h-[112px] lg:px-4 lg:py-4">
-                      <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="truncate text-[13px] font-medium leading-[1.4] lg:text-lg lg:leading-7">{item.name}</span>
-                        {item.description ? (
-                          <span className="line-clamp-1 text-[11px] font-light text-accent-dark/60 lg:text-sm">{item.description}</span>
-                        ) : null}
-                        <span className="mt-1 text-xs text-accent-dark/65 lg:text-sm">From {money(item.price.amount, item.price.currency)}</span>
-                      </span>
+                    <span className="flex min-h-[58px] items-center justify-between gap-2.5 px-3 py-2.5 lg:min-h-[72px] lg:px-4 lg:py-4">
+                      <span className="min-w-0 truncate text-[13px] font-medium leading-[1.4] lg:text-lg lg:leading-7">{item.name}</span>
                       <span className="grid size-[26px] shrink-0 place-items-center rounded-full bg-primary text-xl font-light leading-none text-accent lg:size-7" aria-hidden="true">
-                        {designId === item.id ? "✓" : "+"}
+                        +
                       </span>
                     </span>
                   </button>
@@ -284,6 +280,7 @@ function CakeDraftFlow({ designs, error, onRetry }: { designs?: CakeDesign[]; er
 }
 
 function CakeFlow({ design, onExit }: { design: CakeDesign; onExit: () => void }) {
+  const [sizeId, setSizeId] = useDraftState<string | null>("size", null, (value): value is string | null => value === null || (typeof value === "string" && value.length <= 200));
   const [rawSelections, setSelections] = useDraftState<Record<string, string[]>>("selections", {}, (value): value is Record<string, string[]> =>
     !!value && typeof value === "object" && !Array.isArray(value) &&
     Object.entries(value).every(([key, ids]) => key.length <= 200 && Array.isArray(ids) && ids.length <= 50 && ids.every((id) => typeof id === "string" && id.length <= 200)));
@@ -293,6 +290,7 @@ function CakeFlow({ design, onExit }: { design: CakeDesign; onExit: () => void }
   const { step, go, back } = useCakeStep(onExit);
   const [quoteRevision, setQuoteRevision] = useState(0);
   const [now, setNow] = useState(() => Date.now());
+  const size = design.sizes.find((candidate) => candidate.id === sizeId);
 
   useEffect(() => {
     if (step !== "date" && step !== "summary" && step !== "payment") return;
@@ -301,31 +299,59 @@ function CakeFlow({ design, onExit }: { design: CakeDesign; onExit: () => void }
   }, [step]);
 
   const cake: CakeConfig = useMemo(
-    () => ({ design: design.id, selections: sanitizeSelections(design, rawSelections), message }),
-    [design, rawSelections, message],
+    () => ({ design: design.id, size: size?.id ?? "", selections: size ? sanitizeSelections(size, rawSelections) : [], message }),
+    [design.id, size, rawSelections, message],
   );
+  const configurationComplete = size
+    ? incompleteLists(size, rawSelections).length === 0
+    : false;
+  const liveSubtotal = useMemo(() => {
+    if (!size) return undefined;
+    return (
+      size.price.amount +
+      (size.designModifier?.price ?? 0) +
+      size.modifierLists.reduce(
+        (total, list) =>
+          total +
+          selectedModifiers(list, rawSelections[list.id] ?? []).reduce(
+            (listTotal, modifier) => listTotal + modifier.price,
+            0,
+          ),
+        0,
+      )
+    );
+  }, [size, rawSelections]);
   const pickupValue = useMemo(() => {
     const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date);
     if (!match || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return undefined;
     return `${match[3]}-${match[2]}-${match[1]}T${time}`;
   }, [date, time]);
-  const { quote, error: quoteError } = useCakeQuote(cake, pickupValue, quoteRevision);
+  const { quote, error: quoteError } = useCakeQuote(
+    cake,
+    pickupValue,
+    quoteRevision,
+    configurationComplete,
+  );
 
-  const currency = design.price.currency;
+  const currency = size?.price.currency ?? "AUD";
   const fee = quote?.fee ?? 0;
   const unavailable = quote?.available === false;
   const availability = unavailable ? "Not available (< 24 h)" : fee ? "Next-day creation (+$80)" : "Standard (free)";
-  const valid = !!pickupValue && quote?.available === true && !!quote.expires && quote.expires > now;
+  const valid = !!size && !!pickupValue && quote?.available === true && !!quote.expires && quote.expires > now;
 
   const summary: CakeSummaryItem[] = useMemo(() => [
     { label: "Design", value: design.name },
-    ...design.modifierLists.flatMap((list) => {
+    ...(size ? [
+      { label: "Shape", value: size.shape[0].toUpperCase() + size.shape.slice(1) },
+      { label: "Size", value: `${size.label}${size.serves ? `, Serves ${size.serves}` : ""}` },
+    ] : []),
+    ...(size?.modifierLists ?? []).flatMap((list) => {
       const names = selectedModifiers(list, rawSelections[list.id] ?? []).map((modifier) => modifier.name);
-      return names.length > 0 ? [{ label: list.name, value: names.join(", ") }] : [];
+      return names.length > 0 ? [{ label: modifierListLabel(list.name), value: names.join(", ") }] : [];
     }),
     { label: "Message", value: message || "None" },
-    { label: "Total", value: quote?.subtotal === undefined ? "…" : money(quote.subtotal, currency) },
-  ], [design, rawSelections, message, quote?.subtotal, currency]);
+    { label: "Total", value: money(quote?.subtotal ?? liveSubtotal ?? 0, currency) },
+  ], [design.name, size, rawSelections, message, quote?.subtotal, liveSubtotal, currency]);
 
   // The payment step needs a live, unexpired quote; otherwise stay on Summary.
   const view = step === "payment" && !valid ? "summary" : step;
@@ -334,10 +360,12 @@ function CakeFlow({ design, onExit }: { design: CakeDesign; onExit: () => void }
     return (
       <CakeCustomiser
         design={design}
+        selectedSizeId={size?.id ?? null}
         selections={rawSelections}
         message={message}
-        subtotal={quote?.subtotal}
+        subtotal={quote?.subtotal ?? liveSubtotal}
         priceError={quoteError}
+        onSizeChange={setSizeId}
         onSelectionsChange={setSelections}
         onMessageChange={setMessage}
         onBack={() => go("design")}

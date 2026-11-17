@@ -4,12 +4,14 @@ import type {
   CakeDesign,
   CakeModifier,
   CakeModifierList,
+  CakeSize,
 } from "../services/square.js";
 import type { ApiEnv } from "../types/env.js";
 
 export type CakeSelection = { listId: string; modifierIds: string[] };
 export type Cake = {
   design: string;
+  size: string;
   selections: CakeSelection[];
   message: string;
 };
@@ -17,6 +19,7 @@ export type Cake = {
 export type PricedCake = {
   cake: Cake;
   design: CakeDesign;
+  size: CakeSize;
   lines: Array<{ list: CakeModifierList; modifiers: CakeModifier[] }>;
   subtotal: number;
 };
@@ -41,6 +44,7 @@ function id(value: unknown, message: string): string {
 export function parseCake(value: unknown): Cake {
   const cake = object(value);
   const design = id(cake.design, "Choose a cake design.");
+  const size = id(cake.size, "Choose a cake size.");
 
   if (!Array.isArray(cake.selections) || cake.selections.length > 50) {
     throw new CakeError("Choose valid cake options.");
@@ -69,7 +73,7 @@ export function parseCake(value: unknown): Cake {
     throw new CakeError("Message is too long");
   }
 
-  return { design, selections, message: cake.message };
+  return { design, size, selections, message: cake.message };
 }
 
 /**
@@ -79,19 +83,21 @@ export function parseCake(value: unknown): Cake {
 export function priceCake(cake: Cake, designs: CakeDesign[]): PricedCake {
   const design = designs.find((candidate) => candidate.id === cake.design);
   if (!design) throw new CakeError("This cake design is no longer available.");
+  const size = design.sizes.find((candidate) => candidate.id === cake.size);
+  if (!size) throw new CakeError("This cake size is no longer available.");
 
   const selections = new Map(
     cake.selections.map((selection) => [selection.listId, selection.modifierIds]),
   );
 
   for (const listId of selections.keys()) {
-    if (!design.modifierLists.some((list) => list.id === listId)) {
+    if (!size.modifierLists.some((list) => list.id === listId)) {
       throw new CakeError("Choose valid cake options.");
     }
   }
 
-  let subtotal = design.price.amount;
-  const lines = design.modifierLists.map((list) => {
+  let subtotal = size.price.amount + (size.designModifier?.price ?? 0);
+  const lines = size.modifierLists.map((list) => {
     const selectedIds = selections.get(list.id) ?? [];
     const selected = new Set(selectedIds);
 
@@ -122,6 +128,7 @@ export function priceCake(cake: Cake, designs: CakeDesign[]): PricedCake {
   return {
     cake,
     design,
+    size,
     lines: lines.filter((line) => line.modifiers.length > 0),
     subtotal,
   };

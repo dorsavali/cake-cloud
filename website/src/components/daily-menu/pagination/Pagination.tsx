@@ -1,10 +1,11 @@
-import styles from "./Pagination.module.css";
-
 type PaginationProps = {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 };
+
+const paginationButtonClass =
+  "inline-flex size-10 items-center justify-center rounded-full border border-luxury-accent/45 bg-accent/72 text-accent-dark [transition:color_180ms_ease,border-color_180ms_ease,background-color_180ms_ease,transform_180ms_ease] [&:not(:disabled):hover]:-translate-y-px [&:not(:disabled):hover]:border-primary [&:not(:disabled):hover]:bg-primary [&:not(:disabled):hover]:text-accent disabled:cursor-default disabled:opacity-[0.38]";
 
 export function Pagination({
   currentPage,
@@ -20,7 +21,7 @@ export function Pagination({
         aria-label="Previous page"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
-        className={`${styles.button} inline-flex size-10 items-center justify-center rounded-full text-lg`}
+        className={`${paginationButtonClass} text-lg`}
       >
         <span aria-hidden="true">←</span>
       </button>
@@ -32,7 +33,9 @@ export function Pagination({
           aria-label={`Page ${page}`}
           aria-current={page === currentPage ? "page" : undefined}
           onClick={() => onPageChange(page)}
-          className={`${styles.button} ${page === currentPage ? styles.active : ""} inline-flex size-10 items-center justify-center rounded-full text-sm font-medium`}
+          className={`${paginationButtonClass} text-sm font-medium ${
+            page === currentPage ? "border-primary! bg-primary! text-accent!" : ""
+          }`}
         >
           {page}
         </button>
@@ -43,7 +46,7 @@ export function Pagination({
         aria-label="Next page"
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
-        className={`${styles.button} inline-flex size-10 items-center justify-center rounded-full text-lg`}
+        className={`${paginationButtonClass} text-lg`}
       >
         <span aria-hidden="true">→</span>
       </button>

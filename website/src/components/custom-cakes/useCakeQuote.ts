@@ -5,7 +5,12 @@ import type { CakeConfig, CakeQuote } from "./cake-types";
 
 export type { CakeConfig, CakeQuote } from "./cake-types";
 
-export function useCakeQuote(cake: CakeConfig, pickup?: string, revision = 0) {
+export function useCakeQuote(
+  cake: CakeConfig,
+  pickup?: string,
+  revision = 0,
+  enabled = true,
+) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setTick((t) => t + 1), 30000);
@@ -14,6 +19,10 @@ export function useCakeQuote(cake: CakeConfig, pickup?: string, revision = 0) {
   const body = JSON.stringify({ cake, pickup, revision });
   const [result, setResult] = useState<{ body: string; quote?: CakeQuote; error?: string }>();
   useEffect(() => {
+    if (!cake.size || !enabled) {
+      setResult(undefined);
+      return;
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => {
       fetch(apiUrl("/api/cake/quote"), { method: "POST", headers: { "Content-Type": "application/json" }, body, signal: controller.signal })
@@ -21,6 +30,6 @@ export function useCakeQuote(cake: CakeConfig, pickup?: string, revision = 0) {
         .then((quote) => setResult({ body, quote })).catch((e) => { if (!controller.signal.aborted) setResult({ body, error: e.message }); });
     }, 200);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [body, tick]);
+  }, [body, cake.size, enabled, tick]);
   return result?.body === body ? result : { body };
 }

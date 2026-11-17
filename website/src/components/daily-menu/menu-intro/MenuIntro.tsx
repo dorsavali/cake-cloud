@@ -1,8 +1,6 @@
 import { UberEatsIcon } from "@/components/ui";
 import { uberEatsUrl } from "@/lib/externalLinks";
 
-import styles from "./MenuIntro.module.css";
-
 function StoreIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0">
@@ -26,10 +24,10 @@ export function MenuIntro() {
       className="px-4 py-5 lg:py-7 lg:px-8 "
     >
       <div className="mx-auto max-w-[1476px]">
-        <div className="flex items-start justify-between ">
+        <div className="flex items-center justify-between gap-3">
           <h1
             id="daily-menu-heading"
-            className="max-w-[180px] font-kalnia text-[30px] font-medium leading-[1.16] text-accent-dark max-[380px]:max-w-[150px] max-[380px]:text-[31px] md:max-w-none md:text-[48px] md:leading-[1.1]"
+            className="whitespace-nowrap font-kalnia text-[clamp(26px,7vw,30px)] font-medium leading-[48px] text-accent-dark md:text-[48px] md:leading-[1.1]"
           >
             Daily Menu
           </h1>
@@ -39,9 +37,9 @@ export function MenuIntro() {
             target="_blank"
             rel="noreferrer"
             aria-label="Order Cake Cloud delivery on Uber Eats"
-            className={`${styles.deliveryButton} inline-flex h-12 w-[145px] items-center justify-center gap-2 overflow-hidden rounded-full border border-luxury-accent bg-[#FAF7F0] px-4 font-signika text-base font-medium text-accent-dark transition-[color,background-color,border-color] duration-300 max-[420px]:w-[135px] md:w-[242px] md:gap-3 md:px-8`}
+            className="inline-flex h-11 w-[128px] shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full border border-luxury-accent bg-[#FAF7F0] px-3 font-signika text-sm font-medium text-accent-dark [transition:width_500ms_cubic-bezier(0.22,1,0.36,1),padding_500ms_cubic-bezier(0.22,1,0.36,1),gap_500ms_cubic-bezier(0.22,1,0.36,1),color_180ms_ease,background-color_180ms_ease,border-color_180ms_ease] [&:hover]:border-primary [&:hover]:bg-primary [&:hover]:text-accent [&:active]:border-[#5e796c] [&:active]:bg-[#5e796c] max-[360px]:w-[118px] md:h-12 md:w-auto md:gap-3 md:px-6 md:text-base"
           >
-            <UberEatsIcon className="h-6 w-auto shrink-0" />
+            <UberEatsIcon className="h-5 w-auto shrink-0 md:h-6" />
             <span className="whitespace-nowrap">Delivery</span>
           </a>
         </div>

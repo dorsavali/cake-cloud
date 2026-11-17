@@ -13,7 +13,6 @@ import { useRouter } from "next/navigation";
 
 import { apiUrl } from "@/lib/api";
 
-import styles from "./Cart.module.css";
 
 export type CartItem = {
   id: string;
@@ -235,7 +234,7 @@ function CartDrawer({
             type="button"
             disabled={items.length === 0}
             onClick={reviewOrder}
-            className={`${styles.checkoutButton} mt-4 flex h-[52px] w-full items-center justify-center rounded-[18px] border border-primary bg-primary font-kalnia text-lg font-medium text-accent transition-[color,background-color,border-color,transform] duration-200 disabled:cursor-not-allowed disabled:border-primary disabled:bg-primary disabled:opacity-45`}
+            className="mt-4 flex h-[52px] w-full items-center justify-center rounded-[18px] border border-primary bg-primary font-kalnia text-lg font-medium text-accent transition-[color,background-color,border-color,transform] duration-200 [&:not(:disabled):hover]:border-[#b9a36e] [&:not(:disabled):hover]:bg-[#d8d4cf] [&:not(:disabled):hover]:text-accent-dark [&:not(:disabled):active]:scale-[0.99] [&:not(:disabled):active]:border-primary [&:not(:disabled):active]:bg-primary disabled:cursor-not-allowed disabled:border-primary disabled:bg-primary disabled:opacity-45"
           >
             Checkout
           </button>

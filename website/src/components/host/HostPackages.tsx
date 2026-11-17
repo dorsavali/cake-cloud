@@ -92,10 +92,10 @@ export function HostPackages() {
   return (
     <section className="mx-auto w-full max-w-[1476px] px-4 py-5 lg:py-7 lg:px-8 ">
       <div className="mb-4 pl-0.5">
-        <h1 className="mt-2 font-kalnia text-[32px] font-medium leading-none tracking-[-0.025em] text-accent-dark md:text-[38px]">
+        <h1 className="mt-2 font-kalnia text-[28px] font-medium leading-[1.05] tracking-[-0.025em] text-accent-dark md:text-[38px] md:leading-none">
           Host with Cake Cloud
         </h1>
-        <p className="mt-2 font-signika text-[13px] text-accent-dark/65">
+        <p className="mt-2 font-signika text-[11px] leading-[1.45] text-accent-dark/65 md:text-[13px] md:leading-normal">
           Ready-to-book packages for corporate events, celebrations, and
           gatherings.
         </p>
@@ -107,7 +107,7 @@ export function HostPackages() {
         </p>
         <Link
           href="/events/enquiry"
-          className="inline-flex min-w-40 items-center justify-center rounded-full bg-primary px-4 py-2 font-kalnia text-[11px] font-medium text-white transition-colors hover:bg-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:min-w-44 md:px-5 md:text-[13px]"
+          className="inline-flex min-w-0 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-3 py-2 font-kalnia text-[11px] font-medium text-white transition-colors hover:bg-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:min-w-44 md:px-5 md:text-[13px]"
         >
           Go to Enquiry Form
         </Link>

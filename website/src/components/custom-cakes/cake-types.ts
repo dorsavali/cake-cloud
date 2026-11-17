@@ -14,21 +14,36 @@ export type CakeModifierList = {
   modifiers: CakeModifier[];
 };
 
+export type CakeShape = "round" | "square" | "heart";
+
+export type CakeSize = {
+  id: string;
+  variationId: string;
+  name: string;
+  label: string;
+  serves: string;
+  shape: CakeShape;
+  image: string | null;
+  images: string[];
+  price: { amount: number; currency: string };
+  designModifier: CakeModifier | null;
+  modifierLists: CakeModifierList[];
+};
+
 export type CakeDesign = {
   id: string;
-  variationId: string | null;
   name: string;
   description: string;
   image: string | null;
   images: string[];
-  price: { amount: number; currency: string };
-  modifierLists: CakeModifierList[];
+  sizes: CakeSize[];
 };
 
 export type CakeSelection = { listId: string; modifierIds: string[] };
 
 export type CakeConfig = {
   design: string;
+  size: string;
   selections: CakeSelection[];
   message: string;
 };
@@ -69,10 +84,10 @@ export function toggleModifier(
 
 /** Drops ids that are no longer part of the Square catalogue. */
 export function sanitizeSelections(
-  design: CakeDesign,
+  size: CakeSize,
   raw: Record<string, string[]>,
 ): CakeSelection[] {
-  return design.modifierLists
+  return size.modifierLists
     .map((list) => ({
       listId: list.id,
       modifierIds: (raw[list.id] ?? []).filter((id) =>
@@ -82,9 +97,9 @@ export function sanitizeSelections(
     .filter((selection) => selection.modifierIds.length > 0);
 }
 
-export function defaultSelections(design: CakeDesign): Record<string, string[]> {
+export function defaultSelections(size: CakeSize): Record<string, string[]> {
   const selected: Record<string, string[]> = {};
-  for (const list of design.modifierLists) {
+  for (const list of size.modifierLists) {
     const defaults = list.modifiers
       .filter((modifier) => modifier.defaultSelected)
       .map((modifier) => modifier.id);
@@ -94,10 +109,10 @@ export function defaultSelections(design: CakeDesign): Record<string, string[]> 
 }
 
 export function incompleteLists(
-  design: CakeDesign,
+  size: CakeSize,
   raw: Record<string, string[]>,
 ): CakeModifierList[] {
-  return design.modifierLists.filter((list) => {
+  return size.modifierLists.filter((list) => {
     const count = (raw[list.id] ?? []).filter((id) =>
       list.modifiers.some((modifier) => modifier.id === id),
     ).length;
@@ -113,8 +128,10 @@ const colourNames: Record<string, string> = {
   ivory: "#faf7f0",
   white: "#ffffff",
   blush: "#efc2c2",
+  "blush pink": "#efc2c2",
   pink: "#efc2c2",
   sage: "#91ac88",
+  "sage green": "#91ac88",
   green: "#91ac88",
   lavender: "#c5b1d8",
   purple: "#c5b1d8",
@@ -123,11 +140,22 @@ const colourNames: Record<string, string> = {
   "dusty rose": "#c68779",
   red: "#b05249",
   blue: "#8aa9c2",
+  "light blue": "#8aa9c2",
   yellow: "#ead58b",
 };
 
 export function isColourList(name: string) {
   return /colo(u)?r/i.test(name);
+}
+
+export function modifierListLabel(name: string) {
+  return name
+    .replace(
+      /^\s*\d+\s*(?:(?:extra|ultra)\s+tall|mini|classic|tall)?\s+/i,
+      "",
+    )
+    .replace(/^cake\s+/i, "")
+    .trim();
 }
 
 export function colourFor(name: string): string | null {

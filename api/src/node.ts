@@ -30,7 +30,6 @@ const env: ApiEnv = {
     process.env.SQUARE_WEBHOOK_NOTIFICATION_URL ??
     `http://${hostname}:${port}/api/webhooks/square`,
   EMAIL_ENABLED: process.env.EMAIL_ENABLED ?? "false",
-  EMAIL_PREVIEW_ENABLED: process.env.EMAIL_PREVIEW_ENABLED ?? "true",
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_SECURITY:

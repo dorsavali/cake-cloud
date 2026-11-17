@@ -4,7 +4,6 @@ import { Button } from "@/components/ui";
 
 import type { CakeShowcaseItem as CakeShowcaseItemData } from "./data";
 import { CakeImageReveal } from "./CakeImageReveal";
-import styles from "./CakeShowcaseItem.module.css";
 
 type CakeShowcaseItemProps = {
   item: CakeShowcaseItemData;
@@ -24,7 +23,7 @@ export function CakeShowcaseItem({ item }: CakeShowcaseItemProps) {
           <Link
             href={item.ctaHref}
             prefetch={false}
-            className={`${styles.exploreButton} mt-6 inline-flex h-10 min-w-0 items-center justify-center rounded-[20px] border border-luxury-accent px-8 py-2 font-kalnia text-[18px] leading-none text-accent-dark transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:h-[60px] lg:min-w-[238px] lg:rounded-full lg:px-10 lg:text-[32px]`}
+            className="mt-6 inline-flex h-10 min-w-0 items-center justify-center rounded-[20px] border border-luxury-accent px-8 py-2 font-kalnia text-[18px] leading-none text-accent-dark transition-[color,background-color,border-color,transform] duration-200 [&:hover]:border-primary [&:hover]:bg-primary [&:hover]:text-accent active:scale-[0.99] active:border-accent-dark active:bg-accent-dark active:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:h-[60px] lg:min-w-[238px] lg:rounded-full lg:px-10 lg:text-[32px]"
           >
             {item.ctaLabel}
           </Link>
@@ -33,7 +32,7 @@ export function CakeShowcaseItem({ item }: CakeShowcaseItemProps) {
             variant="outline"
             size="lg"
             font="display"
-            className={`${styles.exploreButton} mt-6 h-10! min-w-0! rounded-[20px]! px-8! py-2! text-[18px]! gap-2! lg:h-[60px]! lg:min-w-[238px]! lg:rounded-full! lg:px-10! lg:text-[32px]!`}
+            className="mt-6 h-10! min-w-0! gap-2! rounded-[20px]! px-8! py-2! text-[18px]! [&:hover]:border-primary! [&:hover]:bg-primary! [&:hover]:text-accent! active:scale-[0.99]! active:border-accent-dark! active:bg-accent-dark! active:text-accent! lg:h-[60px]! lg:min-w-[238px]! lg:rounded-full! lg:px-10! lg:text-[32px]!"
           >
             {item.ctaLabel}
           </Button>

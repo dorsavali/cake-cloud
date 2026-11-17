@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useCart } from "./CartProvider";
-import styles from "./Cart.module.css";
 
 function lineId(item: {
   id: string;
@@ -62,9 +61,7 @@ export function CheckoutReview() {
     (sum, item) => sum + item.unitPrice * item.quantity,
     0,
   );
-  const tax = Math.round(subtotal * 0.1);
-  const shipping = 150;
-  const total = subtotal + tax + shipping;
+  const total = subtotal;
   const currency = items[0]?.currency ?? "AUD";
   const customerValid = name.trim().length > 0
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
@@ -188,14 +185,6 @@ export function CheckoutReview() {
                 <div className="flex justify-between border-b border-dotted border-[#cbbb98] pb-3">
                   <dt>Subtotal</dt>
                   <dd>{money(subtotal, currency)}</dd>
-                </div>
-                <div className="flex justify-between border-b border-dotted border-[#cbbb98] pb-3">
-                  <dt>Tax</dt>
-                  <dd>{money(tax, currency)}</dd>
-                </div>
-                <div className="flex justify-between border-b border-dotted border-[#cbbb98] pb-3">
-                  <dt>Estimated Shipping</dt>
-                  <dd>{money(shipping, currency)}</dd>
                 </div>
               </dl>
               <div className="mt-6 flex items-center justify-between border-y border-dotted border-[#cbbb98] py-5 font-kalnia text-2xl md:text-3xl">
@@ -344,7 +333,7 @@ export function CheckoutReview() {
                   termsAccepted,
                   allergenAccepted,
                 )}
-                className={`${styles.reviewCheckoutButton} mt-6 flex min-h-14 w-full items-center justify-center rounded-full border border-[#b9a36e] bg-[#faf7f0] px-6 font-kalnia text-lg transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60`}
+                className="mt-6 flex min-h-14 w-full items-center justify-center rounded-full border border-[#b9a36e] bg-[#faf7f0] px-6 font-kalnia text-lg transition-[color,background-color,border-color,transform] duration-200 [&:not(:disabled):hover]:border-[#b9a36e] [&:not(:disabled):hover]:bg-[#d8d4cf] [&:not(:disabled):hover]:text-accent-dark [&:not(:disabled):active]:scale-[0.99] [&:not(:disabled):active]:border-primary [&:not(:disabled):active]:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {checkoutBusy ? "Opening Square…" : "Pay & Place Order"}
               </button>

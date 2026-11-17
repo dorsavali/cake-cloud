@@ -1,10 +1,13 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {handleCustomCakeCheckout} from "../dist/routes/custom-cake-checkout.js";
+import {cake,cakeCatalogResponse,isCakeCatalogRequest} from "./helpers/cake-fixture.mjs";
 const env={SQUARE_ENVIRONMENT:"sandbox",SQUARE_ACCESS_TOKEN:"test",SQUARE_LOCATION_ID:"test",SQUARE_TIMEZONE:"Australia/Perth"};
-const body=()=>({cake:{base:"classic-round",size:0,height:0,filling:0,sponge:"Vanilla",frosting:"Smooth Buttercream",colour:"Ivory",extras:[],message:""},pickup:new Date(Date.now()+72*3600000).toISOString().slice(0,16),name:"Test Buyer",email:"test@example.com",expectedTotal:14500,idempotencyKey:crypto.randomUUID(),termsAccepted:true});
+const body=()=>({cake,pickup:new Date(Date.now()+72*3600000).toISOString().slice(0,16),name:"Test Buyer",email:"test@example.com",phone:"0412 345 678",expectedTotal:14500,idempotencyKey:crypto.randomUUID(),termsAccepted:true,allergenAccepted:true});
 const req=b=>new Request("http://localhost/api/cake/checkout",{method:"POST",body:JSON.stringify(b)});
-test("rejects production and invalid amounts before Square",async()=>{
+test("rejects production and invalid amounts before Square",async t=>{
+ let catalogCall=0;
+ t.mock.method(globalThis,"fetch",async (_url,options)=>cakeCatalogResponse(catalogCall++%2===0?{body:JSON.stringify({object_types:["CATEGORY"]})}:options));
  assert.equal((await handleCustomCakeCheckout(req(body()),{...env,SQUARE_ENVIRONMENT:"production"})).status,503);
  assert.equal((await handleCustomCakeCheckout(req({...body(),expectedTotal:1}),env)).status,409);
  assert.equal((await handleCustomCakeCheckout(req({...body(),pickup:"2020-01-01T00:00"}),env)).status,409);
@@ -13,7 +16,10 @@ test("rejects production and invalid amounts before Square",async()=>{
 test("Square receives server price, fulfillment, and a stable retry key",async t=>{
  const sent=[];
  t.mock.method(globalThis,"fetch",async (url,options)=>{
-   if(options.method==="POST"){
+   if(isCakeCatalogRequest(url)) return cakeCatalogResponse(options);
+   if(String(url).endsWith("/v2/customers/search")) return Response.json({customers:[]});
+   if(String(url).endsWith("/v2/customers")) return Response.json({customer:{id:"test-customer"}});
+   if(String(url).endsWith("/v2/online-checkout/payment-links")){
     assert.equal(url,"https://connect.squareupsandbox.com/v2/online-checkout/payment-links");
     sent.push(JSON.parse(options.body));
     return Response.json({payment_link:{id:"test-link",url:"https://sandbox.square.link/u/test",order_id:"test-order"}});
@@ -24,7 +30,7 @@ test("Square receives server price, fulfillment, and a stable retry key",async t
  const b=body();
  for(let i=0;i<2;i++)assert.equal((await handleCustomCakeCheckout(req(b),env)).status,200);
  assert.deepEqual(sent[0],sent[1]);
- assert.equal(sent[0].order.line_items[0].base_price_money.amount,14500);
+ assert.equal(sent[0].order.line_items[0].catalog_object_id,"cake-variation");
  assert.equal(sent[0].pre_populated_data,undefined);
  assert.equal(sent[0].order.fulfillments[0].pickup_details.recipient.email_address,b.email);
 });

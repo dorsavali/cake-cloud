@@ -13,7 +13,7 @@ import { handleSquareWebhook } from "./routes/square-webhook.js";
 import { handleHostPackages } from "./routes/host-packages.js";
 import { handleHostCheckout } from "./routes/host-checkout.js";
 import { handleHostEnquiry } from "./routes/host-enquiry.js";
-import { handleEmailPreview } from "./routes/email-preview.js";
+import { handleClubJoin } from "./routes/club.js";
 import {
   handleCategories,
   handleProductCards,
@@ -48,6 +48,9 @@ export async function handleApiRequest(
   if (url.pathname === "/api/host/enquiry") {
     return applyPublicApiRateLimit(request) ?? handleHostEnquiry(request, env);
   }
+  if (url.pathname === "/api/club/join") {
+    return applyPublicApiRateLimit(request) ?? handleClubJoin(request, env);
+  }
   if (url.pathname === "/api/cake/quote") {
     const limited = applyPublicApiRateLimit(request);
     return limited ?? handleCakeCheckout(request, env);
@@ -70,11 +73,6 @@ export async function handleApiRequest(
 
   if (url.pathname === "/api/health") {
     return handleHealth(request);
-  }
-
-  const emailPreviewMatch = url.pathname.match(/^\/api\/email-preview\/(customer|internal)$/);
-  if (emailPreviewMatch) {
-    return handleEmailPreview(request, emailPreviewMatch[1], env);
   }
 
   if (url.pathname === "/api/products") {

@@ -1,7 +1,7 @@
 
 
 export const pageShell =
-  "-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-cover bg-top bg-no-repeat px-4 pb-8 pt-16 font-signika text-accent-dark md:bg-[length:100%_auto] md:bg-repeat-y md:px-8 md:pb-16";
+  "-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y px-4 pb-8 pt-16 font-signika text-accent-dark md:px-8 md:pb-16";
 export const container = "mx-auto w-full max-w-[1476px]";
 
 export const pageTitle =

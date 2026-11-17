@@ -9,6 +9,24 @@ const responseCacheHeaders = {
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
+const hostCategoryNames = new Set(["host", "host packages"]);
+
+const hasHostCategory = (categoryPaths: string[][]) =>
+  categoryPaths.some((path) =>
+    path.some((category) => hostCategoryNames.has(normalize(category))),
+  );
+
+const directHostCategories = (categoryPaths: string[][]) => [
+  ...new Set(
+    categoryPaths.flatMap((path) => {
+      const hostIndex = path.findIndex((category) =>
+        hostCategoryNames.has(normalize(category)),
+      );
+      return hostIndex > 0 ? [path[hostIndex - 1]] : [];
+    }),
+  ),
+];
+
 const attributeString = (
   attributes: Record<string, string | number | boolean | string[]>,
   key: string,
@@ -46,9 +64,7 @@ export async function handleHostPackages(
         );
         return (
           section === "host" ||
-          product.categories.some(
-            (category) => normalize(category) === "host packages",
-          )
+          hasHostCategory(product.categoryPaths)
         );
       })
       .map((product) => {
@@ -69,9 +85,7 @@ export async function handleHostPackages(
           name: product.name,
           description: product.description,
           image: product.image,
-          categories: product.categories.filter(
-            (category) => normalize(category) !== "host packages",
-          ),
+          categories: directHostCategories(product.categoryPaths),
           price: product.price,
           priceUnit:
             pricingModel === "fixed"

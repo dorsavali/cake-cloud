@@ -19,7 +19,6 @@ import { ProductDetailLoading } from "./ProductDetailLoading";
 import {
   defaultDrinkSelection,
   DrinkOptions,
-  VariationOptions,
   type DrinkSelection,
 } from "./DrinkOptions";
 
@@ -37,18 +36,21 @@ function formatPrice(product: DailyMenuProduct, amount = product.price.amount) {
   }).format(amount / 100);
 }
 
+function capitalizeListItems(value: string) {
+  return value.replace(
+    /(^|[,;/]\s*)([a-z])/gi,
+    (_, separator: string, letter: string) => separator + letter.toUpperCase(),
+  );
+}
+
 function formatAllergen(value: string) {
   const normalized = value.replace(/_/g, " ").trim().toLowerCase();
-  return normalized
-    ? normalized.charAt(0).toUpperCase() + normalized.slice(1)
-    : "";
+  return capitalizeListItems(normalized);
 }
 
 function formatDietaryPreference(value: string) {
   const normalized = value.replace(/_/g, " ").toLowerCase().trim();
-  return normalized
-    ? normalized.charAt(0).toUpperCase() + normalized.slice(1)
-    : "";
+  return capitalizeListItems(normalized);
 }
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -76,7 +78,6 @@ export function ProductDetail() {
   const [quantity, setQuantity] = useState(0);
   const [selectedVariationId, setSelectedVariationId] = useState("");
   const [drinkSelection, setDrinkSelection] = useState<DrinkSelection>(defaultDrinkSelection);
-  const [drinkMenuOpen, setDrinkMenuOpen] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -87,7 +88,6 @@ export function ProductDetail() {
       setProduct(null);
       setResolvedProductId(null);
       setDrinkSelection(defaultDrinkSelection);
-      setDrinkMenuOpen(false);
       setSelectedVariationId("");
       setQuantity(0);
       setActiveImage(0);
@@ -102,10 +102,19 @@ export function ProductDetail() {
           });
           const modifierIdsByList = Object.fromEntries(
             fetchedProduct.modifierLists.map((list) => {
-              const selected =
-                list.modifiers.find((modifier) => modifier.defaultSelected) ??
-                (list.minSelected > 0 ? list.modifiers[0] : undefined);
-              return [list.id, selected?.id ?? ""];
+              const maximum =
+                list.maxSelected > 0
+                  ? list.maxSelected
+                  : Number.POSITIVE_INFINITY;
+              const selected = list.modifiers
+                .filter((modifier) => modifier.defaultSelected)
+                .slice(0, maximum)
+                .map((modifier) => modifier.id);
+              for (const modifier of list.modifiers) {
+                if (selected.length >= list.minSelected) break;
+                if (!selected.includes(modifier.id)) selected.push(modifier.id);
+              }
+              return [list.id, selected];
             }),
           );
           setProduct(fetchedProduct);
@@ -176,19 +185,26 @@ export function ProductDetail() {
     product.variations[0];
   const selectedModifierIds = Object.values(
     drinkSelection.modifierIdsByList,
-  ).filter(Boolean);
+  ).flat();
   const selectedModifiers = product.modifierLists.flatMap((list) =>
     list.modifiers.filter((modifier) => selectedModifierIds.includes(modifier.id)),
   );
   const modifierOptions = Object.fromEntries(
     product.modifierLists.map((list) => {
-      const selectedId = drinkSelection.modifierIdsByList[list.id] ?? "";
-      const selectedName = list.modifiers.find(
-        (modifier) => modifier.id === selectedId,
-      )?.name;
-      return [list.name, selectedName ?? "None"];
+      const selectedIds = drinkSelection.modifierIdsByList[list.id] ?? [];
+      const selectedNames = list.modifiers
+        .filter((modifier) => selectedIds.includes(modifier.id))
+        .map((modifier) => modifier.name);
+      return [list.name, selectedNames.join(", ") || "None"];
     }),
   );
+  const modifierSelectionValid = product.modifierLists.every((list) => {
+    const selectedCount = drinkSelection.modifierIdsByList[list.id]?.length ?? 0;
+    return (
+      selectedCount >= list.minSelected &&
+      (list.maxSelected === 0 || selectedCount <= list.maxSelected)
+    );
+  });
   const unitPrice =
     (selectedVariation?.price.amount ?? product.price.amount) +
     selectedModifiers.reduce((total, modifier) => total + modifier.price, 0);
@@ -214,7 +230,7 @@ export function ProductDetail() {
   const backHref = returnCategory
     ? `/DailyMenu?category=${encodeURIComponent(returnCategory.id)}`
     : "/DailyMenu";
-  const ingredients = product.ingredients?.trim() ?? "";
+  const ingredients = capitalizeListItems(product.ingredients?.trim() ?? "");
   const allergens = product.allergens
     .map(formatAllergen)
     .filter(Boolean)
@@ -254,20 +270,21 @@ export function ProductDetail() {
   };
 
   const addToCart = () => {
-    if (quantity < 1 || unavailable) return;
+    if (quantity < 1 || unavailable || !modifierSelectionValid) return;
+
+    const options = {
+      ...(product.variations.length > 1 || isDrink || isWholeCake
+        ? { size: selectedVariation?.name ?? "" }
+        : {}),
+      ...(isDrink ? { temperature: drinkSelection.temperature } : {}),
+      ...modifierOptions,
+    };
 
     addItem({
       id: product.id,
-      options: isDrink
-        ? {
-            size: selectedVariation?.name ?? "",
-            temperature: drinkSelection.temperature,
-            ...modifierOptions,
-          }
-        : isWholeCake
-          ? { size: selectedVariation?.name ?? "" }
-          : undefined,
-      modifierIds: isDrink ? selectedModifierIds : undefined,
+      options: Object.keys(options).length > 0 ? options : undefined,
+      modifierIds:
+        product.modifierLists.length > 0 ? selectedModifierIds : undefined,
       variationId: selectedVariation?.id ?? product.variationId,
       name: product.name,
       unitPrice,
@@ -279,7 +296,7 @@ export function ProductDetail() {
   };
 
   return (
-    <div dir="ltr" className="mx-auto w-full max-w-[1220px] px-4 pb-20 pt-2 text-accent-dark lg:px-8 lg:pb-18">
+    <div dir="ltr" className="mx-auto w-full max-w-[1220px] px-4 pb-6 pt-2 text-accent-dark lg:px-8 lg:pb-18">
       <Link href={backHref} className="inline-flex items-center gap-2 font-signika text-xs text-accent-dark/60 transition-colors hover:text-primary lg:text-sm">
         <span aria-hidden="true">←</span> Back to Daily Products
       </Link>
@@ -318,7 +335,7 @@ export function ProductDetail() {
             )}
           </div>
           {images.length > 0 && (
-            <div className="mt-1 flex justify-center gap-2 overflow-x-auto px-1 pb-1 lg:mt-3 lg:justify-start lg:gap-2.5">
+            <div className="mt-3 hidden justify-start gap-2.5 overflow-x-auto px-1 pb-1 lg:flex">
               {images.map((image, index) => (
                 <button key={`${image}-${index}`} type="button" onClick={() => {
                   setImageDirection(index < activeImage ? -1 : 1);
@@ -341,20 +358,8 @@ export function ProductDetail() {
 
           {categoryTags.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5 font-signika text-[10px] text-accent-dark/60 lg:gap-x-7 lg:gap-y-1.5 lg:text-xs">{categoryTags.map((category) => <span key={category} className="rounded-full bg-[#eee8da] px-2 py-1 lg:bg-transparent lg:px-0 lg:py-0">{category}</span>)}</div>}
 
-          {isWholeCake && product.variations.length > 1 && (
-            <div className="mt-6 font-signika">
-              <VariationOptions
-                variations={product.variations}
-                selectedVariationId={selectedVariation?.id ?? ""}
-                onVariationChange={(variationId) => {
-                  setSelectedVariationId(variationId);
-                  setQuantity(0);
-                }}
-              />
-            </div>
-          )}
-
-          {isDrink && (
+          {(product.variations.length > 1 ||
+            product.modifierLists.length > 0) && (
             <DrinkOptions
               variations={product.variations}
               modifierLists={product.modifierLists}
@@ -366,7 +371,6 @@ export function ProductDetail() {
               }}
               value={drinkSelection}
               onChange={setDrinkSelection}
-              onMenuOpenChange={setDrinkMenuOpen}
             />
           )}
 
@@ -392,8 +396,6 @@ export function ProductDetail() {
         </section>
       </div>
 
-      {drinkMenuOpen ? <div aria-hidden="true" className="h-[320px]" /> : null}
-
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-luxury-accent/25 bg-accent/95 px-3 py-2.5 backdrop-blur-md lg:px-8">
         <div className="mx-auto flex max-w-[1390px] gap-2 lg:gap-4">
           <div className="flex h-12 w-[90px] shrink-0 items-center justify-around rounded-2xl bg-primary font-signika text-accent lg:w-[150px]">
@@ -413,11 +415,15 @@ export function ProductDetail() {
           </div>
           <button
             type="button"
-            disabled={unavailable || quantity < 1}
+            disabled={unavailable || quantity < 1 || !modifierSelectionValid}
             onClick={addToCart}
             className={`${styles.actionButton} h-12 flex-1 rounded-2xl border border-luxury-accent bg-accent font-kalnia text-base font-medium disabled:cursor-not-allowed disabled:opacity-45`}
           >
-            {unavailable ? "Sold Out" : "Add to Cart"}
+            {unavailable
+              ? "Sold Out"
+              : !modifierSelectionValid
+                ? "Choose Required Options"
+                : "Add to Cart"}
           </button>
         </div>
       </div>
