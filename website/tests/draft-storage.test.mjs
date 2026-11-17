@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readDraft, writeDraft, clearCakeDraft, draftText, draftIndex, draftChoice } from "../src/components/custom-cakes/draft-storage.ts";
 
+
 function storage(t) {
   const values = new Map();
   const previous = Object.getOwnPropertyDescriptor(globalThis, "sessionStorage");
