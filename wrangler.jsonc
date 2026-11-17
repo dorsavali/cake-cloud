@@ -4,6 +4,12 @@
   "main": "./api/src/index.ts",
   "compatibility_date": "2026-09-01",
   "keep_vars": true,
+  "routes": [
+    {
+      "pattern": "cake-cloud.dorsavalli.com",
+      "custom_domain": true
+    }
+  ],
   "vars": {
     "SQUARE_ENVIRONMENT": "sandbox",
     "SQUARE_TIMEZONE": "Australia/Perth",
@@ -23,8 +29,7 @@
       "SQUARE_WEBHOOK_NOTIFICATION_URL",
       "SMTP_HELLO_PASSWORD",
       "SMTP_ORDERS_USERNAME",
-      "SMTP_ORDERS_PASSWORD",
-      "SMTP_ORDERS_USERNAME"
+      "SMTP_ORDERS_PASSWORD"
     ]
   },
   "triggers": {
