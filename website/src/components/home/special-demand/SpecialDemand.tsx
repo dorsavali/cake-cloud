@@ -7,11 +7,11 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import styles from "./SpecialDemand.module.css";
 
 const layers = [
-  { file: "1&2exploded.webp", sourceWidth: 604, sourceHeight: 293, desktopWidth: 310, desktopClosedY: 360, desktopOpenY: 360, mobileWidth: 145, mobileClosedY: 176, mobileOpenY: 176 },
-  { file: "3exploded.webp", sourceWidth: 464, sourceHeight: 174, desktopWidth: 145, desktopClosedY: 330, desktopOpenY: 303, mobileWidth: 68, mobileClosedY: 165, mobileOpenY: 149 },
-  { file: "4exploded.webp", sourceWidth: 422, sourceHeight: 161, desktopWidth: 145, desktopClosedY: 300, desktopOpenY: 244, mobileWidth: 68, mobileClosedY: 145, mobileOpenY: 121 },
-  { file: "5exploded.webp", sourceWidth: 432, sourceHeight: 125, desktopWidth: 145, desktopClosedY: 270, desktopOpenY: 199, mobileWidth: 68, mobileClosedY: 125, mobileOpenY: 99 },
-  { file: "6exploded.webp", sourceWidth: 481, sourceHeight: 311, desktopWidth: 145, desktopClosedY: 220, desktopOpenY: 102, mobileWidth: 68, mobileClosedY: 95, mobileOpenY: 53 },
+  { file: "1&2exploded.webp", sourceWidth: 604, sourceHeight: 293, desktopWidth: 310, desktopClosedY: 360, desktopOpenY: 360, mobileWidth: 80, mobileClosedY: 176, mobileOpenY: 176 },
+  { file: "3exploded.webp", sourceWidth: 464, sourceHeight: 174, desktopWidth: 145, desktopClosedY: 330, desktopOpenY: 303, mobileWidth: 38, mobileClosedY: 165, mobileOpenY: 149 },
+  { file: "4exploded.webp", sourceWidth: 422, sourceHeight: 161, desktopWidth: 145, desktopClosedY: 300, desktopOpenY: 244, mobileWidth: 38, mobileClosedY: 145, mobileOpenY: 121 },
+  { file: "5exploded.webp", sourceWidth: 432, sourceHeight: 125, desktopWidth: 145, desktopClosedY: 270, desktopOpenY: 199, mobileWidth: 38, mobileClosedY: 125, mobileOpenY: 99 },
+  { file: "6exploded.webp", sourceWidth: 481, sourceHeight: 311, desktopWidth: 145, desktopClosedY: 220, desktopOpenY: 102, mobileWidth: 38, mobileClosedY: 95, mobileOpenY: 53 },
 ] as const;
 
 type LayerStyle = CSSProperties & {
@@ -67,7 +67,7 @@ export function SpecialDemand() {
       className="relative z-10 overflow-visible  lg:pb-[35px]"
     >
       <div className="relative mx-auto min-h-[320px] w-full max-w-[1100px] px-4 lg:grid lg:min-h-[400px] lg:grid-cols-[minmax(0,1fr)_460px] lg:items-center lg:gap-20 lg:px-8">
-        <div className="pt-10 lg:pt-0">
+        <div className="relative z-10 w-[54%] pt-10 lg:w-auto lg:pt-0">
           <h2
             id="special-demand-heading"
             className="font-kalnia text-[18px] font-medium leading-[1.15] text-accent-dark lg:text-[32px]"
@@ -78,10 +78,10 @@ export function SpecialDemand() {
             Let's bring your dream cake to life. Making every Celebration and Event unique!
           </p>
 
-          <div className="mt-16 flex flex-col gap-4 lg:flex-row lg:gap-8">
+          <div className="absolute left-0 top-[193px] flex flex-col gap-4 min-[480px]:top-[calc(216px+2vw)] lg:static lg:mt-16 lg:flex-row lg:gap-8">
             <Link
               href="/custom-cakes/from-scratch"
-              className={`${styles.actionButton} flex h-10 w-[200px] items-center justify-center gap-4 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary max-[479px]:h-11 max-[479px]:w-[180px] lg:h-[68px] lg:w-[264px] lg:text-base`}
+              className={`${styles.actionButton} flex h-10 w-[150px] items-center justify-center gap-3 rounded-full border border-luxury-accent bg-accent font-signika text-sm text-accent-dark transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary max-[479px]:h-11 max-[479px]:w-[140px] lg:h-[68px] lg:w-[264px] lg:gap-4 lg:text-base`}
             >
               <span aria-hidden="true" className="text-2xl font-light">+</span>
               Describe it!
@@ -118,7 +118,7 @@ export function SpecialDemand() {
                   "--desktop-width": `${layer.desktopWidth}px`,
                   "--desktop-closed-y": `${layer.desktopClosedY}px`,
                   "--desktop-open-y": `${layer.desktopOpenY}px`,
-                  "--mobile-width": `${layer.mobileWidth}px`,
+                  "--mobile-width": `${layer.mobileWidth}%`,
                   "--mobile-closed-y": `${layer.mobileClosedY}px`,
                   "--mobile-open-y": `${layer.mobileOpenY}px`,
                   "--delay": `${index * 55}ms`,

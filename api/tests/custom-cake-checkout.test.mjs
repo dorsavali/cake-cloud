@@ -27,10 +27,29 @@ test("Square receives server price, fulfillment, and a stable retry key",async t
    const checkout_options=options.method==="PUT"?JSON.parse(options.body).payment_link.checkout_options:{};
    return Response.json({payment_link:{id:"test-link",version:1,order_id:"test-order",checkout_options}});
  });
- const b=body();
+ const configured={...cake,selections:[
+  {listId:"size",modifierIds:["size-large"]},
+  {listId:"height",modifierIds:["height-tall"]},
+  {listId:"filling",modifierIds:["filling-premium"]},
+  {listId:"extras",modifierIds:["flowers","gold"]},
+ ]};
+ const b={...body(),cake:configured,expectedTotal:28400};
  for(let i=0;i<2;i++)assert.equal((await handleCustomCakeCheckout(req(b),env)).status,200);
  assert.deepEqual(sent[0],sent[1]);
  assert.equal(sent[0].order.line_items[0].catalog_object_id,"cake-variation");
+ assert.deepEqual(sent[0].order.line_items[0].modifiers,[
+  {catalog_object_id:"size-large"},
+  {catalog_object_id:"height-tall"},
+  {catalog_object_id:"filling-premium"},
+  {catalog_object_id:"flowers"},
+  {catalog_object_id:"gold"},
+ ]);
+ assert.equal(sent[0].order.line_items[0].applied_modifiers,undefined);
+ assert.equal(sent[0].order.reference_id,b.idempotencyKey);
+ assert.equal(sent[0].order.metadata.cc_expected,JSON.stringify([b.idempotencyKey,b.expectedTotal,"AUD",env.SQUARE_LOCATION_ID]));
+ assert.match(sent[0].order.line_items[0].note,/Customer-selected pickup: \d{4}-\d{2}-\d{2} \d{2}:\d{2} \(Australia\/Perth\)/);
+ assert.match(sent[0].order.fulfillments[0].pickup_details.pickup_at,/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\+08:00$/);
+ assert.match(sent[0].order.fulfillments[0].pickup_details.note,/Australia\/Perth/);
  assert.equal(sent[0].pre_populated_data,undefined);
  assert.equal(sent[0].order.fulfillments[0].pickup_details.recipient.email_address,b.email);
 });

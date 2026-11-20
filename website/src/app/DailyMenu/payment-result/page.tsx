@@ -1,12 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { clearStoredCart } from "@/components/cart";
-import { cardSurface, container, errorText, pageShell, pageTitle, primaryButton } from "@/components/custom-cakes/cake-ui";
+import { container, errorText, pageShell, primaryButton } from "@/components/custom-cakes/cake-ui";
+import { Footer } from "@/components/layout/footer";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
 import { apiUrl } from "@/lib/api";
+import { publicContactEmail } from "@/lib/contact";
 
 export default function DailyMenuPaymentResult() {
   const [result, setResult] = useState<{ status: string; orderId?: string; total?: number; currency?: string }>({ status: "checking" });
@@ -68,32 +71,67 @@ export default function DailyMenuPaymentResult() {
     <>
       <DesktopHeader />
       <MobileHeader />
-      <main className={pageShell}>
+      <main className={`${pageShell} !min-h-0 !pb-3 md:!min-h-dvh md:!pb-16`}>
         <div className={container}>
-          <h1 className={pageTitle}>{messages[result.status] ?? "Checking Payment"}</h1>
-          <div className="grid gap-4 md:max-w-[620px]">
-            <section className={cardSurface} aria-live="polite">
-              <p className="m-0 text-sm leading-[1.6] text-accent-dark">
-                {result.status === "paid" ? "Thank you! Your payment has been verified and your Daily Menu order is confirmed."
-                  : result.status === "pending" ? "Square has not confirmed payment yet. You can check again below."
-                  : result.status === "failed" ? "Square reports that this payment was not completed."
-                  : result.status === "review" ? "Your payment details need review. Please contact Cake Cloud with your order number."
-                  : result.status === "refunded" ? "A refund has been recorded for this payment. Please contact Cake Cloud for details."
-                  : "Checking your payment securely with Square."}
+          <div className="mx-auto w-full max-w-[440px] pt-5 md:pt-7">
+            <Link
+              className="inline-flex min-h-10 items-center gap-2 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary"
+              href="/DailyMenu"
+            >
+              ← <span>Back to Daily Menu</span>
+            </Link>
+            <section
+              className="mt-3 rounded-2xl bg-[#faf7f0] px-6 py-8 text-center shadow-[0_8px_28px_rgb(70_66_72/12%)] md:px-8 md:py-10"
+              aria-live="polite"
+            >
+              <Image
+                src="/images/logo/main.svg"
+                alt="Cake Cloud"
+                width={150}
+                height={190}
+                unoptimized
+                className="mx-auto h-auto w-[122px] md:w-[138px]"
+              />
+              <h1 className={`mt-4 font-kalnia font-medium text-accent-dark md:text-[34px] ${result.status === "checking" ? "whitespace-nowrap text-[clamp(22px,7vw,30px)]" : "text-3xl"}`}>
+                {messages[result.status] ?? "Checking Payment"}
+              </h1>
+              <div className="mt-6 border-y border-dotted border-[#cbbb98] py-6 font-signika text-sm leading-6 text-accent-dark/70">
+                <p>
+                  {result.status === "paid" ? "Thank you! Your payment has been verified and your order is confirmed."
+                    : result.status === "pending" ? "Square has not confirmed payment yet. You can check again below."
+                    : result.status === "failed" ? "Square reports that this payment was not completed."
+                    : result.status === "review" ? "Your payment details need review. Please contact Cake Cloud with your order number."
+                    : result.status === "refunded" ? "A refund has been recorded for this payment. Please contact Cake Cloud for details."
+                    : "Checking your payment securely with Square."}
+                </p>
+                {result.orderId && (
+                  <p className="mt-5 break-all">
+                    <strong className="mr-2 font-semibold text-accent-dark">Order No:</strong>
+                    {result.orderId}
+                  </p>
+                )}
+                {error && <p className={`${errorText} mt-4`} role="alert">{error}</p>}
+              </div>
+              {result.status !== "paid" && (
+                <button className={`${primaryButton} mt-6`} type="button" onClick={() => setRetry((value) => value + 1)}>
+                  Check Payment Again
+                </button>
+              )}
+              <p className="mt-6 font-signika text-sm leading-6 text-accent-dark/70">
+                If you have any questions or issues, please email us at{" "}
+                <a
+                  className="font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-[#5e796c]"
+                  href={`mailto:${publicContactEmail}`}
+                >
+                  {publicContactEmail}
+                </a>
+                .
               </p>
-              {result.orderId && <p className="mt-3 text-sm">Order: {result.orderId}</p>}
-              {result.total !== undefined && <p className="mt-2 text-sm">Total: {new Intl.NumberFormat("en-AU", { style: "currency", currency: result.currency ?? "AUD" }).format(result.total / 100)}</p>}
-              {error && <p className={`${errorText} mt-3`} role="alert">{error}</p>}
             </section>
-            {result.status !== "paid" && (
-              <button className={primaryButton} type="button" onClick={() => setRetry((value) => value + 1)}>
-                Check Payment Again
-              </button>
-            )}
-            <Link className="inline-flex min-h-10 items-center gap-2 font-signika text-xs text-[#88857d] transition-colors hover:text-primary md:text-[13px]" href="/DailyMenu">← Back to Daily Menu</Link>
           </div>
         </div>
       </main>
+      <Footer />
     </>
   );
 }

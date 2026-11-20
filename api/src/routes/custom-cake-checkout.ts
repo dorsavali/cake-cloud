@@ -31,7 +31,9 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
     if(typeof body.idempotencyKey!=="string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey))throw new CakeError("Invalid checkout request");
     const priced=await getPricedCake(env, body.cake);
     const subtotal=priced.subtotal;
-    const instant=pickupInstant(body.pickup,env.SQUARE_TIMEZONE || "Australia/Perth");
+    const timeZone=env.SQUARE_TIMEZONE || "Australia/Perth";
+    const instant=pickupInstant(body.pickup,timeZone);
+    const pickupLocal=String(body.pickup).replace("T", " ");
     const {available,fee}=rushFee(instant);
     if(!available)return json({error:"Please choose a pickup time at least 24 hours from now."},409);
     const total=subtotal+fee;
@@ -47,23 +49,24 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
     const message = priced.cake.message.trim();
     // Square receives the real catalogue item and its modifiers so the receipt
     // and reports show the chosen options instead of a single text note.
-    const appliedModifiers = [
+    const modifiers = [
       ...(priced.size.designModifier
-        ? [{ catalog_object_id: priced.size.designModifier.id, quantity: "1" }]
+        ? [{ catalog_object_id: priced.size.designModifier.id }]
         : []),
       ...priced.lines.flatMap(line =>
-        line.modifiers.map(modifier => ({ catalog_object_id: modifier.id, quantity: "1" })),
+        line.modifiers.map(modifier => ({ catalog_object_id: modifier.id })),
       ),
     ];
     const lineNote = [
       `Design: ${priced.design.name}`,
       ...(message ? [`Message on cake: ${message}`] : []),
+      `Customer-selected pickup: ${pickupLocal} (${timeZone})`,
     ].join(" · ");
     const lineItem = priced.size.variationId
       ? {
           catalog_object_id: priced.size.variationId,
           quantity: "1",
-          applied_modifiers: appliedModifiers,
+          ...(modifiers.length > 0 ? { modifiers } : {}),
           note: lineNote,
         }
       : {
@@ -75,6 +78,9 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
     const expected=expectedValue(body.idempotencyKey,total,env.SQUARE_LOCATION_ID);
     const returnUrl=new URL("/custom-cakes/payment-result/",env.WEBSITE_ORIGIN || "http://localhost:3000");
     returnUrl.searchParams.set("checkout",body.idempotencyKey);
+    // Cake Cloud and its customers use Perth time. Preserve the entered wall
+    // time verbatim; +08:00 only makes the value valid RFC 3339 for Square.
+    const pickupAt=`${String(body.pickup)}:00+08:00`;
     const payload={
       idempotency_key:body.idempotencyKey,
       order:{
@@ -86,10 +92,11 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
           ...(fee?[{name:"Next-day creation",quantity:"1",base_price_money:{amount:fee,currency:"AUD"}}]:[]),
         ],
         fulfillments:[{type:"PICKUP",state:"PROPOSED",pickup_details:{
-          schedule_type:"SCHEDULED",pickup_at:new Date(instant).toISOString(),
+          schedule_type:"SCHEDULED",pickup_at:pickupAt,
+          note:`Customer-selected pickup: ${pickupLocal} (${timeZone})`,
           recipient:{display_name:name,email_address:email,phone_number:phone,customer_id:customerId},
         }}],
-        metadata:{cc_expected:expected,cc_signature:await signValue(env,expected),cc_status:"pending",pickup_local:String(body.pickup),time_zone:env.SQUARE_TIMEZONE || "Australia/Perth"},
+        metadata:{cc_expected:expected,cc_signature:await signValue(env,expected),cc_status:"pending",pickup_local:String(body.pickup),time_zone:timeZone},
       },
       // Square prepopulates pickup checkout contact fields from this recipient.
       // Do not also set pre_populated_data.buyer_email: it conflicts with fulfillment.
