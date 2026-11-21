@@ -40,6 +40,19 @@ type CategoriesResponse = {
   categories?: string[];
 };
 
+type InventoryResponse = {
+  items?: Array<
+    Pick<
+      DailyMenuProductCard,
+      | "id"
+      | "variationName"
+      | "price"
+      | "stock"
+      | "available"
+    >
+  >;
+};
+
 const skeletonCards = Array.from({ length: 8 }, (_, index) => index);
 
 function ProductGridSkeleton() {
@@ -90,9 +103,9 @@ export function DailyMenuCatalog() {
   const [pageSize, setPageSize] = useState(12);
   const [totalResults, setTotalResults] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [inventoryRevision, setInventoryRevision] = useState(0);
   const productsStartRef = useRef<HTMLDivElement>(null);
   const lastInventoryRefreshRef = useRef(0);
+  const hasTrackedInventoryRef = useRef(false);
   const activeCategory =
     categories.find((item) => item.id === selectedCategory)?.id ??
     categories.find((item) => item.id === requestedCategory)?.id ??
@@ -140,20 +153,49 @@ export function DailyMenuCatalog() {
   }, []);
 
   useEffect(() => {
-    const refreshVisibleInventory = () => {
+    const controller = new AbortController();
+
+    const refreshVisibleInventory = async () => {
       if (document.visibilityState !== "visible") return;
+      if (!hasTrackedInventoryRef.current) return;
 
       const now = Date.now();
-      if (now - lastInventoryRefreshRef.current < 2_000) return;
+      if (now - lastInventoryRefreshRef.current < 15_000) return;
       lastInventoryRefreshRef.current = now;
-      setInventoryRevision((current) => current + 1);
+
+      try {
+        const response = await fetch(apiUrl("/api/inventory"), {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+
+        const data = (await response.json()) as InventoryResponse;
+        const inventoryByProduct = new Map(
+          (data.items ?? []).map((item) => [item.id, item]),
+        );
+        setProducts((current) =>
+          current.map((product) => {
+            const inventory = inventoryByProduct.get(product.id);
+            return inventory ? { ...product, ...inventory } : product;
+          }),
+        );
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          // Keep the last healthy cards visible while Square is unavailable.
+        }
+      }
     };
 
-    window.addEventListener("focus", refreshVisibleInventory);
-    document.addEventListener("visibilitychange", refreshVisibleInventory);
+    const refreshOnFocus = () => void refreshVisibleInventory();
+    const intervalId = window.setInterval(refreshOnFocus, 60_000);
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnFocus);
     return () => {
-      window.removeEventListener("focus", refreshVisibleInventory);
-      document.removeEventListener("visibilitychange", refreshVisibleInventory);
+      controller.abort();
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnFocus);
     };
   }, []);
 
@@ -188,12 +230,17 @@ export function DailyMenuCatalog() {
         const data = (await response.json()) as ProductsResponse;
         if (!isActive) return;
 
-        setProducts(data.items ?? []);
+        const nextProducts = data.items ?? [];
+        hasTrackedInventoryRef.current = nextProducts.some(
+          (product) => product.stock !== null,
+        );
+        setProducts(nextProducts);
         setTotalResults(data.total ?? 0);
         setTotalPages(data.totalPages ?? 1);
         setAllergenOptions(
           category.filter === "allergens" ? (data.allergenOptions ?? []) : [],
         );
+        lastInventoryRefreshRef.current = Date.now();
         setLoadState("success");
       } catch (error) {
         if (isActive && (error as Error).name !== "AbortError") {
@@ -207,7 +254,7 @@ export function DailyMenuCatalog() {
       isActive = false;
       controller.abort();
     };
-  }, [activeCategory, allergens, category, currentPage, inventoryRevision, pageSize, productType, sortBy]);
+  }, [activeCategory, allergens, category, currentPage, pageSize, productType, sortBy]);
 
   const handleCategoryChange = (category: DailyMenuCategory) => {
     setCurrentPage(1);

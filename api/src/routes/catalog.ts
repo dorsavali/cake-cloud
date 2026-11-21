@@ -1,5 +1,8 @@
 import { json, methodNotAllowed } from "../http/json.js";
-import { getCatalogItems } from "../services/square.js";
+import {
+  getCatalogItems,
+  stripInventoryMetadata,
+} from "../services/square.js";
 import type { ApiEnv } from "../types/env.js";
 
 type CatalogItems = Awaited<ReturnType<typeof getCatalogItems>>;
@@ -148,9 +151,11 @@ export async function handleCatalogItems(
   }
 
   try {
-    const items = (await getCachedCatalogItems(env)).map(
-      ({ customAttributes: _customAttributes, ...product }) => product,
-    );
+    const items = (await getCachedCatalogItems(env)).map((item) => {
+      const { customAttributes: _customAttributes, ...product } =
+        stripInventoryMetadata(item);
+      return product;
+    });
     return json(
       { items },
       200,

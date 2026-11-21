@@ -1,4 +1,8 @@
 import { json, methodNotAllowed } from "../http/json.js";
+import {
+  refreshStorefrontInventory,
+  stripInventoryMetadata,
+} from "../services/square.js";
 import { getCachedCatalogItems } from "./catalog.js";
 import type { ApiEnv } from "../types/env.js";
 
@@ -15,8 +19,9 @@ const inventoryResponseHeaders = {
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
-const toPublicProduct = <T extends { customAttributes: unknown }>(product: T) => {
-  const { customAttributes: _customAttributes, ...publicProduct } = product;
+const toPublicProduct = <T extends CatalogProduct>(product: T) => {
+  const { customAttributes: _customAttributes, ...publicProduct } =
+    stripInventoryMetadata(product);
   return publicProduct;
 };
 
@@ -25,6 +30,11 @@ const dailyMenuCatalogOptions = {
   includePopularity: false,
   variant: "daily-menu",
 } as const;
+
+const getInventoryAwareDailyMenu = async (env: ApiEnv) => {
+  const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
+  return refreshStorefrontInventory(env, products);
+};
 
 const recommendedRank = (product: CatalogProduct) => {
   const raw = product.customAttributes.recommended_rank;
@@ -81,7 +91,7 @@ export async function handleProductDetail(
   if (request.method !== "GET") return methodNotAllowed();
 
   try {
-    const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
+    const products = await getInventoryAwareDailyMenu(env);
     const product = products.find((item) => item.id === productId);
     if (!product) return json({ error: "Product not found" }, 404);
     return json({ product: toPublicProduct(product) }, 200, inventoryResponseHeaders);
@@ -109,7 +119,7 @@ export async function handleProductCards(
     const sort = url.searchParams.get("sort") ?? "recommended";
     const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
     const limit = Math.min(24, Math.max(1, Number.parseInt(url.searchParams.get("limit") ?? "9", 10) || 9));
-    const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
+    const products = await getInventoryAwareDailyMenu(env);
     const categoryProducts = products.filter(
       (product) =>
         !category || product.categories.some((name) => normalize(name) === category),
@@ -188,6 +198,36 @@ export async function handleProductCards(
   }
 }
 
+export async function handleInventorySnapshot(
+  request: Request,
+  env: ApiEnv,
+): Promise<Response> {
+  if (request.method !== "GET") return methodNotAllowed();
+
+  try {
+    const products = await getInventoryAwareDailyMenu(env);
+    return json(
+      {
+        items: products.map((product) => ({
+          id: product.id,
+          variationId: product.variationId,
+          variationName: product.variationName,
+          price: product.price,
+          stock: product.stock,
+          available: product.available,
+        })),
+      },
+      200,
+      inventoryResponseHeaders,
+    );
+  } catch (error) {
+    console.error("[api] Inventory endpoint failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return json({ error: "Inventory is temporarily unavailable" }, 502);
+  }
+}
+
 export async function handleRecommendations(
   request: Request,
   env: ApiEnv,
@@ -195,7 +235,7 @@ export async function handleRecommendations(
   if (request.method !== "GET") return methodNotAllowed();
 
   try {
-    const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
+    const products = await getInventoryAwareDailyMenu(env);
     const picks = products
       .map((product) => ({ product, rank: homeRecommendationRank(product) }))
       .filter(

@@ -123,7 +123,7 @@ export type CatalogItemSnapshot = {
   available: boolean;
 };
 
-type StorefrontProduct = {
+export type StorefrontProduct = {
   id: string;
   variationId: string | null;
   name: string;
@@ -137,6 +137,8 @@ type StorefrontProduct = {
     price: { amount: number; currency: string };
     stock: number | null;
     available: boolean;
+    inventoryTracked: boolean;
+    availableWithoutStock: boolean;
   }>;
   modifierLists: Array<{
     id: string;
@@ -163,6 +165,19 @@ type StorefrontProduct = {
   popularityScore: number;
   customAttributes: Record<string, string | number | boolean | string[]>;
 };
+
+export function stripInventoryMetadata(product: StorefrontProduct) {
+  return {
+    ...product,
+    variations: product.variations.map(
+      ({
+        inventoryTracked: _inventoryTracked,
+        availableWithoutStock: _availableWithoutStock,
+        ...variation
+      }) => variation,
+    ),
+  };
+}
 
 type InventoryCount = {
   catalog_object_id?: string;
@@ -213,6 +228,29 @@ const popularityCache = new Map<
   { expiresAt: number; quantities: Map<string, number> }
 >();
 
+type InventoryCacheEntry = {
+  expiresAt: number;
+  quantities: Map<string, number>;
+  variationKey: string;
+};
+
+type InventoryBackoff = {
+  attempts: number;
+  retryAt: number;
+};
+
+const inventoryCache = new Map<string, InventoryCacheEntry>();
+const inventoryRequests = new Map<string, Promise<Map<string, number> | null>>();
+const inventoryBackoff = new Map<string, InventoryBackoff>();
+const inventoryCacheDurationMs = 15_000;
+const inventoryMaximumBackoffMs = 60_000;
+
+const inventoryCacheKey = (env: ApiEnv) =>
+  `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${env.SQUARE_LOCATION_ID}`;
+
+const inventoryVariationKey = (variationIds: string[]) =>
+  [...variationIds].sort().join(",");
+
 async function getInventoryByVariation(
   env: ApiEnv,
   variationIds: string[],
@@ -234,6 +272,7 @@ async function getInventoryByVariation(
           },
           body: JSON.stringify({
             catalog_object_ids: variationIds,
+            location_ids: [env.SQUARE_LOCATION_ID],
             states: ["IN_STOCK"],
             limit: 1000,
             cursor,
@@ -266,6 +305,106 @@ async function getInventoryByVariation(
   } catch {
     return null;
   }
+}
+
+async function getCachedInventoryByVariation(
+  env: ApiEnv,
+  variationIds: string[],
+): Promise<Map<string, number> | null> {
+  if (variationIds.length === 0) return new Map();
+
+  const cacheKey = inventoryCacheKey(env);
+  const variationKey = inventoryVariationKey(variationIds);
+  const cached = inventoryCache.get(cacheKey);
+  const now = Date.now();
+  if (
+    cached &&
+    cached.variationKey === variationKey &&
+    cached.expiresAt > now
+  ) {
+    return cached.quantities;
+  }
+
+  const backoff = inventoryBackoff.get(cacheKey);
+  if (backoff && backoff.retryAt > now) {
+    return cached?.variationKey === variationKey ? cached.quantities : null;
+  }
+
+  const existingRequest = inventoryRequests.get(cacheKey);
+  if (existingRequest) return existingRequest;
+
+  const request = getInventoryByVariation(env, variationIds)
+    .then((quantities) => {
+      if (!quantities) {
+        const attempts = (inventoryBackoff.get(cacheKey)?.attempts ?? 0) + 1;
+        const exponentialDelay = Math.min(
+          inventoryMaximumBackoffMs,
+          1_000 * 2 ** Math.min(attempts - 1, 6),
+        );
+        const jitter = Math.floor(Math.random() * 500);
+        inventoryBackoff.set(cacheKey, {
+          attempts,
+          retryAt: Date.now() + exponentialDelay + jitter,
+        });
+        return cached?.variationKey === variationKey
+          ? cached.quantities
+          : null;
+      }
+
+      inventoryBackoff.delete(cacheKey);
+      inventoryCache.set(cacheKey, {
+        expiresAt: Date.now() + inventoryCacheDurationMs,
+        quantities,
+        variationKey,
+      });
+      return quantities;
+    })
+    .finally(() => inventoryRequests.delete(cacheKey));
+
+  inventoryRequests.set(cacheKey, request);
+  return request;
+}
+
+export async function refreshStorefrontInventory(
+  env: ApiEnv,
+  products: StorefrontProduct[],
+): Promise<StorefrontProduct[]> {
+  const trackedVariationIds = products.flatMap((product) =>
+    product.variations
+      .filter((variation) => variation.inventoryTracked)
+      .map((variation) => variation.id),
+  );
+  if (trackedVariationIds.length === 0) return products;
+
+  const quantities = await getCachedInventoryByVariation(
+    env,
+    trackedVariationIds,
+  );
+  if (!quantities) return products;
+
+  return products.map((product) => {
+    const variations = product.variations.map((variation) => {
+      if (!variation.inventoryTracked) return variation;
+      const stock = quantities.get(variation.id) ?? 0;
+      return {
+        ...variation,
+        stock,
+        available: variation.availableWithoutStock && stock > 0,
+      };
+    });
+    const primaryVariation =
+      variations.find((variation) => variation.available) ?? variations[0];
+
+    return {
+      ...product,
+      variationId: primaryVariation?.id ?? null,
+      variationName: primaryVariation?.name ?? "",
+      price: primaryVariation?.price ?? product.price,
+      stock: primaryVariation?.stock ?? null,
+      available: variations.some((variation) => variation.available),
+      variations,
+    };
+  });
 }
 
 async function getPopularityByVariation(env: ApiEnv): Promise<Map<string, number>> {
@@ -561,10 +700,15 @@ export async function getCatalogItems(
             return [];
           }
 
+          const inventoryTracked = data?.track_inventory === true;
           const stock =
-            data?.track_inventory && inventoryByVariation
+            inventoryTracked && inventoryByVariation
               ? (inventoryByVariation.get(variation.id) ?? 0)
               : null;
+          const availableWithoutStock =
+            isPresentAtLocation(item, env.SQUARE_LOCATION_ID) &&
+            isPresentAtLocation(variation, env.SQUARE_LOCATION_ID) &&
+            location?.sold_out !== true;
 
           return [
             {
@@ -575,10 +719,10 @@ export async function getCatalogItems(
                 currency: money.currency ?? "AUD",
               },
               stock,
+              availableWithoutStock,
+              inventoryTracked,
               available:
-                isPresentAtLocation(item, env.SQUARE_LOCATION_ID) &&
-                isPresentAtLocation(variation, env.SQUARE_LOCATION_ID) &&
-                location?.sold_out !== true &&
+                availableWithoutStock &&
                 (stock === null || stock > 0),
             },
           ];

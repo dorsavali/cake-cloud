@@ -16,6 +16,7 @@ import { handleHostEnquiry } from "./routes/host-enquiry.js";
 import { handleClubJoin } from "./routes/club.js";
 import {
   handleCategories,
+  handleInventorySnapshot,
   handleProductCards,
   handleProductDetail,
   handleRecommendations,
@@ -61,6 +62,7 @@ export async function handleApiRequest(
   }
   const isRateLimitedRoute =
     url.pathname === "/api/categories" ||
+    url.pathname === "/api/inventory" ||
     url.pathname === "/api/products" ||
     url.pathname === "/api/recommendations" ||
     url.pathname.startsWith("/api/products/") ||
@@ -83,6 +85,10 @@ export async function handleApiRequest(
 
   if (url.pathname === "/api/categories") {
     return handleCategories(request, env);
+  }
+
+  if (url.pathname === "/api/inventory") {
+    return handleInventorySnapshot(request, env);
   }
 
   if (url.pathname === "/api/recommendations") {
