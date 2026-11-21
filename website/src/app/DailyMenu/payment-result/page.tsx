@@ -11,9 +11,10 @@ import { Footer } from "@/components/layout/footer";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
 import { apiUrl } from "@/lib/api";
 import { publicContactEmail } from "@/lib/contact";
+import { OrderNumberDisplay } from "@/components/shared/OrderNumberDisplay";
 
 export default function DailyMenuPaymentResult() {
-  const [result, setResult] = useState<{ status: string; orderId?: string; total?: number; currency?: string }>({ status: "checking" });
+  const [result, setResult] = useState<{ status: string; orderId?: string; orderNumber?: string; total?: number; currency?: string }>({ status: "checking" });
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
 
@@ -108,11 +109,8 @@ export default function DailyMenuPaymentResult() {
                     : result.status === "refunded" ? "A refund has been recorded for this payment. Please contact Cake Cloud for details."
                     : "Checking your payment securely with Square."}
                 </p>
-                {result.orderId && (
-                  <p className="mt-5 break-all">
-                    <strong className="mr-2 font-semibold text-accent-dark">Order No:</strong>
-                    {result.orderId}
-                  </p>
+                {(result.orderNumber || result.orderId) && (
+                  <OrderNumberDisplay value={result.orderNumber || result.orderId || ""} />
                 )}
                 {error && <p className={`${errorText} mt-4`} role="alert">{error}</p>}
               </div>

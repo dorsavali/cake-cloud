@@ -90,7 +90,9 @@ export function DailyMenuCatalog() {
   const [pageSize, setPageSize] = useState(12);
   const [totalResults, setTotalResults] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [inventoryRevision, setInventoryRevision] = useState(0);
   const productsStartRef = useRef<HTMLDivElement>(null);
+  const lastInventoryRefreshRef = useRef(0);
   const activeCategory =
     categories.find((item) => item.id === selectedCategory)?.id ??
     categories.find((item) => item.id === requestedCategory)?.id ??
@@ -138,6 +140,24 @@ export function DailyMenuCatalog() {
   }, []);
 
   useEffect(() => {
+    const refreshVisibleInventory = () => {
+      if (document.visibilityState !== "visible") return;
+
+      const now = Date.now();
+      if (now - lastInventoryRefreshRef.current < 2_000) return;
+      lastInventoryRefreshRef.current = now;
+      setInventoryRevision((current) => current + 1);
+    };
+
+    window.addEventListener("focus", refreshVisibleInventory);
+    document.addEventListener("visibilitychange", refreshVisibleInventory);
+    return () => {
+      window.removeEventListener("focus", refreshVisibleInventory);
+      document.removeEventListener("visibilitychange", refreshVisibleInventory);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!category) return;
 
     const controller = new AbortController();
@@ -161,6 +181,7 @@ export function DailyMenuCatalog() {
 
       try {
         const response = await fetch(apiUrl(`/api/products?${params}`), {
+          cache: "no-store",
           signal: controller.signal,
         });
         if (!response.ok) throw new Error("Products request failed");
@@ -186,7 +207,7 @@ export function DailyMenuCatalog() {
       isActive = false;
       controller.abort();
     };
-  }, [activeCategory, allergens, category, currentPage, pageSize, productType, sortBy]);
+  }, [activeCategory, allergens, category, currentPage, inventoryRevision, pageSize, productType, sortBy]);
 
   const handleCategoryChange = (category: DailyMenuCategory) => {
     setCurrentPage(1);

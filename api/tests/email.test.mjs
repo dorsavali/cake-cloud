@@ -30,9 +30,11 @@ test("customer and internal order emails use the configured mailboxes", () => {
   const internal = renderInternalOrderEmail(order, addresses);
 
   assert.equal(customer.to, "buyer@example.com");
+  assert.match(customer.subject, /CC-TEST/);
   assert.match(customer.from, /customer-orders@example\.test/);
   assert.equal(customer.replyTo, "info@cake-cloud.com.au");
   assert.equal(internal.to, "internal-orders@example.test");
+  assert.match(internal.subject, /CC-TEST/);
   assert.match(internal.from, /internal-orders@example\.test/);
   assert.equal(internal.replyTo, "buyer@example.com");
   assert.match(internal.html, /Address/);

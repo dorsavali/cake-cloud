@@ -1,6 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {handleCustomCakeCheckout} from "../dist/routes/custom-cake-checkout.js";
+import {orderNumberFromSeed} from "../dist/services/order-number.js";
 import {cake,cakeCatalogResponse,isCakeCatalogRequest} from "./helpers/cake-fixture.mjs";
 const env={SQUARE_ENVIRONMENT:"sandbox",SQUARE_ACCESS_TOKEN:"test",SQUARE_LOCATION_ID:"test",SQUARE_TIMEZONE:"Australia/Perth"};
 const body=()=>({cake,pickup:new Date(Date.now()+72*3600000).toISOString().slice(0,16),name:"Test Buyer",email:"test@example.com",phone:"0412 345 678",expectedTotal:14500,idempotencyKey:crypto.randomUUID(),termsAccepted:true,allergenAccepted:true});
@@ -35,6 +36,7 @@ test("Square receives server price, fulfillment, and a stable retry key",async t
   {listId:"extras",modifierIds:["flowers","gold"]},
  ]};
  const b={...body(),cake:configured,expectedTotal:28400};
+ const orderNumber=orderNumberFromSeed("CAKE",b.idempotencyKey);
  for(let i=0;i<2;i++)assert.equal((await handleCustomCakeCheckout(req(b),env)).status,200);
  assert.deepEqual(sent[0],sent[1]);
  assert.equal(sent[0].order.line_items[0].catalog_object_id,"cake-variation");
@@ -46,8 +48,11 @@ test("Square receives server price, fulfillment, and a stable retry key",async t
   {catalog_object_id:"gold"},
  ]);
  assert.equal(sent[0].order.line_items[0].applied_modifiers,undefined);
- assert.equal(sent[0].order.reference_id,b.idempotencyKey);
- assert.equal(sent[0].order.metadata.cc_expected,JSON.stringify([b.idempotencyKey,b.expectedTotal,"AUD",env.SQUARE_LOCATION_ID]));
+ assert.equal(sent[0].order.reference_id,orderNumber);
+ assert.equal(sent[0].order.metadata.cc_order_number,orderNumber);
+ assert.equal(sent[0].order.metadata.cc_expected,JSON.stringify([orderNumber,b.expectedTotal,"AUD",env.SQUARE_LOCATION_ID]));
+ assert.match(sent[0].payment_note,new RegExp(orderNumber));
+ assert.match(sent[0].order.line_items[0].note,new RegExp(`Order: ${orderNumber}`));
  assert.match(sent[0].order.line_items[0].note,/Customer-selected pickup: \d{4}-\d{2}-\d{2} \d{2}:\d{2} \(Australia\/Perth\)/);
  assert.match(sent[0].order.fulfillments[0].pickup_details.pickup_at,/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\+08:00$/);
  assert.match(sent[0].order.fulfillments[0].pickup_details.note,/Australia\/Perth/);

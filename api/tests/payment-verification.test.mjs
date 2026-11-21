@@ -16,7 +16,7 @@ async function fixture(t,{status="COMPLETED",amount=14500,currency="AUD",refund=
  return {order,payment,writes:()=>writes};
 }
 test("completed, matching payment is persisted; duplicate checks do not rewrite",async t=>{
- const f=await fixture(t);assert.equal((await reconcileOrder(env,"order")).status,"paid");
+ const f=await fixture(t);const result=await reconcileOrder(env,"order");assert.equal(result.status,"paid");assert.equal(result.orderNumber,"ref");
  assert.equal((await reconcileOrder(env,"order")).status,"paid");assert.equal(f.writes(),1);
 });
 for(const [label,options,expected] of [

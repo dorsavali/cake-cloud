@@ -3,6 +3,7 @@ import { json } from "../http/json.js";
 import { CakeError, getPricedCake, pickupInstant, rushFee } from "./cake-checkout.js";
 import type { ApiEnv } from "../types/env.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
+import { orderNumberFromSeed } from "../services/order-number.js";
 import {
   isAustralianPhone,
   normalizeSquareAddress,
@@ -47,6 +48,7 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
       if (error instanceof SquareCustomerError) throw new CakeError(error.message);
       throw error;
     }
+    const orderNumber = orderNumberFromSeed("CAKE", body.idempotencyKey);
     const message = priced.cake.message.trim();
     // Square receives the real catalogue item and its modifiers so the receipt
     // and reports show the chosen options instead of a single text note.
@@ -59,6 +61,7 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
       ),
     ];
     const lineNote = [
+      `Order: ${orderNumber}`,
       `Design: ${priced.design.name}`,
       ...(message ? [`Message on cake: ${message}`] : []),
       `Customer-selected pickup: ${pickupLocal} (${timeZone})`,
@@ -76,7 +79,7 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
           base_price_money: { amount: priced.size.price.amount, currency: priced.size.price.currency },
           note: lineNote,
         };
-    const expected=expectedValue(body.idempotencyKey,total,env.SQUARE_LOCATION_ID);
+    const expected=expectedValue(orderNumber,total,env.SQUARE_LOCATION_ID);
     const returnUrl=new URL("/custom-cakes/payment-result/",env.WEBSITE_ORIGIN || "http://localhost:3000");
     returnUrl.searchParams.set("checkout",body.idempotencyKey);
     // Cake Cloud and its customers use Perth time. Preserve the entered wall
@@ -87,19 +90,19 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
       order:{
         location_id:env.SQUARE_LOCATION_ID,
         customer_id:customerId,
-        reference_id:body.idempotencyKey,
+        reference_id:orderNumber,
         line_items:[lineItem],
         fulfillments:[{type:"PICKUP",state:"PROPOSED",pickup_details:{
           schedule_type:"SCHEDULED",pickup_at:pickupAt,
-          note:`Customer-selected pickup: ${pickupLocal} (${timeZone})`,
+          note:`${orderNumber} · Customer-selected pickup: ${pickupLocal} (${timeZone})`,
           recipient:{display_name:name,email_address:email,phone_number:phone,customer_id:customerId},
         }}],
-        metadata:{cc_expected:expected,cc_signature:await signValue(env,expected),cc_status:"pending",pickup_local:String(body.pickup),time_zone:timeZone},
+        metadata:{cc_expected:expected,cc_signature:await signValue(env,expected),cc_status:"pending",cc_order_number:orderNumber,cc_order_type:"custom_cake",pickup_local:String(body.pickup),time_zone:timeZone},
       },
       // Square prepopulates pickup checkout contact fields from this recipient.
       // Do not also set pre_populated_data.buyer_email: it conflicts with fulfillment.
       checkout_options:{redirect_url:returnUrl.href,allow_tipping:false,ask_for_shipping_address:false,enable_coupon:false,enable_loyalty:false},
-      payment_note:"Cake Cloud custom cake · "+name,
+      payment_note:`${orderNumber} · Cake Cloud custom cake · ${name}`,
     };
     try {
       const response=await fetch("https://connect.squareupsandbox.com/v2/online-checkout/payment-links",{

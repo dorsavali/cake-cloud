@@ -184,7 +184,7 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
             },
           },
         }],
-        metadata: { cc_expected: expected, cc_signature: await signValue(env, expected), cc_status: "pending" },
+        metadata: { cc_expected: expected, cc_signature: await signValue(env, expected), cc_status: "pending", cc_order_number: body.orderNumber, cc_order_type: "daily_menu" },
       },
       checkout_options: { redirect_url: new URL("/DailyMenu/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000").href, allow_tipping: false, ask_for_shipping_address: false, enable_coupon: false, enable_loyalty: false },
       payment_note: `Cake Cloud daily menu order · ${body.orderNumber} · ${name}`,

@@ -112,7 +112,7 @@ export function CheckoutReview() {
             </p>
             <p>
               <strong className="mr-2 text-accent-dark">Order No:</strong>
-              {orderNumber || "…"}
+              <span className="select-all">{orderNumber || "…"}</span>
             </p>
           </div>
 

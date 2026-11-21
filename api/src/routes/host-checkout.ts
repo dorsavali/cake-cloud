@@ -2,6 +2,7 @@ import { json, methodNotAllowed } from "../http/json.js";
 import { getCatalogItemSnapshots } from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
+import { orderNumberFromSeed } from "../services/order-number.js";
 import {
   isAustralianPhone,
   normalizeSquareAddress,
@@ -144,7 +145,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
       false,
     );
 
-    const reference = crypto.randomUUID();
+    const reference = orderNumberFromSeed("HOST", idempotencyKey);
     const file = form.get("logo");
     let logoKey = "";
     if (file instanceof File && file.size > 0) {
@@ -166,7 +167,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     }
 
     const expected = expectedValue(reference, total, env.SQUARE_LOCATION_ID);
-    const orderNote = [`Event date: ${eventDate}`, `Contact: ${fullName} · ${email} · ${phone}`, address ? `Address: ${address}` : "", notes ? `Notes: ${notes}` : "", logoKey ? `Logo/design reference: ${reference}` : ""].filter(Boolean).join("\n");
+    const orderNote = [`Order: ${reference}`, `Event date: ${eventDate}`, `Contact: ${fullName} · ${email} · ${phone}`, address ? `Address: ${address}` : "", notes ? `Notes: ${notes}` : "", logoKey ? `Logo/design reference: ${reference}` : ""].filter(Boolean).join("\n");
     lineItems[0] = { ...lineItems[0], note: [lineItems[0].note, orderNote].filter(Boolean).join("\n") };
     const returnUrl = new URL("/host/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000");
     const pickupAt = new Date(`${eventDate}T12:00:00+08:00`).toISOString();
@@ -191,10 +192,10 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
             },
           },
         }],
-        metadata: { cc_expected: expected, cc_signature: await signValue(env, expected), cc_status: "pending", cc_order_type: "host", cc_event_date: eventDate, cc_request: reference },
+        metadata: { cc_expected: expected, cc_signature: await signValue(env, expected), cc_status: "pending", cc_order_number: reference, cc_order_type: "host", cc_event_date: eventDate, cc_request: reference },
       },
       checkout_options: { redirect_url: returnUrl.href, allow_tipping: false, ask_for_shipping_address: false, enable_coupon: false, enable_loyalty: false },
-      payment_note: `Cake Cloud host request · ${fullName}\n${orderNote}`,
+      payment_note: `${reference} · Cake Cloud host request · ${fullName}\n${orderNote}`,
     };
     const response = await fetch("https://connect.squareupsandbox.com/v2/online-checkout/payment-links", { method: "POST", headers: { authorization: `Bearer ${env.SQUARE_ACCESS_TOKEN}`, "Square-Version": "2026-08-19", "content-type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(20_000) });
     const data = await response.json() as { payment_link?: { id?: string; url?: string; order_id?: string }; errors?: Array<{ code?: string }> };

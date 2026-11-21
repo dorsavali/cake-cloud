@@ -5,6 +5,12 @@ import type { ApiEnv } from "../types/env.js";
 const responseCacheHeaders = {
   "cache-control": "public, max-age=30, s-maxage=60, stale-while-revalidate=60",
 };
+const inventoryResponseHeaders = {
+  // Inventory is already cached on the API side and refreshed by Square
+  // webhooks. Browser/CDN caching here would keep sold-out cards stale even
+  // after the server cache has the new stock count.
+  "cache-control": "no-store",
+};
 
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
@@ -78,7 +84,7 @@ export async function handleProductDetail(
     const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
     const product = products.find((item) => item.id === productId);
     if (!product) return json({ error: "Product not found" }, 404);
-    return json({ product: toPublicProduct(product) }, 200, responseCacheHeaders);
+    return json({ product: toPublicProduct(product) }, 200, inventoryResponseHeaders);
   } catch (error) {
     console.error("[api] Product detail endpoint failed", {
       productId,
@@ -172,7 +178,7 @@ export async function handleProductCards(
         allergenOptions,
       },
       200,
-      responseCacheHeaders,
+      inventoryResponseHeaders,
     );
   } catch (error) {
     console.error("[api] Products endpoint failed", {
@@ -212,7 +218,7 @@ export async function handleRecommendations(
     return json(
       { items: picks.map(toCard) },
       200,
-      responseCacheHeaders,
+      inventoryResponseHeaders,
     );
   } catch (error) {
     console.error("[api] Recommendations endpoint failed", {
