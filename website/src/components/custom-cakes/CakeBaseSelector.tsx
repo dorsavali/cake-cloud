@@ -74,7 +74,7 @@ function CakeDesignPageLoading() {
   return (
     <main className={pageShell} aria-busy="true">
       <div className={container}>
-        <SkeletonBlock className="mt-4 h-4 w-28 rounded-full" />
+        <SkeletonBlock className="h-4 w-28 rounded-full" />
         <div className={`${topbar} max-md:mt-5`}>
           <SkeletonBlock className={`${progressInTopbar} h-9 rounded-full md:h-11`} />
           <SkeletonBlock className="h-8 w-32 rounded-full max-md:hidden md:h-12 md:w-44" />
@@ -89,13 +89,13 @@ function CakeDesignPageLoading() {
 function CakeCustomiserLoading() {
   return (
     <main
-      className={`${pageShell} pb-[30px]`}
+      className={pageShell}
       role="status"
       aria-label="Loading cake customisation"
       aria-busy="true"
     >
-      <div className={container} aria-hidden="true">
-        <SkeletonBlock className="mt-4 h-4 w-28 rounded-full" />
+      <div className={`${container} mx-auto max-w-[1476px]`} aria-hidden="true">
+        <SkeletonBlock className="h-4 w-28 rounded-full" />
         <div className={`${topbar} max-md:mt-5`}>
           <SkeletonBlock className={`${progressInTopbar} h-9 rounded-full md:h-11`} />
           <SkeletonBlock className="h-8 w-32 rounded-full max-md:hidden md:h-12 md:w-44" />
@@ -146,26 +146,21 @@ function CakeCustomiserLoading() {
 }
 
 export function CakeBaseSelector() {
-  const [ready, setReady] = useState(false);
-  const [resetRevision, setResetRevision] = useState(0);
   const searchParams = useSearchParams();
   const shouldStartOver = searchParams.get("start") === "1";
   const { designs, error, retry } = useCakeCatalog();
 
   useEffect(() => {
-    if (shouldStartOver) {
-      clearCakeDraft();
-      setResetRevision((revision) => revision + 1);
-      const url = new URL(window.location.href);
-      window.history.replaceState(null, "", url.pathname);
-    }
-    setReady(true);
+    if (!shouldStartOver) return;
+    clearCakeDraft();
+    const url = new URL(window.location.href);
+    window.history.replaceState(null, "", url.pathname);
   }, [shouldStartOver]);
 
-  if (!ready) {
+  if (shouldStartOver) {
     return <CakeDesignPageLoading />;
   }
-  return <CakeDraftFlow key={resetRevision} designs={designs} error={error} onRetry={retry} />;
+  return <CakeDraftFlow designs={designs} error={error} onRetry={retry} />;
 }
 
 function CakeDraftFlow({ designs, error, onRetry }: { designs?: CakeDesign[]; error?: string; onRetry: () => void }) {
@@ -197,7 +192,7 @@ function CakeDraftFlow({ designs, error, onRetry }: { designs?: CakeDesign[]; er
     <section>
       <main className={pageShell}>
         <div className={container}>
-          <div className="flex items-center justify-between gap-3 pt-4 md:block">
+          <div className="flex items-center justify-between gap-3 md:block">
             <Link
               href="/"
               className="inline-flex min-h-6 items-center border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]"
@@ -334,9 +329,8 @@ function CakeFlow({ design, onExit }: { design: CakeDesign; onExit: () => void }
   );
 
   const currency = size?.price.currency ?? "AUD";
-  const fee = quote?.fee ?? 0;
   const unavailable = quote?.available === false;
-  const availability = unavailable ? "Not available (< 24 h)" : fee ? "Next-day creation (+$80)" : "Standard (free)";
+  const availability = unavailable ? "Not available (< 48 h)" : "Standard (free)";
   const valid = !!size && !!pickupValue && quote?.available === true && !!quote.expires && quote.expires > now;
 
   const summary: CakeSummaryItem[] = useMemo(() => [
@@ -381,6 +375,7 @@ function CakeFlow({ design, onExit }: { design: CakeDesign; onExit: () => void }
         time={time}
         quote={quote}
         quoteError={quoteError}
+        now={now}
         onDateChange={setDate}
         onTimeChange={setTime}
         onBack={() => back("customise")}
@@ -394,9 +389,6 @@ function CakeFlow({ design, onExit }: { design: CakeDesign; onExit: () => void }
       cake={cake}
       pickup={pickupValue!}
       quote={quote}
-      summary={summary}
-      availability={availability}
-      fee={fee}
       onBack={() => { setQuoteRevision((value) => value + 1); back("summary"); }}
     />
   ) : (
@@ -404,7 +396,7 @@ function CakeFlow({ design, onExit }: { design: CakeDesign; onExit: () => void }
       summary={summary}
       pickup={date && time ? `${date} ${time}` : ""}
       availability={availability}
-      fee={fee}
+      now={now}
       quote={quote}
       unavailable={unavailable}
       quoteError={quoteError}

@@ -10,6 +10,7 @@ test("rejects production and invalid amounts before Square",async t=>{
  t.mock.method(globalThis,"fetch",async (_url,options)=>cakeCatalogResponse(catalogCall++%2===0?{body:JSON.stringify({object_types:["CATEGORY"]})}:options));
  assert.equal((await handleCustomCakeCheckout(req(body()),{...env,SQUARE_ENVIRONMENT:"production"})).status,503);
  assert.equal((await handleCustomCakeCheckout(req({...body(),expectedTotal:1}),env)).status,409);
+ assert.equal((await handleCustomCakeCheckout(req({...body(),pickup:new Date(Date.now()+47*3600000).toISOString().slice(0,16)}),env)).status,409);
  assert.equal((await handleCustomCakeCheckout(req({...body(),pickup:"2020-01-01T00:00"}),env)).status,409);
  assert.equal((await handleCustomCakeCheckout(req({...body(),email:"bad"}),env)).status,400);
 });

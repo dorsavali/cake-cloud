@@ -77,7 +77,7 @@ export function CategoryTabs({
     <nav
       dir="ltr"
       aria-label="Fresh Bakes categories"
-      className="mx-auto w-full max-w-[1476px] overflow-hidden px-4 pt-1 md:px-8"
+      className="w-full overflow-hidden px-4 pt-1 md:px-8"
     >
       <ul className={`${styles.scroller} flex flex-nowrap items-center gap-2 overflow-x-auto md:flex-wrap md:gap-3 md:overflow-visible`}>
         {categories.map((category) => {

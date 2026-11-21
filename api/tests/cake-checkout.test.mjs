@@ -29,7 +29,7 @@ test("Perth local date conversion and invalid dates",()=>{
 });
 test("rush boundaries",()=>{
  const now=1000000000000;
- for(const [h,available,fee] of [[-1,false,0],[23.999,false,0],[24,true,8000],[47.999,true,8000],[48,true,0]])assert.deepEqual(rushFee(now+h*3600000,now),{available,fee});
+ for(const [h,available,fee] of [[-1,false,0],[24,false,0],[47.999,false,0],[48,true,0],[72,true,0]])assert.deepEqual(rushFee(now+h*3600000,now),{available,fee});
 });
 test("quote endpoint calculates from the Square catalog",async t=>{
  let call=0;

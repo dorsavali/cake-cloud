@@ -28,6 +28,12 @@ function parseDate(value: string) {
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+function sameDay(left: Date, right: Date) {
+  return left.getFullYear() === right.getFullYear()
+    && left.getMonth() === right.getMonth()
+    && left.getDate() === right.getDate();
+}
+
 function WhatsAppIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-4">
@@ -45,11 +51,12 @@ function PhoneIcon() {
   );
 }
 
-export function CakePickup({ date, time, quote, quoteError, onDateChange, onTimeChange, onBack, onContinue }: {
+export function CakePickup({ date, time, quote, quoteError, now, onDateChange, onTimeChange, onBack, onContinue }: {
   date: string;
   time: string;
   quote?: CakeQuote;
   quoteError?: string;
+  now: number;
   onDateChange: (value: string) => void;
   onTimeChange: (value: string) => void;
   onBack: () => void;
@@ -59,21 +66,40 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
   const contact = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const contactTrigger = useRef<HTMLButtonElement>(null);
-  const [month, setMonth] = useState(parseDate(date) ?? new Date());
-  const [touched, setTouched] = useState(false);
-  const [input, setInput] = useState([date, time].filter(Boolean).join(" "));
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   const selected = parseDate(date);
+  const [month, setMonth] = useState<Date>();
+  const [touched, setTouched] = useState(false);
+  const [inputDraft, setInputDraft] = useState<string | null>(null);
+  const input = inputDraft ?? [date, time].filter(Boolean).join(" ");
+
+  const firstPickup = new Date(now + 48 * 60 * 60 * 1000);
+  firstPickup.setSeconds(0, 0);
+  firstPickup.setMinutes(firstPickup.getMinutes() + 1);
+  const firstPickupDay = new Date(firstPickup);
+  firstPickupDay.setHours(0, 0, 0, 0);
+  const firstDaySelected = !!selected && sameDay(selected, firstPickup);
+  const firstHour = firstDaySelected ? firstPickup.getHours() : 0;
+  const hourOptions = Array.from(
+    { length: 24 - firstHour },
+    (_, index) => String(firstHour + index).padStart(2, "0"),
+  );
+  const selectedHour = timePattern.test(time) && hourOptions.includes(time.slice(0, 2))
+    ? time.slice(0, 2)
+    : "";
+  const firstMinute = firstDaySelected && Number(selectedHour) === firstPickup.getHours()
+    ? firstPickup.getMinutes()
+    : 0;
+  const minuteOptions = Array.from(
+    { length: 60 - firstMinute },
+    (_, index) => String(firstMinute + index).padStart(2, "0"),
+  );
   const validDate = !!selected && timePattern.test(time);
   const unavailable = quote?.available === false;
-  const fee = quote?.fee ?? 0;
-  const availability = unavailable ? "Not available (< 24 h)" : fee ? "Next-day creation (+$80)" : "Standard (free)";
-  const valid = validDate && quote?.available === true && !!quote.expires && quote.expires > Date.now();
+  const availability = unavailable ? "Not available (< 48 h)" : "Standard (free)";
+  const valid = validDate && quote?.available === true && !!quote.expires && quote.expires > now;
 
   function updateInput(value: string) {
-    setInput(value);
+    setInputDraft(value);
     const parts = value.trim().split(/\s+/);
     onDateChange(parts[0] ?? "");
     onTimeChange(parts.length === 2 ? parts[1] : "");
@@ -93,8 +119,8 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
 
   return (
     <main className={pageShell}>
-      <div className={`${container} max-w-[620px] md:max-w-[60%]`}>
-        <button className="inline-flex  min-h-6 items-center gap-[7px] border-0 bg-none p-0 pt-4 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
+      <div className={`${container} mx-auto max-w-[620px] md:max-w-[60%]`}>
+        <button className="inline-flex min-h-6 items-center gap-[7px] border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
           ← <span>Back to Customise</span>
         </button>
         <div className="mt-[18px] min-w-0 max-md:mt-[22px] md:mt-[22px]"><CakeProgress current={2} /></div>
@@ -121,7 +147,7 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
                 value={input}
                 aria-describedby={touched && !validDate ? "pickup-error" : selected && quote ? "pickup-status" : undefined}
                 aria-invalid={touched && (!validDate || unavailable)}
-                onBlur={() => setTouched(true)}
+                onBlur={() => { setTouched(true); setInputDraft(null); }}
                 onChange={(event) => updateInput(event.target.value)}
                 className={`${inputClass} pr-11 md:pr-[46px]`}
               />
@@ -147,7 +173,7 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
                 <span aria-hidden="true">{unavailable ? "⛔" : "🕒"}</span>
                 <div>
                   {availability}
-                  {unavailable && <p className="mt-1 text-xs text-[#e12727]">Please choose a date at least 24 hours from now.</p>}
+                  {unavailable && <p className="mt-1 text-xs text-[#e12727]">Please choose a date at least 48 hours from now.</p>}
                 </div>
               </div>
             )}
@@ -182,15 +208,30 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
             className="font-signika text-sm max-md:[--rdp-day-width:clamp(30px,10vw,42px)] max-md:[--rdp-day-height:42px] max-md:[--rdp-day_button-width:clamp(28px,9vw,40px)] max-md:[--rdp-day_button-height:40px]"
             mode="single"
             selected={selected}
-            month={month}
+            month={month ?? selected ?? new Date()}
             onMonthChange={setMonth}
-            disabled={{ before: today }}
+            disabled={{ before: firstPickupDay }}
+            modifiers={{ firstAvailable: firstPickupDay }}
+            modifiersClassNames={{
+              firstAvailable: "[&_.rdp-day_button]:bg-primary/10 [&_.rdp-day_button]:text-base [&_.rdp-day_button]:font-bold [&_.rdp-day_button]:text-primary [&_.rdp-day_button]:ring-1 [&_.rdp-day_button]:ring-primary/40",
+            }}
             autoFocus
             onSelect={(value) => {
               if (!value) return;
               const text = `${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}`;
+              let nextTime = time;
+              if (sameDay(value, firstPickup)) {
+                const chosen = new Date(value);
+                const [hour, minute] = timePattern.test(time) ? time.split(":").map(Number) : [0, 0];
+                chosen.setHours(hour, minute, 0, 0);
+                if (chosen < firstPickup) {
+                  nextTime = `${String(firstPickup.getHours()).padStart(2, "0")}:${String(firstPickup.getMinutes()).padStart(2, "0")}`;
+                  onTimeChange(nextTime);
+                }
+              }
               onDateChange(text);
-              setInput(`${text}${time ? ` ${time}` : ""}`);
+              setMonth(value);
+              setInputDraft(null);
             }}
           />
           <fieldset className="my-4 grid gap-1.5 text-sm">
@@ -199,24 +240,28 @@ export function CakePickup({ date, time, quote, quoteError, onDateChange, onTime
               <CakeSelect
                 consistent
                 label="Hour"
-                value={timePattern.test(time) ? time.slice(0, 2) : "Choose"}
-                options={Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0"))}
+                value={selectedHour || "Choose"}
+                options={hourOptions}
                 onChange={(hour) => {
-                  const value = `${hour}:${/^[0-5]\d$/.test(time.slice(3)) ? time.slice(3) : "00"}`;
+                  const earliestMinute = firstDaySelected && Number(hour) === firstPickup.getHours()
+                    ? firstPickup.getMinutes()
+                    : 0;
+                  const currentMinute = /^[0-5]\d$/.test(time.slice(3)) ? Number(time.slice(3)) : 0;
+                  const value = `${hour}:${String(Math.max(earliestMinute, currentMinute)).padStart(2, "0")}`;
                   onTimeChange(value);
-                  setInput([date, value].filter(Boolean).join(" "));
+                  setInputDraft(null);
                 }}
               />
               <span aria-hidden="true">:</span>
               <CakeSelect
                 consistent
                 label="Minute"
-                value={timePattern.test(time) ? time.slice(3) : "Choose"}
-                options={Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0"))}
+                value={selectedHour && minuteOptions.includes(time.slice(3)) ? time.slice(3) : "Choose"}
+                options={minuteOptions}
                 onChange={(minute) => {
-                  const value = `${/^([01]\d|2[0-3])$/.test(time.slice(0, 2)) ? time.slice(0, 2) : "00"}:${minute}`;
+                  const value = `${selectedHour || hourOptions[0]}:${minute}`;
                   onTimeChange(value);
-                  setInput([date, value].filter(Boolean).join(" "));
+                  setInputDraft(null);
                 }}
               />
             </div>

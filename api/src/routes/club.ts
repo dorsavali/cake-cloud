@@ -1,6 +1,6 @@
 import { json, methodNotAllowed } from "../http/json.js";
 import {
-  normalizeSquarePhone,
+  isAustralianPhone,
   SquareCustomerError,
   upsertClubMember,
 } from "../services/square-customer.js";
@@ -87,7 +87,7 @@ export async function handleClubJoin(
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       throw new Error("Enter a valid email address.");
     }
-    if (!/^\+61\d{9}$/.test(normalizeSquarePhone(phone))) {
+    if (!isAustralianPhone(phone)) {
       throw new Error("Enter a valid Australian phone number.");
     }
     if (!validBirthday(birthday)) throw new Error("Enter a valid date of birth.");

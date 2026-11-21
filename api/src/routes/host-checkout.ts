@@ -1,13 +1,19 @@
 import { json, methodNotAllowed } from "../http/json.js";
-import { getCatalogItems } from "../services/square.js";
+import { getCatalogItemSnapshots } from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import {
+  isAustralianPhone,
   normalizeSquareAddress,
   normalizeSquarePhone,
   upsertSquareCustomer,
 } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
+import {
+  getCachedCatalogItems,
+  invalidateCatalogCache,
+  refreshHostCatalogCache,
+} from "./catalog.js";
 
 const maxFileBytes = 5 * 1024 * 1024;
 const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -46,7 +52,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     const idempotencyKey = text(form, "idempotencyKey", 36, true);
     if (!/^[a-f0-9-]{36}$/i.test(idempotencyKey)) throw new Error("Invalid checkout request.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email.");
-    if (!/^\+[1-9]\d{7,14}$/.test(phone)) throw new Error("Enter a valid phone number, including its country code.");
+    if (!isAustralianPhone(phone)) throw new Error("Enter a valid Australian phone number.");
     if (form.get("termsAccepted") !== "true") throw new Error("Accept the terms and conditions.");
     if (form.get("allergenAccepted") !== "true") throw new Error("Accept the allergen and food safety information.");
     const parsedDate = new Date(`${eventDate}T00:00:00Z`);
@@ -61,14 +67,27 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
 
     // Client storage supplies only identifiers and counts. Names, prices and
     // limits are always reloaded from the authoritative Square catalog here.
-    const products = await getCatalogItems(env, {
+    const products = await getCachedCatalogItems(env, {
       includeInventory: false,
       includePopularity: false,
+      variant: "host",
     });
     const hostProducts = products.filter((product) => {
       const section = normalize(String(product.customAttributes.site_section ?? ""));
       return section === "host" || product.categories.some((category) => normalize(category) === "host packages");
     });
+    const requestedIds = requested.flatMap((raw) => {
+      if (!raw || typeof raw !== "object") return [];
+      const id = (raw as { id?: unknown }).id;
+      return typeof id === "string" ? [id] : [];
+    });
+    let liveProducts: Awaited<ReturnType<typeof getCatalogItemSnapshots>>;
+    try {
+      liveProducts = await getCatalogItemSnapshots(env, requestedIds);
+    } catch {
+      throw new Error("Square could not verify package availability. Please retry.");
+    }
+
     const lineItems: Array<Record<string, unknown>> = [];
     const summary: Array<{ id: string; name: string; guests: number; unitPrice: number; priceUnit: string }> = [];
     let total = 0;
@@ -77,16 +96,44 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
       const { id, guests } = raw as { id?: unknown; guests?: unknown };
       if (typeof id !== "string" || !Number.isInteger(guests)) throw new Error("Invalid package request.");
       const product = hostProducts.find((candidate) => candidate.id === id);
-      if (!product || !product.variationId || product.price.currency !== "AUD" || product.price.amount < 1) throw new Error("A selected package is no longer available.");
+      const liveProduct = liveProducts.get(id);
+      const changed = Boolean(
+        product &&
+        liveProduct &&
+        (product.variationId !== liveProduct.variationId ||
+          product.price.amount !== liveProduct.price.amount ||
+          product.price.currency !== liveProduct.price.currency),
+      );
+      if (
+        !product ||
+        !product.variationId ||
+        !product.available ||
+        product.price.currency !== "AUD" ||
+        product.price.amount < 1 ||
+        !liveProduct ||
+        !liveProduct.available ||
+        !liveProduct.variationId ||
+        liveProduct.price.currency !== "AUD" ||
+        liveProduct.price.amount < 1 ||
+        changed
+      ) {
+        invalidateCatalogCache(env);
+        await refreshHostCatalogCache(env).catch((error) => {
+          console.error("[square] Host catalog refresh after checkout mismatch failed", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+        throw new Error("A package changed or is no longer available. Review your request and try again.");
+      }
       const minimum = Number(product.customAttributes.minimum_guests ?? product.customAttributes.minimum_quantity ?? 10);
       const maximumValue = Number(product.customAttributes.maximum_guests);
       const maximum = Number.isFinite(maximumValue) && maximumValue > 0 ? maximumValue : 9999;
       if ((guests as number) < minimum || (guests as number) > maximum) throw new Error(`${product.name} requires between ${minimum} and ${maximum} guests.`);
       const fixed = normalize(String(product.customAttributes.pricing_model ?? "")) === "fixed";
       const quantity = fixed ? 1 : guests as number;
-      total += product.price.amount * quantity;
-      lineItems.push({ catalog_object_id: product.variationId, quantity: String(quantity), note: fixed ? `${guests} guests` : undefined });
-      summary.push({ id: product.id, name: product.name, guests: guests as number, unitPrice: product.price.amount, priceUnit: fixed ? "package" : "head" });
+      total += liveProduct.price.amount * quantity;
+      lineItems.push({ catalog_object_id: liveProduct.variationId, quantity: String(quantity), note: fixed ? `${guests} guests` : undefined });
+      summary.push({ id: product.id, name: product.name, guests: guests as number, unitPrice: liveProduct.price.amount, priceUnit: fixed ? "package" : "head" });
     }
 
     const customerId = await upsertSquareCustomer(

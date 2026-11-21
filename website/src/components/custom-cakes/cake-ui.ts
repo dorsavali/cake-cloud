@@ -1,8 +1,8 @@
 
 
 export const pageShell =
-  "-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y px-4 pb-8 pt-16 font-signika text-accent-dark md:px-8 md:pb-16";
-export const container = "mx-auto w-full max-w-[1476px]";
+  "-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y px-4 pb-4 pt-20 font-signika text-accent-dark md:px-8 md:pb-8 md:pt-24";
+export const container = "w-full";
 
 export const pageTitle =
   "my-5 font-kalnia text-[clamp(25px,7.5vw,32px)] font-medium leading-[1.3] md:text-[30px]";
@@ -13,7 +13,7 @@ export const topbar =
 export const progressInTopbar = "min-w-0 flex-1 max-w-[70%] max-md:max-w-none";
 
 export const modeLink =
-  "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-luxury-accent bg-accent px-3 font-signika text-xs font-medium text-accent-dark transition-colors duration-200 [&:hover>span]:text-accent hover:border-primary hover:bg-primary hover:text-accent motion-reduce:transition-none md:h-12 md:gap-3 md:px-8 md:text-base";
+  "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-luxury-accent bg-accent px-3 font-signika text-xs font-medium text-accent-dark transition-colors duration-200 [&:hover>span]:text-accent [&:hover]:border-accent-dark [&:hover]:bg-accent-dark [&:hover]:text-accent motion-reduce:transition-none md:h-12 md:gap-3 md:px-8 md:text-base";
 
 export const modeIcon = "text-[#ead58b]";
 
@@ -25,10 +25,10 @@ export const fieldLabel = "mb-[5px] block text-xs text-accent-dark md:text-sm";
 export const requiredMark = "text-[#b05249]";
 
 export const primaryButton =
-  "w-full min-h-10 rounded-full bg-primary px-4 py-[9px] font-kalnia text-sm text-accent transition-colors hover:bg-[#5e796c] disabled:cursor-not-allowed disabled:bg-primary/40 disabled:hover:bg-primary/40 md:px-5 md:text-base";
+  "w-full min-h-10 rounded-full bg-primary px-4 py-[9px] font-kalnia text-sm text-accent transition-colors [&:hover]:bg-[#5c7669] disabled:cursor-not-allowed disabled:bg-primary/40 [&:disabled:hover]:bg-primary/40 md:px-5 md:text-base";
 
 export const primaryButtonInline =
-  "rounded-full border border-primary bg-primary px-5 py-[10px] font-kalnia text-sm font-medium text-accent transition-colors hover:bg-[#5e796c] disabled:cursor-not-allowed disabled:opacity-50 md:px-[30px] md:py-[9px] md:text-base";
+  "rounded-full border border-primary bg-primary px-5 py-[10px] font-kalnia text-sm font-medium text-accent transition-colors [&:hover]:border-[#5c7669] [&:hover]:bg-[#5c7669] disabled:cursor-not-allowed disabled:opacity-50 [&:disabled:hover]:border-primary [&:disabled:hover]:bg-primary md:px-[30px] md:py-[9px] md:text-base";
 
 export const errorText = "mt-[5px] text-xs text-[#a0443c]";
 

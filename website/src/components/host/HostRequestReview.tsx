@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 
 import {
-  readHostRequest,
+  getHostRequestServerSnapshot,
+  getHostRequestSnapshot,
+  parseHostRequest,
   saveHostRequest,
+  subscribeHostRequest,
   type HostRequestItem,
 } from "./request-storage";
 
@@ -19,20 +22,24 @@ const money = new Intl.NumberFormat("en-AU", {
 });
 
 export function HostRequestReview() {
-  const [items, setItems] = useState<HostRequestItem[]>([]);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setItems(readHostRequest());
-    setReady(true);
-  }, []);
+  const serializedItems = useSyncExternalStore(
+    subscribeHostRequest,
+    getHostRequestSnapshot,
+    getHostRequestServerSnapshot,
+  );
+  const storedItems = serializedItems ? parseHostRequest(serializedItems) : [];
+  const [fallbackItems, setFallbackItems] =
+    useState<HostRequestItem[] | null>(null);
+  const items = fallbackItems ?? storedItems;
+  const ready = serializedItems !== "";
 
   const updateItems = (nextItems: HostRequestItem[]) => {
-    setItems(nextItems);
     try {
       saveHostRequest(nextItems);
+      setFallbackItems(null);
     } catch {
       // Keep the current page usable if storage is unavailable.
+      setFallbackItems(nextItems);
     }
   };
 
@@ -54,7 +61,7 @@ export function HostRequestReview() {
     updateItems(items.filter((item) => item.id !== id));
 
   return (
-    <section className="mx-auto w-full max-w-[996px] px-4 pb-24 pt-8 md:px-6 md:pt-10 lg:px-0">
+    <section className="mx-auto w-full max-w-[996px] px-4 pb-24 pt-8 md:px-6 lg:px-0">
       <Link
         href="/host"
         className="inline-flex items-center gap-3 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary"
@@ -117,7 +124,7 @@ export function HostRequestReview() {
             })}
           </ul>
 
-          <Link href="/host/checkout" className="mt-7 inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-primary px-6 font-kalnia text-lg font-medium text-white transition-colors hover:bg-accent-dark">
+          <Link href="/host/checkout" className="mt-7 inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-primary px-6 font-kalnia text-lg font-medium text-accent transition-colors [&:hover]:bg-[#5c7669]">
             Continue to Request
           </Link>
         </>

@@ -1,5 +1,6 @@
 import { handleApiRequest } from "./handler.js";
 import { refreshCatalogCache } from "./routes/catalog.js";
+import { refreshCakeCatalogCache } from "./routes/cake-catalog.js";
 import type { WorkerEnv } from "./types/env.js";
 
 type WorkerExecutionContext = {
@@ -15,6 +16,11 @@ export default {
     env: WorkerEnv,
     context: WorkerExecutionContext,
   ): void {
-    context.waitUntil(refreshCatalogCache(env));
+    context.waitUntil(
+      Promise.all([
+        refreshCatalogCache(env),
+        refreshCakeCatalogCache(env),
+      ]),
+    );
   },
 };

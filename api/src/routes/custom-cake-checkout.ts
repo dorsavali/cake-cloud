@@ -4,6 +4,7 @@ import { CakeError, getPricedCake, pickupInstant, rushFee } from "./cake-checkou
 import type { ApiEnv } from "../types/env.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import {
+  isAustralianPhone,
   normalizeSquareAddress,
   normalizeSquarePhone,
   SquareCustomerError,
@@ -27,16 +28,16 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
     const phone = normalizeSquarePhone(typeof body.phone === "string" ? body.phone.trim() : "");
     const address = normalizeSquareAddress(body.address);
     if(!name || name.length>100 || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new CakeError("Enter a valid full name and email.");
-    if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new CakeError("Enter a valid phone number, including its country code.");
+    if(!isAustralianPhone(phone))throw new CakeError("Enter a valid Australian phone number.");
     if(typeof body.idempotencyKey!=="string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey))throw new CakeError("Invalid checkout request");
     const priced=await getPricedCake(env, body.cake);
     const subtotal=priced.subtotal;
     const timeZone=env.SQUARE_TIMEZONE || "Australia/Perth";
     const instant=pickupInstant(body.pickup,timeZone);
     const pickupLocal=String(body.pickup).replace("T", " ");
-    const {available,fee}=rushFee(instant);
-    if(!available)return json({error:"Please choose a pickup time at least 24 hours from now."},409);
-    const total=subtotal+fee;
+    const {available}=rushFee(instant);
+    if(!available)return json({error:"Please choose a pickup time at least 48 hours from now."},409);
+    const total=subtotal;
     // Expected total is only a change guard, never the source of the price.
     if(body.expectedTotal!==total)return json({error:"The total changed. Return to Summary to review the updated price."},409);
     let customerId: string;
@@ -87,10 +88,7 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
         location_id:env.SQUARE_LOCATION_ID,
         customer_id:customerId,
         reference_id:body.idempotencyKey,
-        line_items:[
-          lineItem,
-          ...(fee?[{name:"Next-day creation",quantity:"1",base_price_money:{amount:fee,currency:"AUD"}}]:[]),
-        ],
+        line_items:[lineItem],
         fulfillments:[{type:"PICKUP",state:"PROPOSED",pickup_details:{
           schedule_type:"SCHEDULED",pickup_at:pickupAt,
           note:`Customer-selected pickup: ${pickupLocal} (${timeZone})`,

@@ -10,7 +10,7 @@ export default function DailyMenuPage() {
     <>
       <DesktopHeader />
       <MobileHeader />
-      <main className="-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y pb-12 pt-16 md:pb-16">
+      <main className="-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:100%_auto] bg-top bg-repeat-y pb-4 pt-16 md:pb-8">
         <MenuIntro />
         <Suspense fallback={null}>
           <DailyMenuCatalog />

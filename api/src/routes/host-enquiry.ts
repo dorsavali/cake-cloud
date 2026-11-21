@@ -1,4 +1,5 @@
 import { json, methodNotAllowed } from "../http/json.js";
+import { isAustralianPhone } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 
 const maxFileBytes = 5 * 1024 * 1024;
@@ -39,7 +40,7 @@ export async function handleHostEnquiry(request: Request, env: ApiEnv): Promise<
     const preferredDate = field(form, "preferredDate", 10, true);
     const notes = field(form, "notes", 2000);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email.");
-    if (!/^[+()\d\s.-]{7,30}$/.test(phone)) throw new Error("Enter a valid phone number.");
+    if (!isAustralianPhone(phone)) throw new Error("Enter a valid Australian phone number.");
     if (form.get("termsAccepted") !== "true") throw new Error("Accept the terms and conditions.");
     if (form.get("allergenAccepted") !== "true") throw new Error("Accept the allergen and food safety information.");
     const date = new Date(`${preferredDate}T00:00:00Z`);

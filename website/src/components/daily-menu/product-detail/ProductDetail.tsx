@@ -27,6 +27,46 @@ const storageInstructions =
 const preparationNotes =
   "Baked fresh daily; quantity subject to production capacity.";
 const swipeThreshold = 40;
+const productDraftStoragePrefix = "cake-cloud:daily-product-draft:v1:";
+
+type ProductDraft = {
+  quantity: number;
+  selectedVariationId: string;
+  drinkSelection: DrinkSelection;
+};
+
+function readProductDraft(productId: string): ProductDraft | null {
+  try {
+    const value: unknown = JSON.parse(
+      sessionStorage.getItem(productDraftStoragePrefix + productId) ?? "null",
+    );
+    if (!value || typeof value !== "object") return null;
+    const draft = value as Partial<ProductDraft>;
+    if (
+      !Number.isInteger(draft.quantity) ||
+      (draft.quantity ?? -1) < 0 ||
+      typeof draft.selectedVariationId !== "string" ||
+      !draft.drinkSelection ||
+      typeof draft.drinkSelection !== "object" ||
+      typeof draft.drinkSelection.temperature !== "string" ||
+      !draft.drinkSelection.modifierIdsByList ||
+      typeof draft.drinkSelection.modifierIdsByList !== "object"
+    ) return null;
+
+    return draft as ProductDraft;
+  } catch {
+    return null;
+  }
+}
+
+function writeProductDraft(productId: string, draft: ProductDraft) {
+  try {
+    sessionStorage.setItem(
+      productDraftStoragePrefix + productId,
+      JSON.stringify(draft),
+    );
+  } catch { /* Keep product selection usable without persistence. */ }
+}
 
 function formatPrice(product: DailyMenuProduct, amount = product.price.amount) {
   return new Intl.NumberFormat("en-AU", {
@@ -117,16 +157,66 @@ export function ProductDetail() {
               return [list.id, selected];
             }),
           );
-          setProduct(fetchedProduct);
-          setSelectedVariationId(
-            fetchedProduct.variations.find((variation) => variation.available)
-              ?.id ?? fetchedProduct.variations[0]?.id ?? "",
+          const savedDraft = readProductDraft(productId);
+          const defaultVariation =
+            fetchedProduct.variations.find((variation) => variation.available) ??
+            fetchedProduct.variations[0];
+          const savedVariation = fetchedProduct.variations.find(
+            (variation) =>
+              variation.id === savedDraft?.selectedVariationId &&
+              variation.available,
           );
+          const selectedVariation = savedVariation ?? defaultVariation;
+          const restoredModifierIdsByList = Object.fromEntries(
+            fetchedProduct.modifierLists.map((list) => {
+              const savedIds =
+                savedDraft?.drinkSelection.modifierIdsByList[list.id];
+              if (!Array.isArray(savedIds)) {
+                return [list.id, modifierIdsByList[list.id] ?? []];
+              }
+              const availableIds = new Set(
+                list.modifiers.map((modifier) => modifier.id),
+              );
+              const maximum =
+                list.maxSelected > 0
+                  ? list.maxSelected
+                  : Number.POSITIVE_INFINITY;
+              const restoredIds = [...new Set(savedIds)]
+                .filter((id): id is string =>
+                  typeof id === "string" && availableIds.has(id),
+                )
+                .slice(0, maximum);
+              return [
+                list.id,
+                restoredIds.length >= list.minSelected
+                  ? restoredIds
+                  : modifierIdsByList[list.id] ?? [],
+              ];
+            }),
+          );
+          const selectedStock = selectedVariation?.stock ?? fetchedProduct.stock;
+          const maximumQuantity =
+            selectedVariation?.available === false ||
+            (!selectedVariation && fetchedProduct.available === false)
+              ? 0
+              : selectedStock === null
+                ? Number.POSITIVE_INFINITY
+                : Math.max(0, Math.floor(selectedStock));
+          const restoredQuantity = savedDraft
+            ? Math.min(savedDraft.quantity, maximumQuantity)
+            : 0;
+          setProduct(fetchedProduct);
+          setSelectedVariationId(selectedVariation?.id ?? "");
           setDrinkSelection({
             ...defaultDrinkSelection,
-            temperature: isColdDrink ? "Cold" : "Hot",
-            modifierIdsByList,
+            temperature:
+              savedDraft?.drinkSelection.temperature === "Hot" ||
+              savedDraft?.drinkSelection.temperature === "Cold"
+                ? savedDraft.drinkSelection.temperature
+                : isColdDrink ? "Cold" : "Hot",
+            modifierIdsByList: restoredModifierIdsByList,
           });
+          setQuantity(restoredQuantity);
           setResolvedProductId(productId);
           setLoadState("success");
         }
@@ -142,6 +232,19 @@ export function ProductDetail() {
       isActive = false;
     };
   }, [productId]);
+
+  useEffect(() => {
+    if (
+      loadState !== "success" ||
+      !productId ||
+      resolvedProductId !== productId
+    ) return;
+    writeProductDraft(productId, {
+      quantity,
+      selectedVariationId,
+      drinkSelection,
+    });
+  }, [drinkSelection, loadState, productId, quantity, resolvedProductId, selectedVariationId]);
 
   if (loadState === "loading" || resolvedProductId !== productId) {
     return <ProductDetailLoading />;

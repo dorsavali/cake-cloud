@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 
 import { apiUrl } from "@/lib/api";
+import { australianPhonePattern, isAustralianPhone } from "@/lib/australian-phone";
 import { useDraftState } from "./useDraftState";
 import { draftText } from "./draft-storage";
 
@@ -12,6 +13,11 @@ const inputClass =
   "min-h-9 w-full rounded-lg border border-[#ddd0b9] bg-[#faf7f0]/90 px-3 py-2 font-signika text-sm text-accent-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 const labelClass = "mb-1.5 block font-signika text-sm text-accent-dark";
+
+const subscribeToMinimumDate = () => () => {};
+const getMinimumDateSnapshot = () =>
+  new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+const getMinimumDateServerSnapshot = () => "";
 
 function BackLink() {
   return (
@@ -100,11 +106,11 @@ export function CakeBriefForm() {
   const [reference, setReference] = useState("");
 
   const fileInput = useRef<HTMLInputElement>(null);
-  const [minimumDate, setMinimumDate] = useState("");
-
-  useEffect(() => {
-    setMinimumDate(new Date(Date.now() + 86400000).toISOString().slice(0, 10));
-  }, []);
+  const minimumDate = useSyncExternalStore(
+    subscribeToMinimumDate,
+    getMinimumDateSnapshot,
+    getMinimumDateServerSnapshot,
+  );
 
   const canSubmit =
     description.trim().length > 0 &&
@@ -112,7 +118,7 @@ export function CakeBriefForm() {
     pickupDate >= minimumDate &&
     name.trim().length > 0 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
-    /^[+()\d\s.-]{7,30}$/.test(phone.trim());
+    isAustralianPhone(phone);
 
   if (reference) {
     return (
@@ -366,6 +372,8 @@ export function CakeBriefForm() {
                   autoComplete="tel"
                   required
                   maxLength={30}
+                  pattern={australianPhonePattern}
+                  placeholder="04xx xxx xxx or +61 4xx xxx xxx"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                 />
@@ -383,7 +391,7 @@ export function CakeBriefForm() {
               )}
 
               <button
-                className="min-h-11 rounded-full bg-primary px-6 font-kalnia text-base text-accent transition hover:bg-[#5e796c] disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-11 rounded-full bg-primary px-6 font-kalnia text-base text-accent transition-colors duration-200 [&:hover]:bg-[#5c7669] active:bg-primary disabled:cursor-not-allowed disabled:opacity-60 [&:disabled:hover]:bg-primary"
                 disabled={busy || !canSubmit}
               >
                 {busy ? "Submitting…" : "Submit Brief"}

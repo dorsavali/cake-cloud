@@ -20,7 +20,6 @@ export function useCakeQuote(
   const [result, setResult] = useState<{ body: string; quote?: CakeQuote; error?: string }>();
   useEffect(() => {
     if (!cake.size || !enabled) {
-      setResult(undefined);
       return;
     }
     const controller = new AbortController();
@@ -31,5 +30,6 @@ export function useCakeQuote(
     }, 200);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [body, cake.size, enabled, tick]);
+  if (!cake.size || !enabled) return { body };
   return result?.body === body ? result : { body };
 }

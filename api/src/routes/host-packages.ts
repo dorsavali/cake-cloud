@@ -62,9 +62,14 @@ export async function handleHostPackages(
         const section = normalize(
           attributeString(product.customAttributes, "site_section"),
         );
+        const belongsToHost =
+          section === "host" || hasHostCategory(product.categoryPaths);
         return (
-          section === "host" ||
-          hasHostCategory(product.categoryPaths)
+          belongsToHost &&
+          product.available &&
+          Boolean(product.variationId) &&
+          product.price.currency === "AUD" &&
+          product.price.amount > 0
         );
       })
       .map((product) => {

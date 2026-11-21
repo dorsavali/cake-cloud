@@ -22,10 +22,13 @@ type SquareCustomer = {
 export class SquareCustomerError extends Error {}
 
 export function normalizeSquarePhone(value: string): string {
-  const compact = value.replace(/[\s().-]/g, "");
-  if (/^04\d{8}$/.test(compact)) return `+61${compact.slice(1)}`;
-  if (/^4\d{8}$/.test(compact)) return `+61${compact}`;
+  const compact = value.trim().replace(/[\s()-]/g, "");
+  if (/^0[23478]\d{8}$/.test(compact)) return `+61${compact.slice(1)}`;
   return compact;
+}
+
+export function isAustralianPhone(value: string): boolean {
+  return /^\+61[23478]\d{8}$/.test(normalizeSquarePhone(value));
 }
 
 export function normalizeSquareAddress(value: unknown): string {

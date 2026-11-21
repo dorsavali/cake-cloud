@@ -2,10 +2,23 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  isAustralianPhone,
   normalizeSquareAddress,
+  normalizeSquarePhone,
   upsertClubMember,
   upsertSquareCustomer,
 } from "../dist/services/square-customer.js";
+
+test("Australian phone numbers accept local and +61 formats", () => {
+  assert.equal(normalizeSquarePhone("0412 345 678"), "+61412345678");
+  assert.equal(normalizeSquarePhone("(02) 1234-5678"), "+61212345678");
+  assert.equal(normalizeSquarePhone("+61 7 1234 5678"), "+61712345678");
+  assert.equal(isAustralianPhone("0412 345 678"), true);
+  assert.equal(isAustralianPhone("+61 3 1234 5678"), true);
+  assert.equal(isAustralianPhone("0412 345 67"), false);
+  assert.equal(isAustralianPhone("0512 345 678"), false);
+  assert.equal(isAustralianPhone("+1 415 555 0123"), false);
+});
 
 const env = {
   SQUARE_ENVIRONMENT: "sandbox",

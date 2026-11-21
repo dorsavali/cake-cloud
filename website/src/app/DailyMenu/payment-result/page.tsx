@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { clearStoredCart } from "@/components/cart";
+import { clearCheckoutIdentity } from "@/components/cart/checkout-identity";
 import { container, errorText, pageShell, primaryButton } from "@/components/custom-cakes/cake-ui";
 import { Footer } from "@/components/layout/footer";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
@@ -39,7 +40,10 @@ export default function DailyMenuPaymentResult() {
         if (!active) return;
         setError("");
         setResult(data);
-        if (data.status === "paid") clearStoredCart();
+        if (data.status === "paid") {
+          clearStoredCart();
+          clearCheckoutIdentity();
+        }
         if (data.status === "pending" && ++attempts < 12) timer = setTimeout(check, 5000);
       } catch (caught) {
         if (active) {

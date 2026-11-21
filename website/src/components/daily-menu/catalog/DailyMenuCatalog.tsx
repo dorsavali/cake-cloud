@@ -40,12 +40,43 @@ type CategoriesResponse = {
   categories?: string[];
 };
 
+const skeletonCards = Array.from({ length: 8 }, (_, index) => index);
+
+function ProductGridSkeleton() {
+  return (
+    <div role="status" aria-live="polite">
+      <span className="sr-only">Loading products...</span>
+      <ul
+        aria-hidden="true"
+        className="grid w-full min-w-0 grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-6"
+      >
+        {skeletonCards.map((card) => (
+          <li key={card} className="min-w-0">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-luxury-accent/20 bg-accent shadow-[0_3px_14px_rgb(70_66_72_/_6%)]">
+              <div className="aspect-[4/4.5] motion-safe:animate-pulse bg-[#e5ddcf]/80" />
+              <div className="min-h-[104px] space-y-2.5 px-3 pb-2 pt-3 lg:min-h-[108px] lg:px-4 lg:pb-3 lg:pt-4">
+                <div className="h-5 w-3/5 rounded-full motion-safe:animate-pulse bg-[#ded6c8]/75" />
+                <div className="h-3.5 w-4/5 rounded-full motion-safe:animate-pulse bg-[#ded6c8]/60" />
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <div className="h-3.5 w-14 rounded-full motion-safe:animate-pulse bg-[#ded6c8]/70" />
+                  <div className="h-3.5 w-12 rounded-full motion-safe:animate-pulse bg-[#ded6c8]/70" />
+                </div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function DailyMenuCatalog() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedCategory = searchParams.get("category");
   const [categories, setCategories] = useState<DailyMenuCategoryOption[]>([]);
-  const [activeCategory, setActiveCategory] = useState<DailyMenuCategory>("");
+  const [selectedCategory, setSelectedCategory] =
+    useState<DailyMenuCategory | null>(null);
   const [categoryLoadState, setCategoryLoadState] =
     useState<"loading" | "success" | "error">("loading");
   const [products, setProducts] = useState<DailyMenuProductCard[]>([]);
@@ -60,6 +91,11 @@ export function DailyMenuCatalog() {
   const [totalResults, setTotalResults] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const productsStartRef = useRef<HTMLDivElement>(null);
+  const activeCategory =
+    categories.find((item) => item.id === selectedCategory)?.id ??
+    categories.find((item) => item.id === requestedCategory)?.id ??
+    categories[0]?.id ??
+    "";
   const category =
     categories.find((item) => item.id === activeCategory);
 
@@ -91,19 +127,6 @@ export function DailyMenuCatalog() {
       controller.abort();
     };
   }, []);
-
-  useEffect(() => {
-    if (categories.length === 0) {
-      setActiveCategory("");
-      return;
-    }
-
-    setActiveCategory((current) =>
-      categories.find((item) => item.id === requestedCategory)?.id ??
-      categories.find((item) => item.id === current)?.id ??
-      categories[0].id,
-    );
-  }, [categories, requestedCategory]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -167,7 +190,7 @@ export function DailyMenuCatalog() {
 
   const handleCategoryChange = (category: DailyMenuCategory) => {
     setCurrentPage(1);
-    setActiveCategory(category);
+    setSelectedCategory(category);
     setAllergens([]);
     setProductType("");
     setSortBy("Recommended");
@@ -198,7 +221,7 @@ export function DailyMenuCatalog() {
         activeCategory={activeCategory}
         onCategoryChange={handleCategoryChange}
       />
-      <div className="mx-auto w-full max-w-[1476px] px-4  pt-4 lg:pt-8 md:px-8">
+      <div className="w-full px-4 pt-4 md:px-8 md:pt-8">
         <ResultsToolbar
           resultCount={totalResults}
           sortBy={sortBy}
@@ -235,9 +258,7 @@ export function DailyMenuCatalog() {
         <div ref={productsStartRef} className="mt-5 scroll-mt-24">
           {categoryLoadState === "loading" ||
           (categoryLoadState === "success" && category && loadState === "loading") ? (
-            <p className="py-20 text-center font-signika text-base text-accent-dark/65">
-              Loading products...
-            </p>
+            <ProductGridSkeleton />
           ) : categoryLoadState === "error" || loadState === "error" ? (
             <p className="py-20 text-center font-signika text-base text-accent-dark">
               Products are temporarily unavailable.

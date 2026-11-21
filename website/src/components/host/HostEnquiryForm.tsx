@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, useMemo, useRef, useState } from "react";
 
 import { apiUrl } from "@/lib/api";
+import { australianPhonePattern } from "@/lib/australian-phone";
 
 const control = "mt-2 min-h-12 w-full min-w-0 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary";
 
@@ -64,7 +65,7 @@ export function HostEnquiryForm() {
             <input className={control} name="email" type="email" required maxLength={254} autoComplete="email" />
           </label>
           <label className="block text-sm font-medium">Phone <span className="text-[#a83831]">*</span>
-            <input className={control} name="phone" type="tel" required minLength={7} maxLength={30} autoComplete="tel" />
+            <input className={control} name="phone" type="tel" required maxLength={30} pattern={australianPhonePattern} placeholder="04xx xxx xxx or +61 4xx xxx xxx" autoComplete="tel" />
           </label>
           <label className="block text-sm font-medium">Preferred Date <span className="text-[#a83831]">*</span>
             <input className={control} name="preferredDate" type="date" required min={tomorrow} />

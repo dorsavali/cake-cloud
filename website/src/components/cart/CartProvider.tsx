@@ -7,11 +7,13 @@ import {
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
 
 import { apiUrl } from "@/lib/api";
+import { isAustralianPhone } from "@/lib/australian-phone";
 
 
 export type CartItem = {
@@ -57,11 +59,6 @@ type CartContextValue = {
 const initialItems: CartItem[] = [];
 const cartStorageKey = "cake-cloud-cart-v1";
 
-export function clearStoredCart() {
-  try { localStorage.removeItem(cartStorageKey); } catch { /* Storage may be unavailable. */ }
-  window.dispatchEvent(new Event("cake-cloud-cart-clear"));
-}
-
 function validStoredCart(value: unknown): value is CartItem[] {
   return Array.isArray(value) && value.length <= 30 && value.every((item) => item && typeof item === "object"
     && typeof item.id === "string" && (typeof item.variationId === "string" || item.variationId === null)
@@ -69,6 +66,66 @@ function validStoredCart(value: unknown): value is CartItem[] {
     && Number.isInteger(item.quantity) && item.quantity > 0 && (item.maxQuantity === null || (typeof item.maxQuantity === "number" && item.maxQuantity >= item.quantity))
     && (item.options === undefined || (item.options && typeof item.options === "object" && !Array.isArray(item.options)))
     && (item.modifierIds === undefined || (Array.isArray(item.modifierIds) && item.modifierIds.every((id: unknown) => typeof id === "string"))));
+}
+
+type CartSnapshot = {
+  items: CartItem[];
+  ready: boolean;
+};
+
+const serverCartSnapshot: CartSnapshot = { items: initialItems, ready: false };
+let browserCartSnapshot: CartSnapshot | null = null;
+const cartListeners = new Set<() => void>();
+
+function readStoredCart() {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(cartStorageKey) ?? "null");
+    return validStoredCart(saved) ? saved : initialItems;
+  } catch {
+    return initialItems;
+  }
+}
+
+function getCartSnapshot() {
+  browserCartSnapshot ??= { items: readStoredCart(), ready: true };
+  return browserCartSnapshot;
+}
+
+function getServerCartSnapshot() {
+  return serverCartSnapshot;
+}
+
+function notifyCartListeners() {
+  cartListeners.forEach((listener) => listener());
+}
+
+function subscribeToCart(listener: () => void) {
+  cartListeners.add(listener);
+  const syncFromStorage = (event: StorageEvent) => {
+    if (event.key !== cartStorageKey) return;
+    browserCartSnapshot = { items: readStoredCart(), ready: true };
+    notifyCartListeners();
+  };
+  window.addEventListener("storage", syncFromStorage);
+  return () => {
+    cartListeners.delete(listener);
+    window.removeEventListener("storage", syncFromStorage);
+  };
+}
+
+function updateStoredCart(update: (items: CartItem[]) => CartItem[]) {
+  const current = getCartSnapshot();
+  const items = update(current.items);
+  if (items === current.items) return;
+  browserCartSnapshot = { items, ready: true };
+  try { localStorage.setItem(cartStorageKey, JSON.stringify(items)); } catch { /* Keep cart usable without persistence. */ }
+  notifyCartListeners();
+}
+
+export function clearStoredCart() {
+  browserCartSnapshot = { items: initialItems, ready: true };
+  try { localStorage.removeItem(cartStorageKey); } catch { /* Storage may be unavailable. */ }
+  notifyCartListeners();
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -246,26 +303,15 @@ function CartDrawer({
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [items, setItems] = useState<CartItem[]>(initialItems);
+  const cartSnapshot = useSyncExternalStore(
+    subscribeToCart,
+    getCartSnapshot,
+    getServerCartSnapshot,
+  );
+  const { items, ready: cartReady } = cartSnapshot;
   const [isOpen, setIsOpen] = useState(false);
-  const [cartReady, setCartReady] = useState(false);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
-
-  useEffect(() => {
-    try {
-      const saved: unknown = JSON.parse(localStorage.getItem(cartStorageKey) ?? "null");
-      if (validStoredCart(saved)) setItems(saved);
-    } catch { /* Ignore corrupt or unavailable storage. */ }
-    setCartReady(true);
-    const clear = () => setItems([]);
-    window.addEventListener("cake-cloud-cart-clear", clear);
-    return () => window.removeEventListener("cake-cloud-cart-clear", clear);
-  }, []);
-  useEffect(() => {
-    if (!cartReady) return;
-    try { localStorage.setItem(cartStorageKey, JSON.stringify(items)); } catch { /* Keep cart usable without persistence. */ }
-  }, [cartReady, items]);
 
   const checkout = useCallback(async (
     orderNumber: string,
@@ -273,7 +319,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     termsAccepted: boolean,
     allergenAccepted: boolean,
   ) => {
-    if (!items.length || checkoutBusy || !termsAccepted || !allergenAccepted) return;
+    const customerValid = customer.name.trim().length > 0
+      && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim())
+      && isAustralianPhone(customer.phone);
+    if (!items.length || checkoutBusy || !customerValid || !termsAccepted || !allergenAccepted) return;
     setCheckoutBusy(true); setCheckoutError("");
     try {
       const sessionResponse = await fetch(apiUrl("/api/cake/checkout-session"), { method: "POST" });
@@ -300,7 +349,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeCart = useCallback(() => setIsOpen(false), []);
 
   const addItem = useCallback((newItem: AddCartItem) => {
-    setItems((currentItems) => {
+    updateStoredCart((currentItems) => {
       const lineId = cartLineId(newItem);
       const existing = currentItems.find((item) => cartLineId(item) === lineId);
       const quantity = Math.min(
@@ -316,7 +365,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setItemQuantity = useCallback((id: string, quantity: number) => {
-    setItems((currentItems) =>
+    updateStoredCart((currentItems) =>
       quantity <= 0
         ? currentItems.filter((item) => cartLineId(item) !== id)
         : currentItems.map((item) =>
@@ -334,7 +383,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const removeItem = useCallback((id: string) => {
-    setItems((currentItems) => currentItems.filter((item) => cartLineId(item) !== id));
+    updateStoredCart((currentItems) => currentItems.filter((item) => cartLineId(item) !== id));
   }, []);
 
   const value = useMemo(

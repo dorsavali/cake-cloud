@@ -90,9 +90,9 @@ export function HostPackages() {
   };
 
   return (
-    <section className="mx-auto w-full max-w-[1476px] px-4 py-5 lg:py-7 lg:px-8 ">
-      <div className="mb-4 pl-0.5">
-        <h1 className="mt-2 font-kalnia text-[28px] font-medium leading-[1.05] tracking-[-0.025em] text-accent-dark md:text-[38px] md:leading-none">
+    <section className="w-full p-4 md:p-8">
+      <div className="mb-4">
+        <h1 className="font-kalnia text-[28px] font-medium leading-[1.05] tracking-[-0.025em] text-accent-dark md:text-[38px] md:leading-none">
           Host with Cake Cloud
         </h1>
         <p className="mt-2 font-signika text-[11px] leading-[1.45] text-accent-dark/65 md:text-[13px] md:leading-normal">
@@ -114,7 +114,7 @@ export function HostPackages() {
       </div>
 
       <div
-        className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:mt-7 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
+        className="mt-3 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mt-7 md:flex-wrap md:overflow-visible md:pb-0"
         role="group"
         aria-label="Filter host packages"
       >

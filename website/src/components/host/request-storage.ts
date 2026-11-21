@@ -33,15 +33,44 @@ function isHostRequestItem(value: unknown): value is HostRequestItem {
   );
 }
 
-export function readHostRequest(): HostRequestItem[] {
+export function parseHostRequest(serialized: string): HostRequestItem[] {
   try {
-    const parsed: unknown = JSON.parse(
-      window.localStorage.getItem(hostRequestStorageKey) ?? "[]",
-    );
+    const parsed: unknown = JSON.parse(serialized);
     return Array.isArray(parsed) ? parsed.filter(isHostRequestItem) : [];
   } catch {
     return [];
   }
+}
+
+export function getHostRequestSnapshot() {
+  try {
+    return window.localStorage.getItem(hostRequestStorageKey) ?? "[]";
+  } catch {
+    return "[]";
+  }
+}
+
+export function getHostRequestServerSnapshot() {
+  return "";
+}
+
+export function subscribeHostRequest(onStoreChange: () => void) {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === hostRequestStorageKey) {
+      onStoreChange();
+    }
+  };
+
+  window.addEventListener(hostRequestChangedEvent, onStoreChange);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    window.removeEventListener(hostRequestChangedEvent, onStoreChange);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+export function readHostRequest(): HostRequestItem[] {
+  return parseHostRequest(getHostRequestSnapshot());
 }
 
 export function saveHostRequestItem(requestItem: HostRequestItem) {

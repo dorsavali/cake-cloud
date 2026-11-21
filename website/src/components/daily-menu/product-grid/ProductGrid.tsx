@@ -37,7 +37,6 @@ export function ProductGrid({
         return (
         <li key={product.id} id={product.id} className="min-w-0">
           <article
-            aria-disabled={unavailable || undefined}
             className={`relative min-w-0 overflow-hidden rounded-2xl border border-luxury-accent/25 bg-accent shadow-[0_3px_14px_rgb(70_66_72_/_6%)] ${unavailable ? "cursor-not-allowed opacity-55 grayscale-[35%]" : ""}`}
           >
             {!unavailable && (
@@ -83,7 +82,7 @@ export function ProductGrid({
                 </span>
                 {unavailable ? (
                   <span className="text-sm font-medium text-accent-dark/50">
-                    Unavailable
+                    Sold Out
                   </span>
                 ) : (
                   <Link

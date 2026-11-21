@@ -12,6 +12,9 @@ type SquareCatalogObject = {
   type?: string;
   id?: string;
   is_deleted?: boolean;
+  present_at_all_locations?: boolean;
+  present_at_location_ids?: string[];
+  absent_at_location_ids?: string[];
   custom_attribute_values?: Record<
     string,
     {
@@ -41,6 +44,9 @@ type SquareCatalogObject = {
     };
     variations?: Array<{
       id?: string;
+      present_at_all_locations?: boolean;
+      present_at_location_ids?: string[];
+      absent_at_location_ids?: string[];
       item_variation_data?: {
         name?: string;
         ordinal?: number;
@@ -107,6 +113,13 @@ type SquareCatalogListResponse = {
   objects?: SquareCatalogObject[];
   related_objects?: SquareCatalogObject[];
   cursor?: string;
+};
+
+export type CatalogItemSnapshot = {
+  id: string;
+  variationId: string | null;
+  price: { amount: number; currency: string };
+  available: boolean;
 };
 
 type StorefrontProduct = {
@@ -358,6 +371,22 @@ const variationSizeRank = (name: string) => {
 const normalizeCategoryName = (name: string) =>
   name.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
+const isPresentAtLocation = (
+  object: {
+    present_at_all_locations?: boolean;
+    present_at_location_ids?: string[];
+    absent_at_location_ids?: string[];
+  },
+  locationId?: string,
+) => {
+  if (!locationId) return true;
+  if (object.absent_at_location_ids?.includes(locationId)) return false;
+  if (object.present_at_location_ids?.length) {
+    return object.present_at_location_ids.includes(locationId);
+  }
+  return object.present_at_all_locations !== false;
+};
+
 export async function getCatalogItems(
   env: ApiEnv,
   options: {
@@ -480,7 +509,13 @@ export async function getCatalogItems(
   ]);
 
   return objects
-    .filter((object) => object.type === "ITEM" && object.id)
+    .filter(
+      (object) =>
+        object.type === "ITEM" &&
+        object.id &&
+        !object.is_deleted &&
+        !object.item_data?.is_archived,
+    )
     .map((item) => {
       const variations = (item.item_data?.variations ?? [])
         .flatMap((variation) => {
@@ -513,7 +548,10 @@ export async function getCatalogItems(
               },
               stock,
               available:
-                location?.sold_out !== true && (stock === null || stock > 0),
+                isPresentAtLocation(item, env.SQUARE_LOCATION_ID) &&
+                isPresentAtLocation(variation, env.SQUARE_LOCATION_ID) &&
+                location?.sold_out !== true &&
+                (stock === null || stock > 0),
             },
           ];
         })
@@ -1115,4 +1153,82 @@ export async function getCakeDesigns(env: ApiEnv): Promise<CakeDesign[]> {
       sizes,
     };
   });
+}
+
+/**
+ * Re-check only the catalog items that are about to be purchased. This keeps
+ * browsing cache-friendly without downloading the full Square catalog during
+ * every checkout.
+ */
+export async function getCatalogItemSnapshots(
+  env: ApiEnv,
+  itemIds: string[],
+): Promise<Map<string, CatalogItemSnapshot>> {
+  const uniqueIds = [...new Set(itemIds)].filter(Boolean);
+  if (uniqueIds.length === 0) return new Map();
+
+  const response = await fetch(
+    `${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/catalog/batch-retrieve`,
+    {
+      method: "POST",
+      headers: squareHeaders(env),
+      body: JSON.stringify({
+        object_ids: uniqueIds,
+        include_related_objects: false,
+      }),
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+  if (!response.ok) {
+    console.error(
+      "[square] Checkout catalog validation failed",
+      squareResponseLog("catalog-validation", response),
+    );
+    throw new Error(`Square Catalog validation failed (${response.status})`);
+  }
+
+  const data = (await response.json()) as SquareCatalogListResponse;
+  const snapshots = new Map<string, CatalogItemSnapshot>();
+  for (const item of data.objects ?? []) {
+    if (item.type !== "ITEM" || !item.id) continue;
+    const variations = (item.item_data?.variations ?? []).flatMap((variation) => {
+      const variationData = variation.item_variation_data;
+      const location = variationData?.location_overrides?.find(
+        (override) => override.location_id === env.SQUARE_LOCATION_ID,
+      );
+      const money = location?.price_money ?? variationData?.price_money;
+      const pricingType = location?.pricing_type ?? variationData?.pricing_type;
+      if (
+        !variation.id ||
+        pricingType === "VARIABLE_PRICING" ||
+        typeof money?.amount !== "number"
+      ) {
+        return [];
+      }
+      return [{
+        id: variation.id,
+        price: {
+          amount: money.amount,
+          currency: money.currency ?? "AUD",
+        },
+        available:
+          isPresentAtLocation(item, env.SQUARE_LOCATION_ID) &&
+          isPresentAtLocation(variation, env.SQUARE_LOCATION_ID) &&
+          location?.sold_out !== true,
+      }];
+    });
+    const primaryVariation =
+      variations.find((variation) => variation.available) ?? variations[0];
+    snapshots.set(item.id, {
+      id: item.id,
+      variationId: primaryVariation?.id ?? null,
+      price: primaryVariation?.price ?? { amount: 0, currency: "AUD" },
+      available: Boolean(
+        !item.is_deleted &&
+        !item.item_data?.is_archived &&
+        primaryVariation?.available,
+      ),
+    });
+  }
+  return snapshots;
 }

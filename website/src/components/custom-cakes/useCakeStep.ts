@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { cakeStepNames, type CakeStep } from "./CakeProgress";
 
@@ -19,27 +19,25 @@ function hashStep(): CakeStep | null {
  * the design grid as expected.
  */
 export function useCakeStep(onDesign: () => void) {
-  const [step, setStep] = useState<CakeStep>("customise");
-  const onDesignRef = useRef(onDesign);
-  onDesignRef.current = onDesign;
+  const [step, setStep] = useState<CakeStep>(() =>
+    typeof window === "undefined" ? "customise" : hashStep() ?? "customise",
+  );
 
   useEffect(() => {
-    const current = hashStep();
-    if (current) setStep(current);
-    else window.location.hash = "customise";
+    if (!hashStep()) window.location.hash = "customise";
 
     const sync = () => {
       const next = hashStep();
       if (next) setStep(next);
-      else onDesignRef.current();
+      else onDesign();
     };
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
-  }, []);
+  }, [onDesign]);
 
   const go = useCallback((next: CakeStep) => {
     if (next === "design") {
-      onDesignRef.current();
+      onDesign();
       return;
     }
     if (hashStep() === next) {
@@ -48,7 +46,7 @@ export function useCakeStep(onDesign: () => void) {
     }
     window.location.hash = next;
     setStep(next);
-  }, []);
+  }, [onDesign]);
 
   const back = useCallback((fallback: CakeStep) => {
     if (window.history.length > 1) window.history.back();

@@ -157,7 +157,7 @@ export function pickupInstant(value: unknown, zone: string) {
 
 export function rushFee(instant: number, now = Date.now()) {
   const hours = (instant - now) / 3600000;
-  return { available: hours >= 24, fee: hours >= 24 && hours < 48 ? 8000 : 0 };
+  return { available: hours >= 48, fee: 0 };
 }
 
 export async function handleCakeCheckout(request: Request, env: ApiEnv) {

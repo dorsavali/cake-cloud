@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiUrl } from "@/lib/api";
+import { australianPhonePattern, isAustralianPhone } from "@/lib/australian-phone";
 
-import { money, type CakeConfig, type CakeQuote, type CakeSummaryItem } from "./cake-types";
+import { money, type CakeConfig, type CakeQuote } from "./cake-types";
 import { useDraftState } from "./useDraftState";
 import { draftText } from "./draft-storage";
 import { CakeProgress } from "./CakeProgress";
-import { CakeSummaryDetails } from "./CakeSummary";
 import {
   container,
   errorText,
@@ -27,13 +27,10 @@ import Link from "next/link";
  * collected here is what Square needs for the pickup fulfilment; card data is
  * always entered on Square itself.
  */
-export function CakePayment({ cake, pickup, quote, summary, availability, fee, onBack }: {
+export function CakePayment({ cake, pickup, quote, onBack }: {
   cake: CakeConfig;
   pickup: string;
   quote: CakeQuote;
-  summary: CakeSummaryItem[];
-  availability: string;
-  fee: number;
   onBack: () => void;
 }) {
   const [name, setName] = useDraftState("name", "", draftText);
@@ -69,11 +66,15 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
     } catch { return false; }
   });
   const attempt = useRef<string | undefined>(savedAttempt ?? undefined);
+  const attemptPending = savedAttempt !== null;
+  const customerValid = name.trim().length > 0
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    && isAustralianPhone(phone);
 
   return (
     <main className={pageShell}>
-      <div className={`${container} max-w-[620px] md:max-w-[60%]`}>
-        <button className="inline-flex min-h-6 items-center gap-[7px] border-0 bg-none p-0 pt-4 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
+      <div className={`${container} mx-auto max-w-[620px] md:max-w-[60%]`}>
+        <button className="inline-flex min-h-6 items-center gap-[7px] border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
           ← <span>Back to Summary</span>
         </button>
         <div className="mt-[18px] min-w-0 max-md:mt-[22px] md:mt-[22px]"><CakeProgress current={4} /></div>
@@ -86,13 +87,20 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
             className="grid gap-[15px] md:gap-[18px]"
             onSubmit={async (event) => {
               event.preventDefault();
-              if (lock.current) return;
+              if (
+                lock.current ||
+                busy ||
+                !customerValid ||
+                !termsAccepted ||
+                !allergenAccepted
+              ) return;
               if (url) { window.location.assign(url); return; }
               lock.current = true;
               setBusy(true);
               setError("");
               request.current = new AbortController();
               try {
+                attempt.current ??= savedAttempt ?? undefined;
                 if (!attempt.current) {
                   const sessionResponse = await fetch(apiUrl("/api/cake/checkout-session"), { method: "POST", signal: request.current.signal });
                   if (!sessionResponse.ok) throw new Error("Could not start checkout. Please try again.");
@@ -123,20 +131,20 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
           >
             <div>
               <label htmlFor="payer-name" className={fieldLabel}>Full Name <span className={requiredMark}>*</span></label>
-              <input className={inputClass} id="payer-name" autoComplete="name" required maxLength={100} value={name} disabled={busy || !!attempt.current} onChange={(event) => setName(event.target.value)} />
+              <input className={inputClass} id="payer-name" autoComplete="name" required maxLength={100} value={name} disabled={busy || attemptPending} onChange={(event) => setName(event.target.value)} />
             </div>
             <div>
               <label htmlFor="payer-email" className={fieldLabel}>Email <span className={requiredMark}>*</span></label>
-              <input className={inputClass} id="payer-email" type="email" autoComplete="email" required maxLength={254} value={email} disabled={busy || !!attempt.current} onChange={(event) => setEmail(event.target.value)} />
+              <input className={inputClass} id="payer-email" type="email" autoComplete="email" required maxLength={254} value={email} disabled={busy || attemptPending} onChange={(event) => setEmail(event.target.value)} />
             </div>
             <div>
               <label htmlFor="payer-phone" className={fieldLabel}>Phone <span className={requiredMark}>*</span></label>
-              <input className={inputClass} id="payer-phone" type="tel" autoComplete="tel" required minLength={7} maxLength={30} pattern="[+()0-9\s.\-]{7,30}" value={phone} disabled={busy || !!attempt.current} onChange={(event) => setPhone(event.target.value)} />
+              <input className={inputClass} id="payer-phone" type="tel" autoComplete="tel" required maxLength={30} pattern={australianPhonePattern} placeholder="04xx xxx xxx or +61 4xx xxx xxx" value={phone} disabled={busy || attemptPending} onChange={(event) => setPhone(event.target.value)} />
               <p className="mt-1 text-[11px] text-accent-dark/50">Saved to your Square customer profile for order management.</p>
             </div>
             <div>
               <label htmlFor="payer-address" className={fieldLabel}>Address <span className="font-normal text-accent-dark/55">(optional)</span></label>
-              <input className={inputClass} id="payer-address" type="text" autoComplete="street-address" maxLength={500} value={address} disabled={busy || !!attempt.current} onChange={(event) => setAddress(event.target.value)} />
+              <input className={inputClass} id="payer-address" type="text" autoComplete="street-address" maxLength={500} value={address} disabled={busy || attemptPending} onChange={(event) => setAddress(event.target.value)} />
             </div>
             <div className="flex items-center justify-between border-t border-[#e3d7c2] pt-3">
               <span className="text-xs text-accent-dark md:text-sm">Total</span>
@@ -148,7 +156,7 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
       type="checkbox"
       required
       checked={termsAccepted}
-      disabled={busy || !!attempt.current}
+      disabled={busy || attemptPending}
       onChange={(event) => setTermsAccepted(event.target.checked)}
       className="mt-1 size-4 shrink-0 accent-primary"
     />
@@ -181,7 +189,7 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
       type="checkbox"
       required
       checked={allergenAccepted}
-      disabled={busy || !!attempt.current}
+      disabled={busy || attemptPending}
       onChange={(event) => setAllergenAccepted(event.target.checked)}
       className="mt-1 size-4 shrink-0 accent-primary"
     />
@@ -209,7 +217,7 @@ export function CakePayment({ cake, pickup, quote, summary, availability, fee, o
 
 <button
   className={primaryButton}
-  disabled={busy || !termsAccepted || !allergenAccepted}
+  disabled={busy || !customerValid || !termsAccepted || !allergenAccepted}
 >
   {busy ? "Opening Square…" : "Continue to Square"}
 </button>

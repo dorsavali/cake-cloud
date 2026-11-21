@@ -1,4 +1,5 @@
 import { json, methodNotAllowed } from "../http/json.js";
+import { isAustralianPhone } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 
 const maxFiles = 3;
@@ -47,7 +48,7 @@ export async function handleCakeBrief(request: Request, env: ApiEnv): Promise<Re
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(pickupDate) || pickup.toISOString().slice(0, 10) !== pickupDate || pickup < tomorrow) throw new Error("Choose a future pickup date");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Invalid email");
-    if (!/^[+()\d\s.-]{7,30}$/.test(phone)) throw new Error("Invalid phone");
+    if (!isAustralianPhone(phone)) throw new Error("Enter a valid Australian phone number.");
 
     const files = form.getAll("images").filter((item): item is File => item instanceof File && item.size > 0);
     if (files.length > maxFiles) throw new Error("Upload up to " + maxFiles + " images");

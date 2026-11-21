@@ -414,10 +414,6 @@ export function CakeCustomiser({
     }
   }, [onSelectionsChange, selectedSize, selections]);
 
-  useEffect(() => {
-    setActiveImage(0);
-  }, [selectedSize?.id]);
-
   const images = [...new Set(design.images)];
   const sizes = design.sizes.filter((size) => size.shape === shape);
   const missing = selectedSize ? incompleteLists(selectedSize, selections) : [];
@@ -447,9 +443,9 @@ export function CakeCustomiser({
   };
 
   return (
-    <main className={`${pageShell} pb-[30px]`}>
-      <div className={container}>
-        <div className="flex items-center justify-between gap-3 pt-4 md:block">
+    <main className={pageShell}>
+      <div className={`${container} mx-auto max-w-[1476px]`}>
+        <div className="flex items-center justify-between gap-3 md:block">
           <button className="inline-flex min-h-6 items-center border-0 bg-none p-0 font-[inherit] text-xs text-[#88857d] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary md:gap-2 md:text-[13px]" type="button" onClick={onBack}>
             ← <span>Back to Design</span>
           </button>

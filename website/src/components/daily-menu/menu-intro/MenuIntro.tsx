@@ -21,9 +21,9 @@ export function MenuIntro() {
     <section
       dir="ltr"
       aria-labelledby="daily-menu-heading"
-      className="px-4 py-5 lg:py-7 lg:px-8 "
+      className="py-4 md:py-8"
     >
-      <div className="mx-auto max-w-[1476px]">
+      <div className="w-full px-4 md:px-8">
         <div className="flex items-center justify-between gap-3">
           <h1
             id="daily-menu-heading"

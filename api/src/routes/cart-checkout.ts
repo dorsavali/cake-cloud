@@ -3,6 +3,7 @@ import { getCatalogItems } from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import {
+  isAustralianPhone,
   normalizeSquareAddress,
   normalizeSquarePhone,
   upsertSquareCustomer,
@@ -40,7 +41,7 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
     const address = normalizeSquareAddress(body.address);
     if (!name || name.length > 100) throw new Error("Enter your full name.");
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
-    if (!/^\+[1-9]\d{7,14}$/.test(phone)) throw new Error("Enter a valid phone number, including its country code.");
+    if (!isAustralianPhone(phone)) throw new Error("Enter a valid Australian phone number.");
 
     // Always load authoritative products, prices, and current inventory from Square.
     const products = await getCatalogItems(env);
@@ -186,7 +187,7 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
         metadata: { cc_expected: expected, cc_signature: await signValue(env, expected), cc_status: "pending" },
       },
       checkout_options: { redirect_url: new URL("/DailyMenu/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000").href, allow_tipping: false, ask_for_shipping_address: false, enable_coupon: false, enable_loyalty: false },
-      payment_note: `Cake Cloud daily menu order · ${name}`,
+      payment_note: `Cake Cloud daily menu order · ${body.orderNumber} · ${name}`,
     };
     const response = await fetch("https://connect.squareupsandbox.com/v2/online-checkout/payment-links", {
       method: "POST",

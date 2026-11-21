@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
@@ -16,6 +17,17 @@ const money = new Intl.NumberFormat("en-AU", {
 });
 
 export function HostPackageDetail() {
+  const packageId = useSearchParams().get("id");
+
+  return (
+    <HostPackageDetailContent
+      key={packageId ?? "missing"}
+      packageId={packageId}
+    />
+  );
+}
+
+function HostPackageDetailContent({ packageId }: { packageId: string | null }) {
   const [hostPackage, setHostPackage] = useState<HostPackage | null>(null);
   const [guestCount, setGuestCount] = useState(1);
   const [addedToRequest, setAddedToRequest] = useState(false);
@@ -23,11 +35,7 @@ export function HostPackageDetail() {
     useState<"loading" | "success" | "error">("loading");
 
   useEffect(() => {
-    const packageId = new URLSearchParams(window.location.search).get("id");
-    if (!packageId) {
-      setLoadState("error");
-      return;
-    }
+    if (!packageId) return;
 
     let active = true;
     loadHostPackages()
@@ -46,9 +54,9 @@ export function HostPackageDetail() {
       });
 
     return () => { active = false; };
-  }, []);
+  }, [packageId]);
 
-  if (loadState === "loading") {
+  if (packageId && loadState === "loading") {
     return <p className="py-40 text-center font-signika text-sm text-accent-dark/65">Loading package...</p>;
   }
 
@@ -89,7 +97,7 @@ export function HostPackageDetail() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[684px] px-6 pb-16 pt-9 md:px-0">
+    <div className="mx-auto w-full max-w-[684px] px-6 pb-16 pt-8 md:px-0">
       <Link href="/host" className="inline-flex items-center gap-3 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-primary">
         <span aria-hidden="true">←</span> Back to Packages
       </Link>
@@ -141,7 +149,7 @@ export function HostPackageDetail() {
 
           <div className="mt-7 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-[#ded4c3] pt-4 md:flex md:justify-between md:gap-3">
             <p className="whitespace-nowrap font-signika text-[20px] text-primary md:text-[24px]">{money.format(total / 100)}</p>
-            <button type="button" onClick={addToRequest} className="inline-flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-2 font-kalnia text-[12px] font-medium text-white transition-colors hover:bg-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:min-h-12 md:min-w-64 md:flex-none md:px-4 md:text-base">Add to The Request</button>
+            <button type="button" onClick={addToRequest} className="inline-flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-2 font-kalnia text-[12px] font-medium text-accent transition-colors [&:hover]:bg-[#5c7669] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:min-h-12 md:min-w-64 md:flex-none md:px-4 md:text-base">Add to The Request</button>
           </div>
         </div>
       </article>
@@ -153,8 +161,8 @@ export function HostPackageDetail() {
             {hostPackage.name} added to your request.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Link href="/host/request" className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-kalnia text-sm font-medium text-white transition-colors hover:bg-accent-dark">Continue to Request</Link>
-            <Link href="/host" className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#b9a47a] bg-[#fbf8f1] px-5 font-kalnia text-sm font-medium text-accent-dark transition-colors hover:border-primary hover:text-primary">Add Another Package</Link>
+            <Link href="/host/request" className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-kalnia text-sm font-medium text-accent transition-colors [&:hover]:bg-[#5c7669]">Continue to Request</Link>
+            <Link href="/host" className="inline-flex min-h-11 items-center justify-center rounded-full border border-luxury-accent bg-accent px-5 font-kalnia text-sm font-medium text-accent-dark transition-colors [&:hover]:border-accent-dark [&:hover]:bg-accent-dark [&:hover]:text-accent">Add Another Package</Link>
           </div>
         </section>
       ) : null}

@@ -15,7 +15,9 @@ const catalogCache = new Map<
   { expiresAt: number; items: CatalogItems }
 >();
 const catalogRequests = new Map<string, Promise<CatalogItems>>();
-const catalogCacheDurationMs = 24 * 60 * 60 * 1000;
+// Webhooks normally refresh this immediately. The short TTL is a fallback for
+// missed deliveries and keeps local development consistent with production.
+const catalogCacheDurationMs = 135 * 60 * 1000;
 
 const catalogCacheKey = (env: ApiEnv, variant = "full") =>
   `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${variant}`;
@@ -88,6 +90,11 @@ export async function refreshCatalogCache(env: ApiEnv): Promise<void> {
     includePopularity: false,
     variant: "daily-menu",
   });
+  setCatalogCache(env, items, {
+    includeInventory: false,
+    includePopularity: false,
+    variant: "host",
+  });
 }
 
 export async function refreshDailyMenuCatalogCache(
@@ -96,6 +103,23 @@ export async function refreshDailyMenuCatalogCache(
   await refreshCatalogVariant(env, {
     includePopularity: false,
     variant: "daily-menu",
+  });
+}
+
+export async function refreshStorefrontCatalogCaches(
+  env: ApiEnv,
+): Promise<void> {
+  const items = await getCatalogItems(env, {
+    includePopularity: false,
+  });
+  setCatalogCache(env, items, {
+    includePopularity: false,
+    variant: "daily-menu",
+  });
+  setCatalogCache(env, items, {
+    includeInventory: false,
+    includePopularity: false,
+    variant: "host",
   });
 }
 

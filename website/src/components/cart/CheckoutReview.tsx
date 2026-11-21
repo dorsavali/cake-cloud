@@ -2,8 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { australianPhonePattern, isAustralianPhone } from "@/lib/australian-phone";
 import { useCart } from "./CartProvider";
+import {
+  getCheckoutIdentityServerSnapshot,
+  getCheckoutIdentitySnapshot,
+  subscribeToCheckoutIdentity,
+  type CheckoutIdentity,
+} from "./checkout-identity";
 
 function lineId(item: {
   id: string;
@@ -36,27 +43,22 @@ export function CheckoutReview() {
     checkoutBusy,
     checkoutError,
   } = useCart();
-  const [createdAt, setCreatedAt] = useState<Date | null>(null);
-  const [orderNumber, setOrderNumber] = useState("");
+  const serializedIdentity = useSyncExternalStore(
+    subscribeToCheckoutIdentity,
+    getCheckoutIdentitySnapshot,
+    getCheckoutIdentityServerSnapshot,
+  );
+  const identity = serializedIdentity
+    ? JSON.parse(serializedIdentity) as CheckoutIdentity
+    : null;
+  const createdAt = identity ? new Date(identity.createdAt) : null;
+  const orderNumber = identity?.orderNumber ?? "";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [allergenAccepted, setAllergenAccepted] = useState(false);
-  useEffect(() => {
-    const now = new Date();
-    setCreatedAt(now);
-    const suffix = crypto
-      .getRandomValues(new Uint16Array(2))
-      .reduce(
-        (value, part) =>
-          value + part.toString(36).toUpperCase().padStart(2, "0"),
-        "",
-      )
-      .slice(0, 4);
-    setOrderNumber(`CC-${Date.now().toString(36).toUpperCase()}-${suffix}`);
-  }, []);
   const subtotal = items.reduce(
     (sum, item) => sum + item.unitPrice * item.quantity,
     0,
@@ -65,7 +67,7 @@ export function CheckoutReview() {
   const currency = items[0]?.currency ?? "AUD";
   const customerValid = name.trim().length > 0
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-    && /^[+()0-9\s.\-]{7,30}$/.test(phone.trim());
+    && isAustralianPhone(phone);
 
   return (
     <main className="min-h-[calc(100dvh-4rem)] px-4 pb-16 pt-5 text-accent-dark md:px-6 md:pt-6">
@@ -224,9 +226,9 @@ export function CheckoutReview() {
                     type="tel"
                     autoComplete="tel"
                     required
-                    minLength={7}
                     maxLength={30}
-                    pattern="[+()0-9\s.\-]{7,30}"
+                    pattern={australianPhonePattern}
+                    placeholder="04xx xxx xxx or +61 4xx xxx xxx"
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
                     className="min-h-11 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 text-base font-normal outline-none focus:border-primary"
