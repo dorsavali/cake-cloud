@@ -19,7 +19,14 @@ export async function getCachedCakeDesigns(env: ApiEnv): Promise<CakeDesigns> {
   if (cached && cached.expiresAt > Date.now()) return cached.designs;
 
   const existing = requests.get(key);
-  if (existing) return existing;
+  if (existing) {
+    try {
+      return await existing;
+    } catch (error) {
+      if (cached) return cached.designs;
+      throw error;
+    }
+  }
 
   const request = getCakeDesigns(env)
     .then((designs) => {
@@ -29,17 +36,23 @@ export async function getCachedCakeDesigns(env: ApiEnv): Promise<CakeDesigns> {
     .finally(() => requests.delete(key));
 
   requests.set(key, request);
-  return request;
-}
-
-export function invalidateCakeCatalogCache(env: ApiEnv): void {
-  cache.delete(cacheKey(env));
+  try {
+    return await request;
+  } catch (error) {
+    // Keep serving the last healthy design catalogue during a temporary
+    // Square failure. A later webhook or scheduled refresh will replace it.
+    if (cached) return cached.designs;
+    throw error;
+  }
 }
 
 export async function refreshCakeCatalogCache(env: ApiEnv): Promise<void> {
   const key = cacheKey(env);
   const existingRequest = requests.get(key);
-  if (existingRequest) await existingRequest;
+  if (existingRequest) {
+    await existingRequest;
+    return;
+  }
 
   const request = getCakeDesigns(env)
     .then((designs) => {

@@ -1,13 +1,7 @@
 import { reconcilePayment } from "../services/payment-verification.js";
 import { json, methodNotAllowed } from "../http/json.js";
-import {
-  invalidateCatalogCache,
-  refreshStorefrontCatalogCaches,
-} from "./catalog.js";
-import {
-  invalidateCakeCatalogCache,
-  refreshCakeCatalogCache,
-} from "./cake-catalog.js";
+import { refreshStorefrontCatalogCaches } from "./catalog.js";
+import { refreshCakeCatalogCache } from "./cake-catalog.js";
 import type { ApiEnv } from "../types/env.js";
 import { sendPaidOrderNotifications } from "../email/order-notifications.js";
 
@@ -130,9 +124,6 @@ export async function handleSquareWebhook(
   }
 
   if (event.type && catalogRefreshEvents.has(event.type)) {
-    invalidateCatalogCache(env);
-    invalidateCakeCatalogCache(env);
-
     try {
       const refreshes: Promise<void>[] = [
         refreshStorefrontCatalogCaches(env),

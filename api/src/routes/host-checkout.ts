@@ -11,7 +11,6 @@ import {
 import type { ApiEnv } from "../types/env.js";
 import {
   getCachedCatalogItems,
-  invalidateCatalogCache,
   refreshHostCatalogCache,
 } from "./catalog.js";
 
@@ -117,7 +116,6 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
         liveProduct.price.amount < 1 ||
         changed
       ) {
-        invalidateCatalogCache(env);
         await refreshHostCatalogCache(env).catch((error) => {
           console.error("[square] Host catalog refresh after checkout mismatch failed", {
             error: error instanceof Error ? error.message : String(error),

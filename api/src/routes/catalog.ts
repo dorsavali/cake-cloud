@@ -39,7 +39,7 @@ async function refreshCatalogVariant(
 ): Promise<CatalogItems> {
   const cacheKey = catalogCacheKey(env, options.variant);
   const existingRequest = catalogRequests.get(cacheKey);
-  if (existingRequest) await existingRequest;
+  if (existingRequest) return existingRequest;
 
   const request = getCatalogItems(env, options)
     .then((items) => {
@@ -61,7 +61,14 @@ export async function getCachedCatalogItems(
   if (cached && cached.expiresAt > Date.now()) return cached.items;
 
   const existingRequest = catalogRequests.get(cacheKey);
-  if (existingRequest) return existingRequest;
+  if (existingRequest) {
+    try {
+      return await existingRequest;
+    } catch (error) {
+      if (cached) return cached.items;
+      throw error;
+    }
+  }
 
   const request = getCatalogItems(env, options)
     .then((items) => {
@@ -71,13 +78,14 @@ export async function getCachedCatalogItems(
     .finally(() => catalogRequests.delete(cacheKey));
 
   catalogRequests.set(cacheKey, request);
-  return request;
-}
-
-export function invalidateCatalogCache(env: ApiEnv): void {
-  const cachePrefix = `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:`;
-  for (const cacheKey of catalogCache.keys()) {
-    if (cacheKey.startsWith(cachePrefix)) catalogCache.delete(cacheKey);
+  try {
+    return await request;
+  } catch (error) {
+    // An expired response is safer than taking the storefront offline while
+    // Square is temporarily unavailable. Scheduled/webhook refreshes will
+    // replace it atomically as soon as a fresh request succeeds.
+    if (cached) return cached.items;
+    throw error;
   }
 }
 
