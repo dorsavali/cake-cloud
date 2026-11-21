@@ -106,17 +106,30 @@ export function HostRequestReview() {
                       {item.name}
                     </h2>
                     <p className="mt-2 font-signika text-sm text-accent-dark/60 md:mt-1 md:text-xs">
-                      {money.format(item.unitPrice / 100)}/{item.priceUnit} · min {minimum} people
+                      {money.format(item.unitPrice / 100)}/{item.priceUnit} · {item.priceUnit === "package" ? `serves ${minimum}` : `min ${minimum}`} people
                     </p>
+                    {item.modifierNames?.length ? (
+                      <p className="mt-1 font-signika text-xs text-primary">
+                        {item.modifierNames.join(", ")}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-                    <span className="mr-1 hidden font-signika text-base text-accent-dark/70 md:inline">Guests</span>
-                    <button type="button" aria-label={`Decrease guests for ${item.name}`} disabled={item.guests <= minimum} onClick={() => changeGuests(item.id, -1)} className="inline-flex size-10 items-center justify-center rounded-full border border-[#d8cdb8] font-signika text-xl text-primary disabled:opacity-35 sm:size-11">−</button>
-                    <div className="flex min-w-7 flex-col items-center sm:min-w-8">
-                      <span className="font-signika text-lg font-medium text-accent-dark">{item.guests}</span>
-                      <span className="lg:mt-4 font-signika text-sm text-accent-dark/70 md:hidden">Guests</span>
-                    </div>
-                    <button type="button" aria-label={`Increase guests for ${item.name}`} disabled={item.guests >= maximum} onClick={() => changeGuests(item.id, 1)} className="inline-flex size-10 items-center justify-center rounded-full border border-[#d8cdb8] font-signika text-xl text-primary disabled:opacity-35 sm:size-11">+</button>
+                    {item.priceUnit === "package" ? (
+                      <span className="whitespace-nowrap font-signika text-sm text-accent-dark/70">
+                        Serves {minimum}
+                      </span>
+                    ) : (
+                      <>
+                        <span className="mr-1 hidden font-signika text-base text-accent-dark/70 md:inline">Guests</span>
+                        <button type="button" aria-label={`Decrease guests for ${item.name}`} disabled={item.guests <= minimum} onClick={() => changeGuests(item.id, -1)} className="inline-flex size-10 items-center justify-center rounded-full border border-[#d8cdb8] font-signika text-xl text-primary disabled:opacity-35 sm:size-11">−</button>
+                        <div className="flex min-w-7 flex-col items-center sm:min-w-8">
+                          <span className="font-signika text-lg font-medium text-accent-dark">{item.guests}</span>
+                          <span className="lg:mt-4 font-signika text-sm text-accent-dark/70 md:hidden">Guests</span>
+                        </div>
+                        <button type="button" aria-label={`Increase guests for ${item.name}`} disabled={item.guests >= maximum} onClick={() => changeGuests(item.id, 1)} className="inline-flex size-10 items-center justify-center rounded-full border border-[#d8cdb8] font-signika text-xl text-primary disabled:opacity-35 sm:size-11">+</button>
+                      </>
+                    )}
                     <button type="button" aria-label={`Remove ${item.name}`} onClick={() => removeItem(item.id)} className="ml-1 font-signika text-xl text-accent-dark/55 transition-colors hover:text-accent-dark md:ml-3">×</button>
                   </div>
                 </li>

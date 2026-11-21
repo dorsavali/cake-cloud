@@ -145,16 +145,18 @@ function ModifierDropdown({
   );
 }
 
-function ModifierOptions({
+export function ModifierOptions({
   list,
   currency,
   selectedModifierIds,
   onChange,
+  alwaysDropdown = false,
 }: {
   list: ModifierList;
   currency: string;
   selectedModifierIds: string[];
   onChange: (modifierIds: string[]) => void;
+  alwaysDropdown?: boolean;
 }) {
   const optional = list.minSelected === 0;
   const singleSelection = list.maxSelected === 1;
@@ -167,7 +169,7 @@ function ModifierOptions({
         : ""
     }`;
 
-  if (list.modifiers.length >= 4) {
+  if (alwaysDropdown || list.modifiers.length >= 4) {
     return (
       <div className="block">
         <span className={labelClassName}>

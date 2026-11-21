@@ -1,6 +1,10 @@
 import { json, methodNotAllowed } from "../http/json.js";
 import { getCachedCatalogItems } from "./catalog.js";
 import type { ApiEnv } from "../types/env.js";
+import {
+  hostPackageMinimumGuests,
+  hostPackagePriceUnit,
+} from "../services/host-package.js";
 
 const responseCacheHeaders = {
   "cache-control": "public, max-age=30, s-maxage=60, stale-while-revalidate=60",
@@ -80,32 +84,27 @@ export async function handleHostPackages(
           .split("|")
           .map((item) => item.trim())
           .filter(Boolean);
-        const pricingModel = attributeString(
+        const minimumGuests = hostPackageMinimumGuests(
           product.customAttributes,
-          "pricing_model",
+          product.description,
         );
 
         return {
           id: product.id,
           name: product.name,
           description: product.description,
+          descriptionHtml: product.descriptionHtml,
           image: product.image,
           categories: directHostCategories(product.categoryPaths),
           price: product.price,
-          priceUnit:
-            pricingModel === "fixed"
-              ? "package"
-              : attributeString(product.customAttributes, "price_unit") ||
-                "head",
-          minimumGuests: attributeNumber(
-            product.customAttributes,
-            "minimum_guests",
-          ) ?? attributeNumber(product.customAttributes, "minimum_quantity"),
+          priceUnit: hostPackagePriceUnit(product.customAttributes),
+          minimumGuests,
           maximumGuests: attributeNumber(
             product.customAttributes,
             "maximum_guests",
           ),
           includedItems,
+          modifierLists: product.modifierLists,
           enquiryOnly:
             product.customAttributes.enquiry_only === true ||
             normalize(String(product.customAttributes.enquiry_only ?? "")) ===

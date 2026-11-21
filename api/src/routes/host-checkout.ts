@@ -4,6 +4,10 @@ import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import { orderNumberFromSeed } from "../services/order-number.js";
 import {
+  hostPackageMinimumGuests,
+  hostPackagePriceUnit,
+} from "../services/host-package.js";
+import {
   isAustralianPhone,
   normalizeSquareAddress,
   normalizeSquarePhone,
@@ -74,7 +78,10 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     });
     const hostProducts = products.filter((product) => {
       const section = normalize(String(product.customAttributes.site_section ?? ""));
-      return section === "host" || product.categories.some((category) => normalize(category) === "host packages");
+      return section === "host" || product.categories.some((category) => {
+        const normalized = normalize(category);
+        return normalized === "host" || normalized === "host packages";
+      });
     });
     const requestedIds = requested.flatMap((raw) => {
       if (!raw || typeof raw !== "object") return [];
@@ -89,12 +96,29 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     }
 
     const lineItems: Array<Record<string, unknown>> = [];
-    const summary: Array<{ id: string; name: string; guests: number; unitPrice: number; priceUnit: string }> = [];
+    const summary: Array<{ id: string; name: string; guests: number; unitPrice: number; priceUnit: string; modifiers: string[] }> = [];
     let total = 0;
     for (const raw of requested) {
       if (!raw || typeof raw !== "object") throw new Error("Invalid package request.");
-      const { id, guests } = raw as { id?: unknown; guests?: unknown };
+      const { id, guests, modifierIds: rawModifierIds } = raw as {
+        id?: unknown;
+        guests?: unknown;
+        modifierIds?: unknown;
+      };
       if (typeof id !== "string" || !Number.isInteger(guests)) throw new Error("Invalid package request.");
+      const modifierIds = rawModifierIds === undefined
+        ? []
+        : Array.isArray(rawModifierIds) && rawModifierIds.length <= 50
+          ? rawModifierIds.map((modifierId) => {
+              if (typeof modifierId !== "string" || modifierId.length > 255) {
+                throw new Error("Choose valid package options.");
+              }
+              return modifierId;
+            })
+          : (() => { throw new Error("Choose valid package options."); })();
+      if (new Set(modifierIds).size !== modifierIds.length) {
+        throw new Error("Choose valid package options.");
+      }
       const product = hostProducts.find((candidate) => candidate.id === id);
       const liveProduct = liveProducts.get(id);
       const changed = Boolean(
@@ -124,15 +148,58 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
         });
         throw new Error("A package changed or is no longer available. Review your request and try again.");
       }
-      const minimum = Number(product.customAttributes.minimum_guests ?? product.customAttributes.minimum_quantity ?? 10);
+      const selectedModifiers = product.modifierLists.flatMap((list) =>
+        list.modifiers.filter((modifier) => modifierIds.includes(modifier.id)),
+      );
+      if (selectedModifiers.length !== modifierIds.length) {
+        throw new Error(`Choose valid options for ${product.name}.`);
+      }
+      for (const list of product.modifierLists) {
+        const selectedCount = list.modifiers.filter((modifier) =>
+          modifierIds.includes(modifier.id),
+        ).length;
+        if (
+          selectedCount < list.minSelected ||
+          (list.maxSelected > 0 && selectedCount > list.maxSelected)
+        ) {
+          throw new Error(`Choose the required ${list.name} option for ${product.name}.`);
+        }
+      }
+      const minimum = hostPackageMinimumGuests(
+        product.customAttributes,
+        product.description,
+      );
       const maximumValue = Number(product.customAttributes.maximum_guests);
       const maximum = Number.isFinite(maximumValue) && maximumValue > 0 ? maximumValue : 9999;
       if ((guests as number) < minimum || (guests as number) > maximum) throw new Error(`${product.name} requires between ${minimum} and ${maximum} guests.`);
-      const fixed = normalize(String(product.customAttributes.pricing_model ?? "")) === "fixed";
+      const priceUnit = hostPackagePriceUnit(product.customAttributes);
+      const fixed = priceUnit === "package";
       const quantity = fixed ? 1 : guests as number;
-      total += liveProduct.price.amount * quantity;
-      lineItems.push({ catalog_object_id: liveProduct.variationId, quantity: String(quantity), note: fixed ? `${guests} guests` : undefined });
-      summary.push({ id: product.id, name: product.name, guests: guests as number, unitPrice: liveProduct.price.amount, priceUnit: fixed ? "package" : "head" });
+      const unitPrice =
+        liveProduct.price.amount +
+        selectedModifiers.reduce((sum, modifier) => sum + modifier.price, 0);
+      total += unitPrice * quantity;
+      lineItems.push({
+        catalog_object_id: liveProduct.variationId,
+        quantity: String(quantity),
+        note: fixed ? `${guests} guests` : undefined,
+        ...(selectedModifiers.length > 0
+          ? {
+              modifiers: selectedModifiers.map((modifier) => ({
+                catalog_object_id: modifier.id,
+                quantity: "1",
+              })),
+            }
+          : {}),
+      });
+      summary.push({
+        id: product.id,
+        name: product.name,
+        guests: guests as number,
+        unitPrice,
+        priceUnit,
+        modifiers: selectedModifiers.map((modifier) => modifier.name),
+      });
     }
 
     const customerId = await upsertSquareCustomer(

@@ -60,7 +60,7 @@ export function HostCheckout() {
       const session = await sessionResponse.json() as { idempotencyKey?: unknown };
       if (typeof session.idempotencyKey !== "string") throw new Error("Could not start checkout.");
       data.set("idempotencyKey", session.idempotencyKey);
-      data.set("items", JSON.stringify(items.map(({ id, guests }) => ({ id, guests }))));
+      data.set("items", JSON.stringify(items.map(({ id, guests, modifierIds }) => ({ id, guests, modifierIds: modifierIds ?? [] }))));
       data.set("termsAccepted", data.has("termsAccepted") ? "true" : "false");
       data.set("allergenAccepted", data.has("allergenAccepted") ? "true" : "false");
       const response = await fetch(apiUrl("/api/host/checkout"), { method: "POST", body: data });
@@ -95,7 +95,7 @@ export function HostCheckout() {
         >
           <ul className="space-y-5">
             {items.map((item) => <li key={item.id} className="flex min-h-[76px] items-center justify-between gap-3 rounded-xl border border-[#d8cdb8] bg-[#eee7da] px-4 md:px-5">
-              <div className="min-w-0"><p className="text-sm font-medium">{item.name}</p><p className="mt-1 text-xs text-accent-dark/60">{item.guests} guests · {money.format(item.unitPrice / 100)}/{item.priceUnit}</p></div>
+              <div className="min-w-0"><p className="text-sm font-medium">{item.name}</p><p className="mt-1 text-xs text-accent-dark/60">{item.priceUnit === "package" ? `Serves ${item.minimumGuests ?? item.guests}` : `${item.guests} guests`} · {money.format(item.unitPrice / 100)}/{item.priceUnit}</p>{item.modifierNames?.length ? <p className="mt-1 text-xs text-primary">{item.modifierNames.join(", ")}</p> : null}</div>
               <p className="shrink-0 font-signika text-lg text-primary md:text-xl">{money.format(item.unitPrice * (item.priceUnit === "package" ? 1 : item.guests) / 100)}</p>
             </li>)}
           </ul>

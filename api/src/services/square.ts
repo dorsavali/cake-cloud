@@ -28,6 +28,7 @@ type SquareCatalogObject = {
   item_data?: {
     name?: string;
     description?: string;
+    description_html?: string;
     description_plaintext?: string;
     is_archived?: boolean;
     image_ids?: string[];
@@ -127,6 +128,7 @@ type StorefrontProduct = {
   variationId: string | null;
   name: string;
   description: string;
+  descriptionHtml: string;
   variationName: string;
   price: { amount: number; currency: string };
   variations: Array<{
@@ -370,6 +372,32 @@ const variationSizeRank = (name: string) => {
 
 const normalizeCategoryName = (name: string) =>
   name.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+
+export const maxModifierSelectionsForStorefront = (
+  categories: string[],
+  listName: string,
+  squareLimit: number,
+) => {
+  const isDrink = categories.some((category) =>
+    /\bdrinks?\b/.test(normalizeCategoryName(category)),
+  );
+  if (!isDrink) return squareLimit;
+  return normalizeCategoryName(listName).includes("syrup") ? 0 : 1;
+};
+
+export const sanitizeSquareDescriptionHtml = (html: string) =>
+  html
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
+    .replace(/<[^>]*>/g, (tag) => {
+      const match = /^<\s*(\/?)\s*(p|ul|ol|li|strong|em|br)\b[^>]*>$/i.exec(
+        tag,
+      );
+      if (!match) return "";
+      const [, closing, name] = match;
+      return name.toLowerCase() === "br"
+        ? "<br>"
+        : `<${closing ? "/" : ""}${name.toLowerCase()}>`;
+    });
 
 const isPresentAtLocation = (
   object: {
@@ -697,6 +725,14 @@ export async function getCatalogItems(
           }),
         ),
       ];
+      const storefrontModifierLists = modifierLists.map((list) => ({
+        ...list,
+        maxSelected: maxModifierSelectionsForStorefront(
+          categories,
+          list.name,
+          list.maxSelected,
+        ),
+      }));
 
       return {
         id: item.id as string,
@@ -706,10 +742,13 @@ export async function getCatalogItems(
           item.item_data?.description_plaintext ??
           item.item_data?.description ??
           "",
+        descriptionHtml: sanitizeSquareDescriptionHtml(
+          item.item_data?.description_html ?? "",
+        ),
         variationName: primaryVariation?.name ?? "",
         price: primaryVariation?.price ?? { amount: 0, currency: "AUD" },
         variations,
-        modifierLists,
+        modifierLists: storefrontModifierLists,
         image: imageId ? (imageUrls.get(imageId) ?? null) : null,
         images: [...new Set(imageIds)]
           .map((id) => imageUrls.get(id))

@@ -11,6 +11,8 @@ export type HostRequestItem = {
   currency: string;
   minimumGuests?: number;
   maximumGuests?: number | null;
+  modifierIds?: string[];
+  modifierNames?: string[];
 };
 
 function isHostRequestItem(value: unknown): value is HostRequestItem {
@@ -29,7 +31,13 @@ function isHostRequestItem(value: unknown): value is HostRequestItem {
       (Number.isInteger(item.minimumGuests) && item.minimumGuests > 0)) &&
     (item.maximumGuests === undefined ||
       item.maximumGuests === null ||
-      (Number.isInteger(item.maximumGuests) && item.maximumGuests > 0))
+      (Number.isInteger(item.maximumGuests) && item.maximumGuests > 0)) &&
+    (item.modifierIds === undefined ||
+      (Array.isArray(item.modifierIds) &&
+        item.modifierIds.every((id) => typeof id === "string"))) &&
+    (item.modifierNames === undefined ||
+      (Array.isArray(item.modifierNames) &&
+        item.modifierNames.every((name) => typeof name === "string")))
   );
 }
 
