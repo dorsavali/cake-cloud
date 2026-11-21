@@ -123,7 +123,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     const expected = expectedValue(reference, total, env.SQUARE_LOCATION_ID);
     const orderNote = [`Event date: ${eventDate}`, `Contact: ${fullName} · ${email} · ${phone}`, address ? `Address: ${address}` : "", notes ? `Notes: ${notes}` : "", logoKey ? `Logo/design reference: ${reference}` : ""].filter(Boolean).join("\n");
     lineItems[0] = { ...lineItems[0], note: [lineItems[0].note, orderNote].filter(Boolean).join("\n") };
-    const returnUrl = new URL("/events/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000");
+    const returnUrl = new URL("/host/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000");
     const pickupAt = new Date(`${eventDate}T12:00:00+08:00`).toISOString();
     const payload = {
       idempotency_key: idempotencyKey,
@@ -161,7 +161,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     if (!response.ok || !data.payment_link?.id || !data.payment_link.url || !data.payment_link.order_id) throw new Error("Square could not create the checkout page. Please retry.");
     const destination = new URL(data.payment_link.url);
     if (destination.protocol !== "https:" || !["square.link", "sandbox.square.link", "checkout.square.site", "sandbox.checkout.square.site"].includes(destination.hostname)) throw new Error("Square returned an unexpected checkout address.");
-    await configureCheckoutReturn(env, data.payment_link.id, data.payment_link.order_id, "/events/payment-result/");
+    await configureCheckoutReturn(env, data.payment_link.id, data.payment_link.order_id, "/host/payment-result/");
     return json({ url: destination.href, total, currency: "AUD" });
   } catch (error) {
     if (stored.length && env.CAKE_BRIEFS) await env.CAKE_BRIEFS.delete(stored).catch(() => undefined);

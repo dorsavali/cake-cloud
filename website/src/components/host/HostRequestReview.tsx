@@ -56,7 +56,7 @@ export function HostRequestReview() {
   return (
     <section className="mx-auto w-full max-w-[996px] px-4 pb-24 pt-8 md:px-6 md:pt-10 lg:px-0">
       <Link
-        href="/events"
+        href="/host"
         className="inline-flex items-center gap-3 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary"
       >
         <span aria-hidden="true">←</span> Back to Packages
@@ -74,7 +74,7 @@ export function HostRequestReview() {
           <p className="font-signika text-sm text-accent-dark/65">
             Your request is empty.
           </p>
-          <Link href="/events" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-7 font-kalnia text-sm text-white">
+          <Link href="/host" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-7 font-kalnia text-sm text-white">
             Browse Packages
           </Link>
         </div>
@@ -117,7 +117,7 @@ export function HostRequestReview() {
             })}
           </ul>
 
-          <Link href="/events/checkout" className="mt-7 inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-primary px-6 font-kalnia text-lg font-medium text-white transition-colors hover:bg-accent-dark">
+          <Link href="/host/checkout" className="mt-7 inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-primary px-6 font-kalnia text-lg font-medium text-white transition-colors hover:bg-accent-dark">
             Continue to Request
           </Link>
         </>

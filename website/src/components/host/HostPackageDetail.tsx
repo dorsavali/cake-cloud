@@ -56,7 +56,7 @@ export function HostPackageDetail() {
     return (
       <div className="mx-auto max-w-xl px-6 py-40 text-center">
         <p className="font-signika text-sm text-accent-dark">This package is currently unavailable.</p>
-        <Link href="/events" className="mt-5 inline-block font-signika text-sm font-medium text-primary underline underline-offset-4">Back to host packages</Link>
+        <Link href="/host" className="mt-5 inline-block font-signika text-sm font-medium text-primary underline underline-offset-4">Back to host packages</Link>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export function HostPackageDetail() {
 
   return (
     <div className="mx-auto w-full max-w-[684px] px-6 pb-16 pt-9 md:px-0">
-      <Link href="/events" className="inline-flex items-center gap-3 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-primary">
+      <Link href="/host" className="inline-flex items-center gap-3 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-primary">
         <span aria-hidden="true">←</span> Back to Packages
       </Link>
 
@@ -153,8 +153,8 @@ export function HostPackageDetail() {
             {hostPackage.name} added to your request.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Link href="/events/request" className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-kalnia text-sm font-medium text-white transition-colors hover:bg-accent-dark">Continue to Request</Link>
-            <Link href="/events" className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#b9a47a] bg-[#fbf8f1] px-5 font-kalnia text-sm font-medium text-accent-dark transition-colors hover:border-primary hover:text-primary">Add Another Package</Link>
+            <Link href="/host/request" className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-kalnia text-sm font-medium text-white transition-colors hover:bg-accent-dark">Continue to Request</Link>
+            <Link href="/host" className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#b9a47a] bg-[#fbf8f1] px-5 font-kalnia text-sm font-medium text-accent-dark transition-colors hover:border-primary hover:text-primary">Add Another Package</Link>
           </div>
         </section>
       ) : null}

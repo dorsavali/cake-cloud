@@ -41,7 +41,7 @@ export function HostRequestBar() {
           </p>
         </div>
         <Link
-          href="/events/request"
+          href="/host/request"
           className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-full bg-primary px-5 font-kalnia text-xs font-medium text-white transition-colors hover:bg-accent-dark md:px-7 md:text-sm"
         >
           Review Request

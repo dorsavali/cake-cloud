@@ -224,7 +224,7 @@ export function renderCustomerOrderEmail(
       </table>
       ${orderTable(data)}
       <div class="email-note" style="margin-top:26px;padding:17px 19px;border-left:4px solid #b9a47a;background:#f3eee5;font-size:13px;line-height:21px;color:#6f696f;">
-        Pickup is from <strong style="color:#464248;">1/180 Royal St, East Perth WA 6004</strong>. Please have your order number ready.
+        Pickup is from <strong style="color:#464248;">181 Adelaide Terrace, Perth WA 6004</strong>. Please have your order number ready.
       </div>`,
   });
 

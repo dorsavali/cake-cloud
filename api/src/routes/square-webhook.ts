@@ -3,6 +3,7 @@ import { json, methodNotAllowed } from "../http/json.js";
 import {
   invalidateCatalogCache,
   refreshDailyMenuCatalogCache,
+  refreshHostCatalogCache,
 } from "./catalog.js";
 import {
   invalidateCakeCatalogCache,
@@ -134,7 +135,10 @@ export async function handleSquareWebhook(
     invalidateCakeCatalogCache(env);
 
     try {
-      const refreshes: Promise<void>[] = [refreshDailyMenuCatalogCache(env)];
+      const refreshes: Promise<void>[] = [
+        refreshDailyMenuCatalogCache(env),
+        refreshHostCatalogCache(env),
+      ];
       if (event.type === "catalog.version.updated") {
         refreshes.push(refreshCakeCatalogCache(env));
       }

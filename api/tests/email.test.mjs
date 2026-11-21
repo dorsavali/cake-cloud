@@ -6,7 +6,7 @@ import {
   renderInternalOrderEmail,
 } from "../dist/email/order-templates.js";
 import { buildMimeMessage } from "../dist/email/smtp.js";
-import { sendPaidOrderNotifications } from "../dist/email/order-notifications.js";
+import { formatPickup, sendPaidOrderNotifications } from "../dist/email/order-notifications.js";
 
 const order = {
   orderNumber: "CC-TEST",
@@ -67,4 +67,13 @@ test("paid-order notifications do nothing until email is enabled", async (t) => 
   });
   await sendPaidOrderNotifications({ EMAIL_ENABLED: "false" }, "order-id");
   assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test("custom cake email preserves the customer-entered Perth pickup time", () => {
+  const pickup = formatPickup(
+    { metadata: { pickup_local: "2026-11-27T08:08" } },
+    "Australia/Perth",
+  );
+  assert.match(pickup, /8:08\s*am/i);
+  assert.doesNotMatch(pickup, /4:08\s*pm/i);
 });

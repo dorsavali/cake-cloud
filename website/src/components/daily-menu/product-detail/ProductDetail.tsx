@@ -155,6 +155,13 @@ export function ProductDetail() {
           <p className="mt-2 text-sm font-light text-accent-dark/60">
             Please try again in a moment.
           </p>
+          <Link
+            href="/DailyMenu"
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-medium text-accent transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-primary"
+          >
+            <span aria-hidden="true" className="mr-2">←</span>
+            Back to Daily Menu
+          </Link>
         </div>
       </div>
     );

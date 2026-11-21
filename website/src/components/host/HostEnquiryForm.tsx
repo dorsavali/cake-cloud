@@ -44,7 +44,7 @@ export function HostEnquiryForm() {
 
   return (
     <section className="mx-auto w-full max-w-[846px] px-4 pb-20 pt-8 sm:px-6 md:pt-10 lg:px-0">
-      <Link href="/events" className="inline-flex min-h-10 items-center gap-3 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary"><span aria-hidden="true">←</span> Back</Link>
+      <Link href="/host" className="inline-flex min-h-10 items-center gap-3 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary"><span aria-hidden="true">←</span> Back</Link>
       <h1 className="mt-4 max-w-[520px] font-kalnia text-[34px] font-medium leading-[1.12] tracking-[-0.025em] text-accent-dark sm:text-[38px] md:mt-5 md:max-w-none md:text-[32px]">Complex Hosting Enquiry</h1>
 
       {reference ? (
@@ -52,7 +52,7 @@ export function HostEnquiryForm() {
           <h2 className="font-kalnia text-2xl text-accent-dark">Request received</h2>
           <p className="mt-3">Thank you. Your enquiry has been saved and Cake Cloud can follow it using reference:</p>
           <p className="mt-2 font-medium text-primary">{reference}</p>
-          <Link href="/events" className="mt-6 inline-flex min-h-11 items-center rounded-full bg-primary px-6 font-kalnia text-sm text-white">Back to Packages</Link>
+          <Link href="/host" className="mt-6 inline-flex min-h-11 items-center rounded-full bg-primary px-6 font-kalnia text-sm text-white">Back to Packages</Link>
         </div>
       ) : (
         <form className="mt-7 min-w-0 space-y-5 font-signika text-accent-dark" onSubmit={submit}>

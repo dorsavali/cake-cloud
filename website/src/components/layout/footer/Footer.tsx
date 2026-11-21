@@ -195,7 +195,7 @@ export function Footer() {
           <div className="order-2 flex flex-col items-center justify-self-center lg:order-1">
             <div className="flex w-fit max-w-full flex-col items-stretch gap-4 font-signika font-light text-accent">
               <a
-                href="https://www.google.com/maps/search/?api=1&query=1%2F180+Royal+St+East+Perth+WA+6004"
+                href="https://www.google.com/maps/search/?api=1&query=181+Adelaide+Terrace+Perth+WA+6004"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-3 text-sm leading-5 tracking-[0.02em] transition-opacity hover:opacity-70 lg:text-md lg:leading-7"
@@ -203,7 +203,7 @@ export function Footer() {
                 <span className="size-5 shrink-0 lg:size-6">
                   <LocationIcon />
                 </span>
-                1/180 Royal St, East Perth WA 6004
+                181 Adelaide Terrace, Perth WA 6004
               </a>
 
               <a

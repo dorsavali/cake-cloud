@@ -58,7 +58,7 @@ export function HostCheckout() {
 
   return (
     <section className="mx-auto w-full max-w-[700px] px-4 pb-20 pt-8 sm:px-6 md:pt-10 lg:px-0">
-      <Link href="/events/request" className="inline-flex min-h-10 items-center gap-3 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary">
+      <Link href="/host/request" className="inline-flex min-h-10 items-center gap-3 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary">
         <span aria-hidden="true">←</span> Back to Package
       </Link>
       <h1 className="mt-5 font-kalnia text-4xl font-medium leading-none tracking-[-0.025em] text-accent-dark md:mt-6 md:text-[32px]">Checkout</h1>
@@ -66,7 +66,7 @@ export function HostCheckout() {
       {!ready ? <p className="py-16 text-center font-signika text-sm text-accent-dark/60">Loading request...</p> : !items.length ? (
         <div className="mt-8 rounded-2xl border border-[#d8cdb8] bg-[#f8f3e9] p-8 text-center">
           <p className="font-signika text-accent-dark/70">Your request is empty.</p>
-          <Link href="/events" className="mt-5 inline-flex min-h-11 items-center rounded-full bg-primary px-7 font-kalnia text-sm text-white">Browse Packages</Link>
+          <Link href="/host" className="mt-5 inline-flex min-h-11 items-center rounded-full bg-primary px-7 font-kalnia text-sm text-white">Browse Packages</Link>
         </div>
       ) : (
         <form className="mt-8 min-w-0 font-signika text-accent-dark" onSubmit={submit}>

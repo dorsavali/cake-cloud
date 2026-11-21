@@ -106,7 +106,7 @@ export function HostPackages() {
           Complex or Large Order?
         </p>
         <Link
-          href="/events/enquiry"
+          href="/host/enquiry"
           className="inline-flex min-w-0 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-3 py-2 font-kalnia text-[11px] font-medium text-white transition-colors hover:bg-accent-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:min-w-44 md:px-5 md:text-[13px]"
         >
           Go to Enquiry Form
@@ -159,7 +159,7 @@ export function HostPackages() {
               className="group relative overflow-hidden rounded-xl border border-[#d8cdb8] bg-[#fbf8f1] shadow-[0_5px_20px_rgb(70_66_72_/_5%)] transition-shadow hover:shadow-[0_10px_28px_rgb(70_66_72_/_12%)] focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-primary"
             >
               <Link
-                href={`/events/package?id=${encodeURIComponent(hostPackage.id)}`}
+                href={`/host/package?id=${encodeURIComponent(hostPackage.id)}`}
                 aria-label={`View ${hostPackage.name}`}
                 className="absolute inset-0 z-10 rounded-xl"
               />

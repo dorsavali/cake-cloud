@@ -131,7 +131,7 @@ export default function AboutPage() {
             <p className="font-signika text-[9px] uppercase tracking-[0.22em] text-accent-dark/50">Find Us</p>
             <h2 className="mt-4 font-kalnia text-[25px] font-medium md:text-[27px]">Visit the Boutique</h2>
             <div className="mt-5 rounded-xl border border-[#ddd2bf] bg-[#faf7f0] p-5 font-signika text-xs text-accent-dark/65 md:p-6">
-              <a href="https://www.google.com/maps/search/?api=1&query=1%2F180+Royal+St+East+Perth+WA+6004" target="_blank" rel="noreferrer" className="flex items-start gap-3 text-accent-dark"><span className="text-primary"><LocationIcon /></span><span><strong className="block font-medium">1/180 Royal Street</strong><span className="mt-1 block text-accent-dark/55">East Perth WA 6004</span></span></a>
+              <a href="https://www.google.com/maps/search/?api=1&query=181+Adelaide+Terrace+Perth+WA+6004" target="_blank" rel="noreferrer" className="flex items-start gap-3 text-accent-dark"><span className="text-primary"><LocationIcon /></span><span><strong className="block font-medium">181 Adelaide Terrace</strong><span className="mt-1 block text-accent-dark/55">Perth WA 6004</span></span></a>
               <a href="https://wa.me/61413681344" target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 whitespace-nowrap text-primary"><ChatIcon /> WhatsApp Us</a>
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-primary">
                 <span className="inline-flex items-center gap-2 whitespace-nowrap"><InstagramIcon /> Instagram</span>

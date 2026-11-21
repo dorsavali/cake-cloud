@@ -1,11 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { container, errorText, pageShell, primaryButton } from "@/components/custom-cakes/cake-ui";
 import { clearHostRequest } from "@/components/host/request-storage";
+import { Footer } from "@/components/layout/footer";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
 import { apiUrl } from "@/lib/api";
+import { publicContactEmail } from "@/lib/contact";
 
 export default function HostPaymentResultPage() {
   const [result, setResult] = useState<{ status: string; orderId?: string; total?: number; currency?: string }>({ status: "checking" });
@@ -39,16 +43,87 @@ export default function HostPaymentResultPage() {
     return () => { active = false; controller.abort(); clearTimeout(timer); };
   }, [retry]);
 
-  const titles: Record<string, string> = { checking: "Checking Payment", pending: "Payment Pending", paid: "Request Confirmed", failed: "Payment Not Completed", review: "Payment Needs Review", refunded: "Payment Refunded", unknown: "Verification Unavailable" };
-  return <><DesktopHeader /><MobileHeader /><main className="-mt-16 min-h-dvh overflow-x-clip bg-accent bg-[url('/images/pattern/background.webp')] bg-[length:auto_100%] bg-top bg-repeat-y pt-16 md:bg-[length:100%_auto]"><section className="mx-auto w-full max-w-[700px] px-4 py-12 sm:px-6">
-    <h1 className="font-kalnia text-4xl text-accent-dark">{titles[result.status] ?? "Checking Payment"}</h1>
-    <div className="mt-7 rounded-2xl border border-[#d8cdb8] bg-[#f8f3e9] p-6 font-signika text-accent-dark/70" aria-live="polite">
-      <p>{result.status === "paid" ? "Thank you! Your payment has been verified and your package request is confirmed." : result.status === "pending" ? "Square has not confirmed the payment yet." : result.status === "failed" ? "Square reports that this payment was not completed." : result.status === "review" ? "Your payment needs review. Please contact Cake Cloud with the order number below." : "Checking your payment securely with Square."}</p>
-      {result.orderId ? <p className="mt-3">Order: {result.orderId}</p> : null}
-      {result.total !== undefined ? <p className="mt-1">Total: {new Intl.NumberFormat("en-AU", { style: "currency", currency: result.currency ?? "AUD" }).format(result.total / 100)}</p> : null}
-      {error ? <p className="mt-3 text-[#a83831]" role="alert">{error}</p> : null}
-    </div>
-    {result.status !== "paid" ? <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-5 min-h-12 w-full rounded-full bg-primary px-6 font-kalnia text-white">Check Payment Again</button> : null}
-    <Link href="/events" className="mt-5 inline-flex min-h-10 items-center font-signika text-sm text-primary">Back to Packages</Link>
-  </section></main></>;
+  const titles: Record<string, string> = {
+    checking: "Checking Payment",
+    pending: "Payment Pending",
+    paid: "Request Confirmed",
+    failed: "Payment Not Completed",
+    review: "Payment Needs Review",
+    refunded: "Payment Refunded",
+    unknown: "Verification Unavailable",
+  };
+
+  return (
+    <>
+      <DesktopHeader />
+      <MobileHeader />
+      <main className={`${pageShell} !min-h-0 !pb-3 md:!min-h-dvh md:!pb-16`}>
+        <div className={container}>
+          <div className="mx-auto w-full max-w-[440px] pt-5 md:pt-7">
+            <Link
+              className="inline-flex min-h-10 items-center gap-2 font-signika text-sm text-accent-dark/60 transition-colors hover:text-primary"
+              href="/host"
+            >
+              ← <span>Back to Packages</span>
+            </Link>
+            <section
+              className="mt-3 rounded-2xl bg-[#faf7f0] px-6 py-8 text-center shadow-[0_8px_28px_rgb(70_66_72/12%)] md:px-8 md:py-10"
+              aria-live="polite"
+            >
+              <Image
+                src="/images/logo/main.svg"
+                alt="Cake Cloud"
+                width={150}
+                height={190}
+                unoptimized
+                className="mx-auto h-auto w-[122px] md:w-[138px]"
+              />
+              <h1 className={`mt-4 font-kalnia font-medium text-accent-dark md:text-[34px] ${result.status === "checking" ? "whitespace-nowrap text-[clamp(22px,7vw,30px)]" : "text-3xl"}`}>
+                {titles[result.status] ?? "Checking Payment"}
+              </h1>
+              <div className="mt-6 border-y border-dotted border-[#cbbb98] py-6 font-signika text-sm leading-6 text-accent-dark/70">
+                <p>
+                  {result.status === "paid" ? "Thank you! Your payment has been verified and your package request is confirmed."
+                    : result.status === "pending" ? "Square has not confirmed payment yet. You can check again below."
+                    : result.status === "failed" ? "Square reports that this payment was not completed."
+                    : result.status === "review" ? "Your payment details need review. Please contact Cake Cloud with your order number."
+                    : result.status === "refunded" ? "A refund has been recorded for this payment. Please contact Cake Cloud for details."
+                    : "Checking your payment securely with Square."}
+                </p>
+                {result.orderId && (
+                  <p className="mt-5 break-all">
+                    <strong className="mr-2 font-semibold text-accent-dark">Order No:</strong>
+                    {result.orderId}
+                  </p>
+                )}
+                {result.total !== undefined && (
+                  <p className="mt-1">
+                    <strong className="mr-2 font-semibold text-accent-dark">Total:</strong>
+                    {new Intl.NumberFormat("en-AU", { style: "currency", currency: result.currency ?? "AUD" }).format(result.total / 100)}
+                  </p>
+                )}
+                {error && <p className={`${errorText} mt-4`} role="alert">{error}</p>}
+              </div>
+              {result.status !== "paid" && (
+                <button className={`${primaryButton} mt-6`} type="button" onClick={() => setRetry((value) => value + 1)}>
+                  Check Payment Again
+                </button>
+              )}
+              <p className="mt-6 font-signika text-sm leading-6 text-accent-dark/70">
+                If you have any questions or issues, please email us at{" "}
+                <a
+                  className="font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-[#5e796c]"
+                  href={`mailto:${publicContactEmail}`}
+                >
+                  {publicContactEmail}
+                </a>
+                .
+              </p>
+            </section>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
 }

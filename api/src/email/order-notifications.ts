@@ -79,16 +79,21 @@ function parseState(value: string | undefined): EmailState {
   }
 }
 
-function formatPickup(order: SquareOrder, timeZone: string): string {
+export function formatPickup(order: SquareOrder, timeZone: string): string {
   const metadata = order.metadata ?? {};
   if (metadata.cc_event_date) return metadata.cc_event_date;
   if (metadata.pickup_local) {
-    const value = new Date(metadata.pickup_local);
+    // pickup_local is already the customer-selected Perth wall time. Parse it
+    // as a display-only UTC value so formatting cannot apply Perth's +08:00 a
+    // second time (08:08 must stay 08:08 in the email).
+    const value = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(metadata.pickup_local)
+      ? new Date(`${metadata.pickup_local}:00Z`)
+      : new Date(Number.NaN);
     if (!Number.isNaN(value.getTime())) {
       return new Intl.DateTimeFormat("en-AU", {
         dateStyle: "full",
         timeStyle: "short",
-        timeZone,
+        timeZone: "UTC",
       }).format(value);
     }
     return metadata.pickup_local;

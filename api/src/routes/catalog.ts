@@ -16,7 +16,6 @@ const catalogCache = new Map<
 >();
 const catalogRequests = new Map<string, Promise<CatalogItems>>();
 const catalogCacheDurationMs = 24 * 60 * 60 * 1000;
-const hostCatalogCacheDurationMs = 5 * 60 * 1000;
 
 const catalogCacheKey = (env: ApiEnv, variant = "full") =>
   `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${variant}`;
@@ -27,11 +26,7 @@ function setCatalogCache(
   options: CatalogOptions = {},
 ): void {
   catalogCache.set(catalogCacheKey(env, options.variant), {
-    expiresAt:
-      Date.now() +
-      (options.variant === "host"
-        ? hostCatalogCacheDurationMs
-        : catalogCacheDurationMs),
+    expiresAt: Date.now() + catalogCacheDurationMs,
     items,
   });
 }
@@ -101,6 +96,14 @@ export async function refreshDailyMenuCatalogCache(
   await refreshCatalogVariant(env, {
     includePopularity: false,
     variant: "daily-menu",
+  });
+}
+
+export async function refreshHostCatalogCache(env: ApiEnv): Promise<void> {
+  await refreshCatalogVariant(env, {
+    includeInventory: false,
+    includePopularity: false,
+    variant: "host",
   });
 }
 

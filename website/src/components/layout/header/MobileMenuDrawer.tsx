@@ -152,7 +152,7 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
         <div className="mt-auto shrink-0 border-t border-luxury-accent/20 px-5 py-5 font-signika text-[13px] text-accent-dark/65">
           <div className="flex items-center gap-2">
             <LocationIcon className="size-4 shrink-0" />
-            <span>1/180 Royal St, East Perth WA 6004</span>
+            <span>181 Adelaide Terrace, Perth WA 6004</span>
           </div>
           <div className="mt-3 flex items-center gap-2">
             <MessageIcon className="size-4 shrink-0" />
