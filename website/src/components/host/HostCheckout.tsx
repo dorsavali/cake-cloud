@@ -4,7 +4,11 @@ import Link from "next/link";
 import { type FormEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { apiUrl } from "@/lib/api";
-import { australianPhonePattern, isAustralianPhone } from "@/lib/australian-phone";
+import {
+  defaultAustralianPhone,
+  formatAustralianPhoneInput,
+  isAustralianPhone,
+} from "@/lib/australian-phone";
 import {
   getHostRequestServerSnapshot,
   getHostRequestSnapshot,
@@ -104,7 +108,7 @@ export function HostCheckout() {
               <input name="email" type="email" required maxLength={254} autoComplete="email" className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />
             </label>
             <label className="block text-sm font-medium">Phone <span className="text-[#a83831]">*</span>
-              <input name="phone" type="tel" required maxLength={30} pattern={australianPhonePattern} placeholder="04xx xxx xxx or +61 4xx xxx xxx" autoComplete="tel" className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />
+              <input name="phone" type="tel" inputMode="tel" required maxLength={15} defaultValue={defaultAustralianPhone} placeholder="+61 4xx xxx xxx" autoComplete="tel-national" onInput={(event) => { event.currentTarget.value = formatAustralianPhoneInput(event.currentTarget.value); }} className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />
             </label>
             <label className="block text-sm font-medium">Address <span className="font-normal text-accent-dark/55">(optional)</span>
               <input name="address" type="text" maxLength={500} autoComplete="street-address" className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />

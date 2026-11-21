@@ -5,7 +5,11 @@ import Script from "next/script";
 import { useRef, useState, useSyncExternalStore } from "react";
 
 import { apiUrl } from "@/lib/api";
-import { australianPhonePattern, isAustralianPhone } from "@/lib/australian-phone";
+import {
+  defaultAustralianPhone,
+  formatAustralianPhoneInput,
+  isAustralianPhone,
+} from "@/lib/australian-phone";
 import { useDraftState } from "./useDraftState";
 import { draftText } from "./draft-storage";
 
@@ -98,7 +102,7 @@ export function CakeBriefForm() {
 
   const [email, setEmail] = useDraftState("briefEmail", "", draftText);
 
-  const [phone, setPhone] = useDraftState("briefPhone", "", draftText);
+  const [phone, setPhone] = useDraftState("briefPhone", defaultAustralianPhone, draftText);
 
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -372,10 +376,9 @@ export function CakeBriefForm() {
                   autoComplete="tel"
                   required
                   maxLength={30}
-                  pattern={australianPhonePattern}
-                  placeholder="04xx xxx xxx or +61 4xx xxx xxx"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="+61 4xx xxx xxx"
+                  value={formatAustralianPhoneInput(phone)}
+                  onChange={(event) => setPhone(formatAustralianPhoneInput(event.target.value))}
                 />
               </label>
 

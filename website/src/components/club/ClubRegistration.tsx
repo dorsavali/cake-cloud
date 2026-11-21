@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 import { apiUrl } from "@/lib/api";
-import { australianPhonePattern } from "@/lib/australian-phone";
+import { defaultAustralianPhone, formatAustralianPhoneInput } from "@/lib/australian-phone";
 
 type JoinResult = { joined?: boolean; memberCode?: string; error?: string };
 
@@ -111,7 +111,7 @@ export function ClubRegistration() {
           </label>
           <label className="block font-signika text-sm font-medium text-accent-dark">
             Phone <span className="text-[#9b4d46]">*</span>
-            <input name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={30} pattern={australianPhonePattern} placeholder="04xx xxx xxx or +61 4xx xxx xxx" required className={`${inputClass} mt-2`} />
+            <input name="phone" type="tel" inputMode="tel" autoComplete="tel-national" maxLength={15} defaultValue={defaultAustralianPhone} placeholder="+61 4xx xxx xxx" required onInput={(event) => { event.currentTarget.value = formatAustralianPhoneInput(event.currentTarget.value); }} className={`${inputClass} mt-2`} />
           </label>
         </div>
 

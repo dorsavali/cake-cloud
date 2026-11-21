@@ -23,12 +23,13 @@ export class SquareCustomerError extends Error {}
 
 export function normalizeSquarePhone(value: string): string {
   const compact = value.trim().replace(/[\s()-]/g, "");
-  if (/^0[23478]\d{8}$/.test(compact)) return `+61${compact.slice(1)}`;
+  if (/^[1-9]\d{8}$/.test(compact)) return `+61${compact}`;
+  if (/^0\d{9}$/.test(compact)) return `+61${compact.slice(1)}`;
   return compact;
 }
 
 export function isAustralianPhone(value: string): boolean {
-  return /^\+61[23478]\d{8}$/.test(normalizeSquarePhone(value));
+  return /^\+61\d{9}$/.test(normalizeSquarePhone(value));
 }
 
 export function normalizeSquareAddress(value: unknown): string {

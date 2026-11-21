@@ -3,7 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
-import { australianPhonePattern, isAustralianPhone } from "@/lib/australian-phone";
+import {
+  defaultAustralianPhone,
+  formatAustralianPhoneInput,
+  isAustralianPhone,
+} from "@/lib/australian-phone";
 import { useCart } from "./CartProvider";
 import {
   getCheckoutIdentityServerSnapshot,
@@ -55,7 +59,7 @@ export function CheckoutReview() {
   const orderNumber = identity?.orderNumber ?? "";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(defaultAustralianPhone);
   const [address, setAddress] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [allergenAccepted, setAllergenAccepted] = useState(false);
@@ -227,10 +231,9 @@ export function CheckoutReview() {
                     autoComplete="tel"
                     required
                     maxLength={30}
-                    pattern={australianPhonePattern}
-                    placeholder="04xx xxx xxx or +61 4xx xxx xxx"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="+61 4xx xxx xxx"
+                    value={formatAustralianPhoneInput(phone)}
+                    onChange={(event) => setPhone(formatAustralianPhoneInput(event.target.value))}
                     className="min-h-11 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 text-base font-normal outline-none focus:border-primary"
                   />
                 </label>
