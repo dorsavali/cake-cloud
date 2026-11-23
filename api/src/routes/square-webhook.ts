@@ -4,6 +4,7 @@ import { refreshStorefrontCatalogCaches } from "./catalog.js";
 import { refreshCakeCatalogCache } from "./cake-catalog.js";
 import type { ApiEnv } from "../types/env.js";
 import { sendPaidOrderNotifications } from "../email/order-notifications.js";
+import { notifyDailyInventoryChanged } from "../services/daily-inventory-reservations.js";
 
 const catalogRefreshEvents = new Set([
   "catalog.version.updated",
@@ -19,6 +20,11 @@ type SquareWebhookEvent = {
     object?: {
       payment?: { id?: string };
       refund?: { payment_id?: string };
+      inventory_counts?: Array<{
+        catalog_object_id?: string;
+        location_id?: string;
+        state?: string;
+      }>;
     };
   };
 };
@@ -117,6 +123,17 @@ export async function handleSquareWebhook(
       if (result?.status === "paid") {
         await sendPaidOrderNotifications(env, result.orderId);
       }
+    }
+    if (event.type === "inventory.count.updated") {
+      const changedVariationIds = (event.data?.object?.inventory_counts ?? [])
+        .filter(
+          (count) =>
+            count.state === "IN_STOCK" &&
+            count.location_id === env.SQUARE_LOCATION_ID &&
+            typeof count.catalog_object_id === "string",
+        )
+        .map((count) => count.catalog_object_id as string);
+      await notifyDailyInventoryChanged(env, changedVariationIds);
     }
   } catch {
     // Do not mark failed deliveries as processed: Square must retry them.

@@ -37,7 +37,7 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
   return (
     <div
       aria-hidden={!isOpen}
-      className={`fixed left-0 top-0 z-50 h-dvh w-screen transition-[visibility] md:hidden ${
+      className={`fixed left-0 top-0 z-50 h-dvh w-screen transition-[visibility] lg:hidden ${
         isOpen
           ? "visible pointer-events-auto"
           : "invisible pointer-events-none delay-300"

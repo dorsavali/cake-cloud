@@ -14,6 +14,12 @@ import { useRouter } from "next/navigation";
 
 import { apiUrl } from "@/lib/api";
 import { isAustralianPhone } from "@/lib/australian-phone";
+import {
+  clearCheckoutAttempt,
+  getSavedCheckoutAttempt,
+  saveCheckoutAttempt,
+  withCheckoutAttemptLock,
+} from "./checkout-identity";
 
 
 export type CartItem = {
@@ -325,12 +331,45 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!items.length || checkoutBusy || !customerValid || !termsAccepted || !allergenAccepted) return;
     setCheckoutBusy(true); setCheckoutError("");
     try {
-      const sessionResponse = await fetch(apiUrl("/api/cake/checkout-session"), { method: "POST" });
-      if (!sessionResponse.ok) throw new Error("Could not start checkout.");
-      const session = await sessionResponse.json();
-      const response = await fetch(apiUrl("/api/cart/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: session.idempotencyKey, orderNumber, ...customer, termsAccepted, allergenAccepted, items: items.map(({ variationId, quantity, options, modifierIds }) => ({ variationId, quantity, options, modifierIds })) }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not start checkout.");
+      const idempotencyKey = await withCheckoutAttemptLock(async () => {
+        const saved = getSavedCheckoutAttempt();
+        if (saved) return saved;
+        const sessionResponse = await fetch(apiUrl("/api/cake/checkout-session"), { method: "POST" });
+        if (!sessionResponse.ok) throw new Error("Could not start checkout.");
+        const session = await sessionResponse.json() as { idempotencyKey?: unknown };
+        if (
+          typeof session.idempotencyKey !== "string" ||
+          !/^[a-f0-9-]{36}$/i.test(session.idempotencyKey)
+        ) {
+          throw new Error("Could not start checkout.");
+        }
+        saveCheckoutAttempt(orderNumber, session.idempotencyKey);
+        return session.idempotencyKey;
+      });
+      const response = await fetch(apiUrl("/api/cart/checkout"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey, orderNumber, ...customer, termsAccepted, allergenAccepted, items: items.map(({ variationId, quantity, options, modifierIds }) => ({ variationId, quantity, options, modifierIds })) }) });
+      const data = await response.json() as {
+        code?: unknown;
+        error?: unknown;
+        expiresAt?: unknown;
+        url?: unknown;
+      };
+      if (!response.ok) {
+        if (
+          data.code === "CHECKOUT_ATTEMPT_EXPIRED" ||
+          data.code === "CHECKOUT_ATTEMPT_CANCELLED_INVENTORY"
+        ) {
+          clearCheckoutAttempt();
+        }
+        throw new Error(
+          typeof data.error === "string"
+            ? data.error
+            : "Could not start checkout.",
+        );
+      }
+      if (typeof data.expiresAt === "number") {
+        saveCheckoutAttempt(orderNumber, idempotencyKey, data.expiresAt);
+      }
+      if (typeof data.url !== "string") throw new Error("Invalid checkout address.");
       const destination = new URL(data.url);
       if (destination.protocol !== "https:" || !["square.link", "sandbox.square.link", "checkout.square.site", "sandbox.checkout.square.site"].includes(destination.hostname)) throw new Error("Invalid checkout address.");
       window.location.assign(destination.href);

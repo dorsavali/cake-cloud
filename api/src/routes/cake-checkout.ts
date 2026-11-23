@@ -147,6 +147,15 @@ export function pickupInstant(value: unknown, zone: string) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) throw new CakeError("Enter a valid pickup date and time");
   const target = Date.parse(value + ":00Z");
   if (!Number.isFinite(target) || new Date(target).toISOString().slice(0, 16) !== value) throw new CakeError("Invalid pickup date");
+  const weekday = new Date(`${value.slice(0, 10)}T00:00:00Z`).getUTCDay();
+  const weekend = weekday === 0 || weekday === 6;
+  const [hour, minute] = value.slice(11).split(":").map(Number);
+  const selectedMinute = hour * 60 + minute;
+  const openingMinute = weekend ? 8 * 60 : 6 * 60 + 30;
+  const closingMinute = weekend ? 16 * 60 : 17 * 60;
+  if (minute % 15 !== 0 || selectedMinute < openingMinute || selectedMinute > closingMinute) {
+    throw new CakeError("Choose a pickup time during opening hours, in 15-minute intervals.");
+  }
   const fmt = new Intl.DateTimeFormat("sv-SE", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
   const local = (t: number) => fmt.format(new Date(t)).replace(" ", "T");
   let instant = target;

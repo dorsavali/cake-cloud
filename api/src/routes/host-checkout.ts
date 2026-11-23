@@ -6,6 +6,7 @@ import { orderNumberFromSeed } from "../services/order-number.js";
 import {
   hostPackageMinimumGuests,
   hostPackagePriceUnit,
+  parseHostModifierSelections,
 } from "../services/host-package.js";
 import {
   isAustralianPhone,
@@ -19,8 +20,7 @@ import {
   refreshHostCatalogCache,
 } from "./catalog.js";
 
-const maxFileBytes = 5 * 1024 * 1024;
-const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const maxRequestBytes = 100_000;
 const normalize = (value: string) => value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 function text(form: FormData, key: string, max: number, required = false) {
   const value = form.get(key);
@@ -30,19 +30,13 @@ function text(form: FormData, key: string, max: number, required = false) {
   return clean;
 }
 
-function validImageHeader(type: string, bytes: Uint8Array) {
-  if (type === "image/jpeg") return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  if (type === "image/png") return bytes.slice(0, 8).every((value, index) => value === [137, 80, 78, 71, 13, 10, 26, 10][index]);
-  return bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
-}
-
 export async function handleHostCheckout(request: Request, env: ApiEnv): Promise<Response> {
   if (request.method !== "POST") return methodNotAllowed();
   if (env.SQUARE_ENVIRONMENT !== "sandbox" || !env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) return json({ error: "Square Sandbox checkout is not configured." }, 503);
   const origin = request.headers.get("origin");
   if (origin && env.WEBSITE_ORIGIN && origin !== new URL(env.WEBSITE_ORIGIN).origin) return json({ error: "Invalid request origin." }, 403);
   const contentLength = Number(request.headers.get("content-length") || 0);
-  if (contentLength > maxFileBytes + 100_000) return json({ error: "Upload is too large." }, 413);
+  if (contentLength > maxRequestBytes) return json({ error: "Request is too large." }, 413);
 
   const stored: string[] = [];
   try {
@@ -100,25 +94,17 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     let total = 0;
     for (const raw of requested) {
       if (!raw || typeof raw !== "object") throw new Error("Invalid package request.");
-      const { id, guests, modifierIds: rawModifierIds } = raw as {
+      const { id, guests, modifiers: rawModifiers, modifierIds: rawModifierIds } = raw as {
         id?: unknown;
         guests?: unknown;
+        modifiers?: unknown;
         modifierIds?: unknown;
       };
       if (typeof id !== "string" || !Number.isInteger(guests)) throw new Error("Invalid package request.");
-      const modifierIds = rawModifierIds === undefined
-        ? []
-        : Array.isArray(rawModifierIds) && rawModifierIds.length <= 50
-          ? rawModifierIds.map((modifierId) => {
-              if (typeof modifierId !== "string" || modifierId.length > 255) {
-                throw new Error("Choose valid package options.");
-              }
-              return modifierId;
-            })
-          : (() => { throw new Error("Choose valid package options."); })();
-      if (new Set(modifierIds).size !== modifierIds.length) {
-        throw new Error("Choose valid package options.");
-      }
+      const requestedModifiers = parseHostModifierSelections(
+        rawModifiers,
+        rawModifierIds,
+      );
       const product = hostProducts.find((candidate) => candidate.id === id);
       const liveProduct = liveProducts.get(id);
       const changed = Boolean(
@@ -148,16 +134,23 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
         });
         throw new Error("A package changed or is no longer available. Review your request and try again.");
       }
-      const selectedModifiers = product.modifierLists.flatMap((list) =>
-        list.modifiers.filter((modifier) => modifierIds.includes(modifier.id)),
+      const requestedQuantities = new Map(
+        requestedModifiers.map((modifier) => [modifier.id, modifier.quantity]),
       );
-      if (selectedModifiers.length !== modifierIds.length) {
+      const selectedModifiers = product.modifierLists.flatMap((list) =>
+        list.modifiers.flatMap((modifier) => {
+          const quantity = requestedQuantities.get(modifier.id) ?? 0;
+          return quantity > 0 ? [{ ...modifier, quantity }] : [];
+        }),
+      );
+      if (selectedModifiers.length !== requestedModifiers.length) {
         throw new Error(`Choose valid options for ${product.name}.`);
       }
       for (const list of product.modifierLists) {
-        const selectedCount = list.modifiers.filter((modifier) =>
-          modifierIds.includes(modifier.id),
-        ).length;
+        const selectedCount = list.modifiers.reduce(
+          (sum, modifier) => sum + (requestedQuantities.get(modifier.id) ?? 0),
+          0,
+        );
         if (
           selectedCount < list.minSelected ||
           (list.maxSelected > 0 && selectedCount > list.maxSelected)
@@ -177,7 +170,10 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
       const quantity = fixed ? 1 : guests as number;
       const unitPrice =
         liveProduct.price.amount +
-        selectedModifiers.reduce((sum, modifier) => sum + modifier.price, 0);
+        selectedModifiers.reduce(
+          (sum, modifier) => sum + modifier.price * modifier.quantity,
+          0,
+        );
       total += unitPrice * quantity;
       lineItems.push({
         catalog_object_id: liveProduct.variationId,
@@ -187,7 +183,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
           ? {
               modifiers: selectedModifiers.map((modifier) => ({
                 catalog_object_id: modifier.id,
-                quantity: "1",
+                quantity: String(modifier.quantity),
               })),
             }
           : {}),
@@ -198,7 +194,11 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
         guests: guests as number,
         unitPrice,
         priceUnit,
-        modifiers: selectedModifiers.map((modifier) => modifier.name),
+        modifiers: selectedModifiers.map((modifier) =>
+          modifier.quantity > 1
+            ? `${modifier.name} × ${modifier.quantity}`
+            : modifier.name,
+        ),
       });
     }
 
@@ -213,20 +213,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     );
 
     const reference = orderNumberFromSeed("HOST", idempotencyKey);
-    const file = form.get("logo");
-    let logoKey = "";
-    if (file instanceof File && file.size > 0) {
-      if (!env.CAKE_BRIEFS) return json({ error: "Logo uploads are not configured." }, 503);
-      if (file.size > maxFileBytes || !allowedTypes.has(file.type)) throw new Error("Logo must be JPG, PNG, or WebP and no larger than 5 MB.");
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      if (!validImageHeader(file.type, bytes)) throw new Error("The uploaded logo is invalid.");
-      const extension = file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
-      logoKey = `host-requests/${reference}/logo.${extension}`;
-      await env.CAKE_BRIEFS.put(logoKey, bytes.buffer, { httpMetadata: { contentType: file.type }, customMetadata: { originalName: file.name.slice(0, 200) } });
-      stored.push(logoKey);
-    }
-
-    const record = { reference, fullName, email, phone, address: address || null, eventDate, notes, logoKey: logoKey || null, items: summary, total, submittedAt: new Date().toISOString() };
+    const record = { reference, fullName, email, phone, address: address || null, eventDate, notes, items: summary, total, submittedAt: new Date().toISOString() };
     if (env.CAKE_BRIEFS) {
       const recordKey = `host-requests/${reference}/request.json`;
       await env.CAKE_BRIEFS.put(recordKey, JSON.stringify(record), { httpMetadata: { contentType: "application/json" } });
@@ -234,7 +221,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     }
 
     const expected = expectedValue(reference, total, env.SQUARE_LOCATION_ID);
-    const orderNote = [`Order: ${reference}`, `Event date: ${eventDate}`, `Contact: ${fullName} · ${email} · ${phone}`, address ? `Address: ${address}` : "", notes ? `Notes: ${notes}` : "", logoKey ? `Logo/design reference: ${reference}` : ""].filter(Boolean).join("\n");
+    const orderNote = [`Order: ${reference}`, `Event date: ${eventDate}`, `Contact: ${fullName} · ${email} · ${phone}`, address ? `Address: ${address}` : "", notes ? `Notes: ${notes}` : ""].filter(Boolean).join("\n");
     lineItems[0] = { ...lineItems[0], note: [lineItems[0].note, orderNote].filter(Boolean).join("\n") };
     const returnUrl = new URL("/host/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000");
     const pickupAt = new Date(`${eventDate}T12:00:00+08:00`).toISOString();

@@ -77,13 +77,6 @@ export async function handleHostPackages(
         );
       })
       .map((product) => {
-        const includedItems = attributeString(
-          product.customAttributes,
-          "included_items",
-        )
-          .split("|")
-          .map((item) => item.trim())
-          .filter(Boolean);
         const minimumGuests = hostPackageMinimumGuests(
           product.customAttributes,
           product.description,
@@ -103,7 +96,6 @@ export async function handleHostPackages(
             product.customAttributes,
             "maximum_guests",
           ),
-          includedItems,
           modifierLists: product.modifierLists,
           enquiryOnly:
             product.customAttributes.enquiry_only === true ||

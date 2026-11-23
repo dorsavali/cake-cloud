@@ -4,15 +4,21 @@ import {handleCustomCakeCheckout} from "../dist/routes/custom-cake-checkout.js";
 import {orderNumberFromSeed} from "../dist/services/order-number.js";
 import {cake,cakeCatalogResponse,isCakeCatalogRequest} from "./helpers/cake-fixture.mjs";
 const env={SQUARE_ENVIRONMENT:"sandbox",SQUARE_ACCESS_TOKEN:"test",SQUARE_LOCATION_ID:"test",SQUARE_TIMEZONE:"Australia/Perth"};
-const body=()=>({cake,pickup:new Date(Date.now()+72*3600000).toISOString().slice(0,16),name:"Test Buyer",email:"test@example.com",phone:"0412 345 678",expectedTotal:14500,idempotencyKey:crypto.randomUUID(),termsAccepted:true,allergenAccepted:true});
+const perthPickup=days=>{
+ const future=new Date(Date.now()+days*24*3600000);
+ const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Australia/Perth",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(future);
+ const part=type=>parts.find(entry=>entry.type===type).value;
+ return `${part("year")}-${part("month")}-${part("day")}T10:00`;
+};
+const body=()=>({cake,pickup:perthPickup(4),name:"Test Buyer",email:"test@example.com",phone:"0412 345 678",expectedTotal:14500,idempotencyKey:crypto.randomUUID(),termsAccepted:true,allergenAccepted:true});
 const req=b=>new Request("http://localhost/api/cake/checkout",{method:"POST",body:JSON.stringify(b)});
 test("rejects production and invalid amounts before Square",async t=>{
  let catalogCall=0;
  t.mock.method(globalThis,"fetch",async (_url,options)=>cakeCatalogResponse(catalogCall++%2===0?{body:JSON.stringify({object_types:["CATEGORY"]})}:options));
  assert.equal((await handleCustomCakeCheckout(req(body()),{...env,SQUARE_ENVIRONMENT:"production"})).status,503);
  assert.equal((await handleCustomCakeCheckout(req({...body(),expectedTotal:1}),env)).status,409);
- assert.equal((await handleCustomCakeCheckout(req({...body(),pickup:new Date(Date.now()+47*3600000).toISOString().slice(0,16)}),env)).status,409);
- assert.equal((await handleCustomCakeCheckout(req({...body(),pickup:"2020-01-01T00:00"}),env)).status,409);
+ assert.equal((await handleCustomCakeCheckout(req({...body(),pickup:perthPickup(1)}),env)).status,409);
+ assert.equal((await handleCustomCakeCheckout(req({...body(),pickup:"2020-01-01T00:00"}),env)).status,400);
  assert.equal((await handleCustomCakeCheckout(req({...body(),email:"bad"}),env)).status,400);
 });
 test("Square receives server price, fulfillment, and a stable retry key",async t=>{

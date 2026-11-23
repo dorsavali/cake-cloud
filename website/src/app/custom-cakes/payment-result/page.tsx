@@ -111,7 +111,6 @@ export default function PaymentResult() {
                 >
                   {publicContactEmail}
                 </a>
-                .
               </p>
             </section>
           </div>

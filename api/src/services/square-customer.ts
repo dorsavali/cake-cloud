@@ -20,6 +20,7 @@ type SquareCustomer = {
 
 /** Errors returned by Square that are safe to show to the customer. */
 export class SquareCustomerError extends Error {}
+export class ClubAlreadyMemberError extends Error {}
 
 export function normalizeSquarePhone(value: string): string {
   const compact = value.trim().replace(/[\s()-]/g, "");
@@ -46,10 +47,7 @@ export type ClubMemberInput = {
   email: string;
   phone: string;
   birthday: string;
-  addressLine1: string;
-  suburb: string;
-  state: string;
-  postcode: string;
+  address: string;
 };
 
 export type ClubMember = {
@@ -139,18 +137,24 @@ export async function upsertClubMember(
 ): Promise<ClubMember> {
   const normalizedEmail = input.email.trim().toLowerCase();
   const normalizedPhone = normalizeSquarePhone(input.phone);
-  const existingByEmail = await searchSquareCustomer(env, {
-    email_address: { exact: normalizedEmail },
-  });
+  const [existingByEmail, existingByPhone] = await Promise.all([
+    searchSquareCustomer(env, {
+      email_address: { exact: normalizedEmail },
+    }),
+    searchSquareCustomer(env, {
+      phone_number: { exact: normalizedPhone },
+    }),
+  ]);
+  if (
+    /^CCC-\d{6}$/.test(existingByEmail?.reference_id ?? "") ||
+    /^CCC-\d{6}$/.test(existingByPhone?.reference_id ?? "")
+  ) {
+    throw new ClubAlreadyMemberError("You are already a Cake Cloud Club member.");
+  }
   const existing =
     existingByEmail ??
-    (await searchSquareCustomer(env, {
-      phone_number: { exact: normalizedPhone },
-    }));
-  const memberCode =
-    existing?.reference_id && /^CCC-\d{6}$/.test(existing.reference_id)
-      ? existing.reference_id
-      : await createMemberCode(env);
+    existingByPhone;
+  const memberCode = await createMemberCode(env);
   const customerFields = {
     given_name: input.firstName,
     family_name: input.lastName,
@@ -159,10 +163,7 @@ export async function upsertClubMember(
     birthday: input.birthday,
     reference_id: memberCode,
     address: {
-      address_line_1: input.addressLine1,
-      locality: input.suburb,
-      administrative_district_level_1: input.state,
-      postal_code: input.postcode,
+      address_line_1: input.address,
       country: "AU",
     },
   };

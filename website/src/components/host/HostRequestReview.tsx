@@ -8,6 +8,7 @@ import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceho
 import {
   getHostRequestServerSnapshot,
   getHostRequestSnapshot,
+  hostModifierLabels,
   parseHostRequest,
   saveHostRequest,
   subscribeHostRequest,
@@ -108,9 +109,9 @@ export function HostRequestReview() {
                     <p className="mt-2 font-signika text-sm text-accent-dark/60 md:mt-1 md:text-xs">
                       {money.format(item.unitPrice / 100)}/{item.priceUnit} · {item.priceUnit === "package" ? `serves ${minimum}` : `min ${minimum}`} people
                     </p>
-                    {item.modifierNames?.length ? (
+                    {hostModifierLabels(item).length ? (
                       <p className="mt-1 font-signika text-xs text-primary">
-                        {item.modifierNames.join(", ")}
+                        {hostModifierLabels(item).join(", ")}
                       </p>
                     ) : null}
                   </div>

@@ -27,6 +27,14 @@ test("Perth local date conversion and invalid dates",()=>{
  assert.throws(()=>pickupInstant("2026-09-10T25:00","Australia/Perth"));
  assert.throws(()=>pickupInstant("2026-10-04T02:30","Australia/Sydney"));
 });
+test("pickup times follow opening hours in 15-minute intervals",()=>{
+ for(const value of ["2026-09-10T06:30","2026-09-10T17:00","2026-09-12T08:00","2026-09-12T16:00"]){
+  assert.doesNotThrow(()=>pickupInstant(value,"Australia/Perth"));
+ }
+ for(const value of ["2026-09-10T06:15","2026-09-10T10:10","2026-09-10T17:15","2026-09-12T07:45","2026-09-12T16:15"]){
+  assert.throws(()=>pickupInstant(value,"Australia/Perth"),/opening hours/);
+ }
+});
 test("rush boundaries",()=>{
  const now=1000000000000;
  for(const [h,available,fee] of [[-1,false,0],[24,false,0],[47.999,false,0],[48,true,0],[72,true,0]])assert.deepEqual(rushFee(now+h*3600000,now),{available,fee});
@@ -34,7 +42,10 @@ test("rush boundaries",()=>{
 test("quote endpoint calculates from the Square catalog",async t=>{
  let call=0;
  t.mock.method(globalThis,"fetch",async (_url,options)=>cakeCatalogResponse(call++===0?{body:JSON.stringify({object_types:["CATEGORY"]})}:options));
- const pickup=new Date(Date.now()+72*3600000).toISOString().slice(0,16);
+ const future=new Date(Date.now()+96*3600000);
+ const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Australia/Perth",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(future);
+ const part=type=>parts.find(entry=>entry.type===type).value;
+ const pickup=`${part("year")}-${part("month")}-${part("day")}T10:00`;
  const response=await handleCakeCheckout(req("quote",{cake,pickup,total:1}),env);
  const quote=await response.json();
  assert.equal(quote.total,14500);

@@ -8,6 +8,7 @@ import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceho
 import { ModifierOptions } from "@/components/daily-menu/product-detail/DrinkOptions";
 
 import { loadHostPackages } from "./host-packages-client";
+import { HostModifierQuantityOptions } from "./HostModifierQuantityOptions";
 import { saveHostRequestItem } from "./request-storage";
 import type { HostPackage } from "./types";
 
@@ -31,8 +32,8 @@ export function HostPackageDetail() {
 function HostPackageDetailContent({ packageId }: { packageId: string | null }) {
   const [hostPackage, setHostPackage] = useState<HostPackage | null>(null);
   const [guestCount, setGuestCount] = useState(1);
-  const [modifierIdsByList, setModifierIdsByList] = useState<
-    Record<string, string[]>
+  const [modifierQuantitiesByList, setModifierQuantitiesByList] = useState<
+    Record<string, Record<string, number>>
   >({});
   const [addedToRequest, setAddedToRequest] = useState(false);
   const [loadState, setLoadState] =
@@ -51,13 +52,15 @@ function HostPackageDetailContent({ packageId }: { packageId: string | null }) {
         if (!selectedPackage) throw new Error("Host package not found");
         setHostPackage(selectedPackage);
         setGuestCount(selectedPackage.minimumGuests ?? 10);
-        setModifierIdsByList(
+        setModifierQuantitiesByList(
           Object.fromEntries(
             selectedPackage.modifierLists.map((list) => [
               list.id,
-              list.modifiers
-                .filter((modifier) => modifier.defaultSelected)
-                .map((modifier) => modifier.id),
+              Object.fromEntries(
+                list.modifiers
+                  .filter((modifier) => modifier.defaultSelected)
+                  .map((modifier) => [modifier.id, 1]),
+              ),
             ]),
           ),
         );
@@ -84,14 +87,17 @@ function HostPackageDetailContent({ packageId }: { packageId: string | null }) {
   }
 
   const minimumGuests = hostPackage.minimumGuests ?? 10;
-  const selectedModifierIds = Object.values(modifierIdsByList).flat();
-  const selectedModifiers = hostPackage.modifierLists.flatMap((list) =>
-    list.modifiers.filter((modifier) =>
-      selectedModifierIds.includes(modifier.id),
-    ),
-  );
+  const selectedModifiers = hostPackage.modifierLists.flatMap((list) => {
+    const quantities = modifierQuantitiesByList[list.id] ?? {};
+    return list.modifiers.flatMap((modifier) => {
+      const quantity = quantities[modifier.id] ?? 0;
+      return quantity > 0 ? [{ ...modifier, quantity }] : [];
+    });
+  });
   const modifierSelectionValid = hostPackage.modifierLists.every((list) => {
-    const selectedCount = modifierIdsByList[list.id]?.length ?? 0;
+    const selectedCount = Object.values(
+      modifierQuantitiesByList[list.id] ?? {},
+    ).reduce((sum, quantity) => sum + quantity, 0);
     return (
       selectedCount >= list.minSelected &&
       (list.maxSelected === 0 || selectedCount <= list.maxSelected)
@@ -99,7 +105,10 @@ function HostPackageDetailContent({ packageId }: { packageId: string | null }) {
   });
   const unitPrice =
     hostPackage.price.amount +
-    selectedModifiers.reduce((sum, modifier) => sum + modifier.price, 0);
+    selectedModifiers.reduce(
+      (sum, modifier) => sum + modifier.price * modifier.quantity,
+      0,
+    );
   const total =
     hostPackage.priceUnit === "package" ? unitPrice : unitPrice * guestCount;
 
@@ -114,8 +123,11 @@ function HostPackageDetailContent({ packageId }: { packageId: string | null }) {
       currency: hostPackage.price.currency,
       minimumGuests,
       maximumGuests: hostPackage.maximumGuests,
-      modifierIds: selectedModifierIds,
-      modifierNames: selectedModifiers.map((modifier) => modifier.name),
+      modifierSelections: selectedModifiers.map((modifier) => ({
+        id: modifier.id,
+        name: modifier.name,
+        quantity: modifier.quantity,
+      })),
     };
 
     try {
@@ -161,33 +173,48 @@ function HostPackageDetailContent({ packageId }: { packageId: string | null }) {
 
           {hostPackage.modifierLists.length > 0 ? (
             <div className="mt-6 space-y-4 font-signika">
-              {hostPackage.modifierLists.map((list) => (
-                <ModifierOptions
-                  key={list.id}
-                  list={list}
-                  currency={hostPackage.price.currency}
-                  selectedModifierIds={modifierIdsByList[list.id] ?? []}
-                  alwaysDropdown
-                  onChange={(modifierIds) =>
-                    setModifierIdsByList((current) => ({
-                      ...current,
-                      [list.id]: modifierIds,
-                    }))
-                  }
-                />
-              ))}
+              {hostPackage.modifierLists.map((list) => {
+                const quantities = modifierQuantitiesByList[list.id] ?? {};
+                if (list.maxSelected === 0) {
+                  return (
+                    <HostModifierQuantityOptions
+                      key={list.id}
+                      list={list}
+                      currency={hostPackage.price.currency}
+                      quantities={quantities}
+                      onChange={(modifierId, quantity) =>
+                        setModifierQuantitiesByList((current) => ({
+                          ...current,
+                          [list.id]: {
+                            ...(current[list.id] ?? {}),
+                            [modifierId]: quantity,
+                          },
+                        }))
+                      }
+                    />
+                  );
+                }
+                return (
+                  <ModifierOptions
+                    key={list.id}
+                    list={list}
+                    currency={hostPackage.price.currency}
+                    selectedModifierIds={Object.entries(quantities)
+                      .filter(([, quantity]) => quantity > 0)
+                      .map(([modifierId]) => modifierId)}
+                    alwaysDropdown
+                    onChange={(modifierIds) =>
+                      setModifierQuantitiesByList((current) => ({
+                        ...current,
+                        [list.id]: Object.fromEntries(
+                          modifierIds.map((modifierId) => [modifierId, 1]),
+                        ),
+                      }))
+                    }
+                  />
+                );
+              })}
             </div>
-          ) : null}
-
-          {hostPackage.includedItems.length > 0 ? (
-            <section className="mt-7" aria-labelledby="included-heading">
-              <h2 id="included-heading" className="font-signika text-[9px] font-medium uppercase tracking-[0.24em] text-accent-dark/55">What&apos;s included</h2>
-              <ul className="mt-3 space-y-2.5">
-                {hostPackage.includedItems.map((item) => (
-                  <li key={item} className="flex gap-3 font-signika text-sm text-accent-dark"><span className="text-primary" aria-hidden="true">✓</span>{item}</li>
-                ))}
-              </ul>
-            </section>
           ) : null}
 
           {hostPackage.priceUnit !== "package" ? (

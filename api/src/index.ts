@@ -3,6 +3,8 @@ import { refreshCatalogCache } from "./routes/catalog.js";
 import { refreshCakeCatalogCache } from "./routes/cake-catalog.js";
 import type { WorkerEnv } from "./types/env.js";
 
+export { DailyInventoryReservations } from "./durable-objects/daily-inventory-reservations.js";
+
 type WorkerExecutionContext = {
   waitUntil(promise: Promise<unknown>): void;
 };

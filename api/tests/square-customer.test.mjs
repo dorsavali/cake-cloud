@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ClubAlreadyMemberError,
   isAustralianPhone,
   normalizeSquareAddress,
   normalizeSquarePhone,
@@ -116,10 +117,7 @@ test("club registration writes the complete member profile and number to Square"
       email: "MEMBER@example.com",
       phone: "0400 000 000",
       birthday: "1990-05-20",
-      addressLine1: "10 Cloud Street",
-      suburb: "Perth",
-      state: "WA",
-      postcode: "6000",
+      address: "10 Cloud Street, Perth WA 6000",
     },
     "33333333-3333-4333-8333-333333333333",
   );
@@ -136,16 +134,13 @@ test("club registration writes the complete member profile and number to Square"
     birthday: "1990-05-20",
     reference_id: result.memberCode,
     address: {
-      address_line_1: "10 Cloud Street",
-      locality: "Perth",
-      administrative_district_level_1: "WA",
-      postal_code: "6000",
+      address_line_1: "10 Cloud Street, Perth WA 6000",
       country: "AU",
     },
   });
 });
 
-test("an existing club member keeps their Square member number", async (t) => {
+test("an existing club member cannot register again", async (t) => {
   const requests = [];
   t.mock.method(globalThis, "fetch", async (url, options) => {
     const body = JSON.parse(options.body);
@@ -162,28 +157,22 @@ test("an existing club member keeps their Square member number", async (t) => {
     return Response.json({ customer: { id: "square-customer-2" } });
   });
 
-  const result = await upsertClubMember(
-    env,
-    {
-      firstName: "Existing",
-      lastName: "Member",
-      email: "existing@example.com",
-      phone: "+61411111111",
-      birthday: "1988-03-04",
-      addressLine1: "20 Cake Road",
-      suburb: "Perth",
-      state: "WA",
-      postcode: "6000",
-    },
-    "44444444-4444-4444-8444-444444444444",
+  await assert.rejects(
+    upsertClubMember(
+      env,
+      {
+        firstName: "Existing",
+        lastName: "Member",
+        email: "existing@example.com",
+        phone: "+61411111111",
+        birthday: "1988-03-04",
+        address: "20 Cake Road, Perth WA 6000",
+      },
+      "44444444-4444-4444-8444-444444444444",
+    ),
+    ClubAlreadyMemberError,
   );
 
-  assert.deepEqual(result, {
-    customerId: "square-customer-2",
-    memberCode: "CCC-123456",
-  });
   assert.equal(requests.length, 2);
-  assert.equal(requests[1].method, "PUT");
-  assert.equal(requests[1].body.reference_id, "CCC-123456");
-  assert.equal(requests[1].body.version, 4);
+  assert.ok(requests.every((request) => request.url.endsWith("/v2/customers/search")));
 });

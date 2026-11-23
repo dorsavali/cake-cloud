@@ -27,11 +27,23 @@ function parseDate(value: string) {
 }
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+const pickupMinutes = ["00", "15", "30", "45"];
 
-function sameDay(left: Date, right: Date) {
-  return left.getFullYear() === right.getFullYear()
-    && left.getMonth() === right.getMonth()
-    && left.getDate() === right.getDate();
+function pickupSlots(date: Date | undefined, firstPickup: Date) {
+  if (!date) return [];
+  const weekend = date.getDay() === 0 || date.getDay() === 6;
+  const openingMinute = weekend ? 8 * 60 : 6 * 60 + 30;
+  const closingMinute = weekend ? 16 * 60 : 17 * 60;
+  const slots: string[] = [];
+
+  for (let minute = openingMinute; minute <= closingMinute; minute += 15) {
+    const candidate = new Date(date);
+    candidate.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
+    if (candidate < firstPickup) continue;
+    slots.push(`${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`);
+  }
+
+  return slots;
 }
 
 function WhatsAppIcon() {
@@ -73,27 +85,20 @@ export function CakePickup({ date, time, quote, quoteError, now, onDateChange, o
   const input = inputDraft ?? [date, time].filter(Boolean).join(" ");
 
   const firstPickup = new Date(now + 48 * 60 * 60 * 1000);
+  const partialMinute = firstPickup.getSeconds() > 0 || firstPickup.getMilliseconds() > 0;
   firstPickup.setSeconds(0, 0);
-  firstPickup.setMinutes(firstPickup.getMinutes() + 1);
+  firstPickup.setMinutes(Math.ceil((firstPickup.getMinutes() + (partialMinute ? 1 : 0)) / 15) * 15);
   const firstPickupDay = new Date(firstPickup);
   firstPickupDay.setHours(0, 0, 0, 0);
-  const firstDaySelected = !!selected && sameDay(selected, firstPickup);
-  const firstHour = firstDaySelected ? firstPickup.getHours() : 0;
-  const hourOptions = Array.from(
-    { length: 24 - firstHour },
-    (_, index) => String(firstHour + index).padStart(2, "0"),
-  );
+  const availableSlots = pickupSlots(selected, firstPickup);
+  const hourOptions = [...new Set(availableSlots.map((slot) => slot.slice(0, 2)))];
   const selectedHour = timePattern.test(time) && hourOptions.includes(time.slice(0, 2))
     ? time.slice(0, 2)
     : "";
-  const firstMinute = firstDaySelected && Number(selectedHour) === firstPickup.getHours()
-    ? firstPickup.getMinutes()
-    : 0;
-  const minuteOptions = Array.from(
-    { length: 60 - firstMinute },
-    (_, index) => String(firstMinute + index).padStart(2, "0"),
-  );
-  const validDate = !!selected && timePattern.test(time);
+  const minuteOptions = selectedHour
+    ? pickupMinutes.filter((minute) => availableSlots.includes(`${selectedHour}:${minute}`))
+    : pickupMinutes;
+  const validDate = !!selected && availableSlots.includes(time);
   const unavailable = quote?.available === false;
   const availability = unavailable ? "Not available (< 48 h)" : "Standard (free)";
   const valid = validDate && quote?.available === true && !!quote.expires && quote.expires > now;
@@ -165,7 +170,7 @@ export function CakePickup({ date, time, quote, quoteError, now, onDateChange, o
                 </svg>
               </button>
             </div>
-            {touched && !validDate && <p id="pickup-error" className={errorText}>Enter a valid date and time: DD/MM/YYYY HH:mm (24-hour time).</p>}
+            {touched && !validDate && <p id="pickup-error" className={errorText}>Choose a pickup time during opening hours, in 15-minute intervals.</p>}
           </div>
           <div aria-live="polite">
             {selected && quote && (
@@ -220,14 +225,10 @@ export function CakePickup({ date, time, quote, quoteError, now, onDateChange, o
               if (!value) return;
               const text = `${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}`;
               let nextTime = time;
-              if (sameDay(value, firstPickup)) {
-                const chosen = new Date(value);
-                const [hour, minute] = timePattern.test(time) ? time.split(":").map(Number) : [0, 0];
-                chosen.setHours(hour, minute, 0, 0);
-                if (chosen < firstPickup) {
-                  nextTime = `${String(firstPickup.getHours()).padStart(2, "0")}:${String(firstPickup.getMinutes()).padStart(2, "0")}`;
-                  onTimeChange(nextTime);
-                }
+              const slots = pickupSlots(value, firstPickup);
+              if (time && !slots.includes(time)) {
+                nextTime = slots[0] ?? "";
+                onTimeChange(nextTime);
               }
               onDateChange(text);
               setMonth(value);
@@ -243,11 +244,9 @@ export function CakePickup({ date, time, quote, quoteError, now, onDateChange, o
                 value={selectedHour || "Choose"}
                 options={hourOptions}
                 onChange={(hour) => {
-                  const earliestMinute = firstDaySelected && Number(hour) === firstPickup.getHours()
-                    ? firstPickup.getMinutes()
-                    : 0;
-                  const currentMinute = /^[0-5]\d$/.test(time.slice(3)) ? Number(time.slice(3)) : 0;
-                  const value = `${hour}:${String(Math.max(earliestMinute, currentMinute)).padStart(2, "0")}`;
+                  const minutes = pickupMinutes.filter((minute) => availableSlots.includes(`${hour}:${minute}`));
+                  const currentMinute = time.slice(3);
+                  const value = `${hour}:${minutes.includes(currentMinute) ? currentMinute : minutes[0]}`;
                   onTimeChange(value);
                   setInputDraft(null);
                 }}

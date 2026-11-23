@@ -1,7 +1,13 @@
 import { json } from "../http/json.js";
-import { getCatalogItems } from "../services/square.js";
+import {
+  getCatalogItems,
+  SquareInventoryUnavailableError,
+} from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
-import { configureCheckoutReturn } from "../services/checkout-return.js";
+import {
+  createDailyMenuCheckout,
+  type DailyInventoryHoldLine,
+} from "../services/daily-inventory-reservations.js";
 import {
   isAustralianPhone,
   normalizeSquareAddress,
@@ -13,6 +19,16 @@ import type { ApiEnv } from "../types/env.js";
 const drinkChoices: Record<string, readonly string[]> = {
   temperature: ["Hot", "Cold"],
 };
+
+function inventoryConflictMessage(
+  itemName: string,
+  availableQuantity: number,
+): string {
+  if (availableQuantity > 0) {
+    return `${itemName} only has ${availableQuantity} available right now. Reduce its quantity, remove it from your cart, or wait a few minutes and try again.`;
+  }
+  return `${itemName} is temporarily unavailable. Remove it from your cart to continue with the rest of your order, or wait a few minutes and try again.`;
+}
 
 type CartLine = {
   variationId?: unknown;
@@ -44,8 +60,13 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
     if (!isAustralianPhone(phone)) throw new Error("Enter a valid Australian phone number.");
 
     // Always load authoritative products, prices, and current inventory from Square.
-    const products = await getCatalogItems(env);
+    const products = await getCatalogItems(env, {
+      includePopularity: false,
+      requireInventory: true,
+    });
     const lineItems: Array<Record<string, unknown>> = [];
+    const inventoryLines = new Map<string, DailyInventoryHoldLine>();
+    const inventoryItemNames = new Map<string, string>();
     let total = 0;
     for (const rawLine of body.items as CartLine[]) {
       if (!rawLine || typeof rawLine !== "object") throw new Error("Invalid cart item");
@@ -59,7 +80,25 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
         (candidate) => candidate.id === rawLine.variationId,
       );
       if (!product || !variation || !variation.available || variation.price.currency !== "AUD" || variation.price.amount < 1) throw new Error("This item is unavailable.");
-      if (variation.stock !== null && quantity as number > variation.stock) throw new Error(`${product.name} no longer has enough stock.`);
+      if (variation.stock !== null) {
+        const itemName = product.variations.length > 1
+          ? `${product.name} (${variation.name})`
+          : product.name;
+        inventoryItemNames.set(variation.id, itemName);
+        const existingInventoryLine = inventoryLines.get(variation.id);
+        const combinedQuantity =
+          (existingInventoryLine?.quantity ?? 0) + (quantity as number);
+        if (combinedQuantity > variation.stock) {
+          throw new Error(
+            inventoryConflictMessage(itemName, variation.stock),
+          );
+        }
+        inventoryLines.set(variation.id, {
+          variationId: variation.id,
+          quantity: combinedQuantity,
+          availableQuantity: variation.stock,
+        });
+      }
 
       const isDrink = product.categories.some((category) => {
         const normalized = category.trim().toLowerCase();
@@ -153,6 +192,17 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
         ...(note ? { note } : {}),
       });
     }
+
+    // Square's Orders view surfaces line-item notes more reliably than the
+    // API-only reference and metadata fields. Keep the customer-facing order
+    // number on the first item, matching custom-cake and host orders.
+    const firstLineItem = lineItems[0];
+    const firstLineNote = typeof firstLineItem.note === "string" ? firstLineItem.note : "";
+    lineItems[0] = {
+      ...firstLineItem,
+      note: [`Order: ${body.orderNumber}`, firstLineNote].filter(Boolean).join("\n"),
+    };
+
     const customerId = await upsertSquareCustomer(
       env,
       name,
@@ -189,19 +239,67 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
       checkout_options: { redirect_url: new URL("/DailyMenu/payment-result/", env.WEBSITE_ORIGIN || "http://localhost:3000").href, allow_tipping: false, ask_for_shipping_address: false, enable_coupon: false, enable_loyalty: false },
       payment_note: `Cake Cloud daily menu order · ${body.orderNumber} · ${name}`,
     };
-    const response = await fetch("https://connect.squareupsandbox.com/v2/online-checkout/payment-links", {
-      method: "POST",
-      headers: { authorization: `Bearer ${env.SQUARE_ACCESS_TOKEN}`, "Square-Version": "2026-08-19", "content-type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(20_000),
-    });
-    const data = await response.json() as { payment_link?: { id?: string; url?: string; order_id?: string } };
-    if (!response.ok || !data.payment_link?.id || !data.payment_link.url || !data.payment_link.order_id) return json({ error: "Square could not create the checkout page. Please retry." }, 502);
-    const url = new URL(data.payment_link.url);
-    if (url.protocol !== "https:" || !["square.link", "sandbox.square.link", "checkout.square.site", "sandbox.checkout.square.site"].includes(url.hostname)) return json({ error: "Square returned an unexpected checkout address." }, 502);
-    await configureCheckoutReturn(env, data.payment_link.id, data.payment_link.order_id, "/DailyMenu/payment-result/");
-    return json({ url: url.href });
+    const checkout = await createDailyMenuCheckout(
+      env,
+      body.idempotencyKey,
+      [...inventoryLines.values()],
+      payload,
+    );
+    if (!checkout.ok) {
+      if (checkout.reason === "attempt-cancelled-inventory") {
+        return json(
+          {
+            error:
+              "Square inventory changed while you were checking out, so the payment link was cancelled to prevent an oversold order. Please review your cart and try again.",
+            code: "CHECKOUT_ATTEMPT_CANCELLED_INVENTORY",
+          },
+          409,
+        );
+      }
+      if (checkout.reason === "attempt-expired") {
+        return json(
+          {
+            error:
+              "Your previous checkout link expired. Please press Pay & Place Order again to start a new checkout.",
+            code: "CHECKOUT_ATTEMPT_EXPIRED",
+          },
+          409,
+        );
+      }
+      if (checkout.reason === "attempt-conflict") {
+        return json(
+          {
+            error:
+              "Your cart changed after checkout started. Wait for the current checkout to expire, then try again.",
+            code: "CHECKOUT_ATTEMPT_CONFLICT",
+            expiresAt: checkout.expiresAt,
+          },
+          409,
+        );
+      }
+      return json(
+        {
+          error: inventoryConflictMessage(
+            checkout.variationId
+              ? (inventoryItemNames.get(checkout.variationId) ?? "This item")
+              : "This item",
+            checkout.availableQuantity ?? 0,
+          ),
+        },
+        409,
+      );
+    }
+    return json({ url: checkout.url, expiresAt: checkout.expiresAt });
   } catch (error) {
+    if (error instanceof SquareInventoryUnavailableError) {
+      return json(
+        {
+          error:
+            "Live inventory is temporarily unavailable. Please try again shortly.",
+        },
+        503,
+      );
+    }
     return json({ error: error instanceof Error ? error.message : "Could not start checkout." }, 400);
   }
 }

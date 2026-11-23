@@ -1,5 +1,6 @@
 import { json, methodNotAllowed } from "../http/json.js";
 import {
+  ClubAlreadyMemberError,
   isAustralianPhone,
   SquareCustomerError,
   upsertClubMember,
@@ -12,25 +13,11 @@ type ClubRequest = {
   email?: unknown;
   phone?: unknown;
   birthday?: unknown;
-  addressLine1?: unknown;
-  suburb?: unknown;
-  state?: unknown;
-  postcode?: unknown;
+  address?: unknown;
   privacyAccepted?: unknown;
   idempotencyKey?: unknown;
   website?: unknown;
 };
-
-const australianStates = new Set([
-  "ACT",
-  "NSW",
-  "NT",
-  "QLD",
-  "SA",
-  "TAS",
-  "VIC",
-  "WA",
-]);
 
 function text(value: unknown, name: string, maxLength: number): string {
   if (typeof value !== "string") throw new Error(`Enter your ${name}.`);
@@ -78,10 +65,7 @@ export async function handleClubJoin(
     const email = text(body.email, "email address", 254).toLowerCase();
     const phone = text(body.phone, "phone number", 30);
     const birthday = text(body.birthday, "date of birth", 10);
-    const addressLine1 = text(body.addressLine1, "street address", 500);
-    const suburb = text(body.suburb, "suburb", 100);
-    const state = text(body.state, "state", 3).toUpperCase();
-    const postcode = text(body.postcode, "postcode", 4);
+    const address = text(body.address, "address", 500);
     const idempotencyKey = text(body.idempotencyKey, "submission reference", 64);
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -91,8 +75,6 @@ export async function handleClubJoin(
       throw new Error("Enter a valid Australian phone number.");
     }
     if (!validBirthday(birthday)) throw new Error("Enter a valid date of birth.");
-    if (!australianStates.has(state)) throw new Error("Select a valid state.");
-    if (!/^\d{4}$/.test(postcode)) throw new Error("Enter a valid postcode.");
     if (!/^[0-9a-f-]{36}$/i.test(idempotencyKey)) {
       throw new Error("Invalid submission reference.");
     }
@@ -105,10 +87,7 @@ export async function handleClubJoin(
         email,
         phone,
         birthday,
-        addressLine1,
-        suburb,
-        state,
-        postcode,
+        address,
       },
       idempotencyKey,
     );
@@ -118,7 +97,11 @@ export async function handleClubJoin(
       error instanceof Error ? error.message : "Could not join the club.";
     return json(
       { error: message },
-      error instanceof SquareCustomerError ? 502 : 400,
+      error instanceof ClubAlreadyMemberError
+        ? 409
+        : error instanceof SquareCustomerError
+          ? 502
+          : 400,
     );
   }
 }

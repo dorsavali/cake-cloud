@@ -19,6 +19,12 @@ export interface ApiEnv {
     put(key: string, value: ReadableStream | ArrayBuffer | string, options?: { httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }): Promise<unknown>;
     delete(keys: string | string[]): Promise<void>;
   };
+  DAILY_INVENTORY_RESERVATIONS?: {
+    idFromName(name: string): unknown;
+    get(id: unknown): {
+      fetch(request: Request): Promise<Response>;
+    };
+  };
 }
 
 export interface WorkerEnv extends ApiEnv {

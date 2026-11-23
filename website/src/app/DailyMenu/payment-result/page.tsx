@@ -127,7 +127,6 @@ export default function DailyMenuPaymentResult() {
                 >
                   {publicContactEmail}
                 </a>
-                .
               </p>
             </section>
           </div>

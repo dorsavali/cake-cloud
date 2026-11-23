@@ -166,6 +166,13 @@ export type StorefrontProduct = {
   customAttributes: Record<string, string | number | boolean | string[]>;
 };
 
+export class SquareInventoryUnavailableError extends Error {
+  constructor() {
+    super("Square inventory is temporarily unavailable");
+    this.name = "SquareInventoryUnavailableError";
+  }
+}
+
 export function stripInventoryMetadata(product: StorefrontProduct) {
   return {
     ...product,
@@ -305,6 +312,13 @@ async function getInventoryByVariation(
   } catch {
     return null;
   }
+}
+
+export async function getFreshInventoryByVariation(
+  env: ApiEnv,
+  variationIds: string[],
+): Promise<Map<string, number> | null> {
+  return getInventoryByVariation(env, [...new Set(variationIds)]);
 }
 
 async function getCachedInventoryByVariation(
@@ -559,6 +573,7 @@ export async function getCatalogItems(
   options: {
     includeInventory?: boolean;
     includePopularity?: boolean;
+    requireInventory?: boolean;
   } = {},
 ): Promise<StorefrontProduct[]> {
   if (!env.SQUARE_ACCESS_TOKEN) {
@@ -674,6 +689,13 @@ export async function getCatalogItems(
     popularityRequest,
     inventoryRequest,
   ]);
+  if (
+    options.requireInventory === true &&
+    options.includeInventory !== false &&
+    inventoryByVariation === null
+  ) {
+    throw new SquareInventoryUnavailableError();
+  }
 
   return objects
     .filter(

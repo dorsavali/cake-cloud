@@ -115,7 +115,6 @@ export default function HostPaymentResultPage() {
                 >
                   {publicContactEmail}
                 </a>
-                .
               </p>
             </section>
           </div>

@@ -12,7 +12,6 @@ export type HostPackage = {
   priceUnit: string;
   minimumGuests: number | null;
   maximumGuests: number | null;
-  includedItems: string[];
   modifierLists: Array<{
     id: string;
     name: string;

@@ -35,6 +35,20 @@
   "triggers": {
     "crons": ["0 */2 * * *"]
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DAILY_INVENTORY_RESERVATIONS",
+        "class_name": "DailyInventoryReservations"
+      }
+    ]
+  },
+  "exports": {
+    "DailyInventoryReservations": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
   "assets": {
     "directory": "./website/out",
     "binding": "ASSETS",

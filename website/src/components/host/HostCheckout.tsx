@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { type FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 
 import { apiUrl } from "@/lib/api";
 import {
@@ -12,6 +12,7 @@ import {
 import {
   getHostRequestServerSnapshot,
   getHostRequestSnapshot,
+  hostModifierLabels,
   parseHostRequest,
   subscribeHostRequest,
 } from "./request-storage";
@@ -29,9 +30,7 @@ function validCheckoutForm(form: HTMLFormElement) {
 export function HostCheckout() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [fileName, setFileName] = useState("");
   const [formValid, setFormValid] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
 
   const serializedItems = useSyncExternalStore(
     subscribeHostRequest,
@@ -60,7 +59,11 @@ export function HostCheckout() {
       const session = await sessionResponse.json() as { idempotencyKey?: unknown };
       if (typeof session.idempotencyKey !== "string") throw new Error("Could not start checkout.");
       data.set("idempotencyKey", session.idempotencyKey);
-      data.set("items", JSON.stringify(items.map(({ id, guests, modifierIds }) => ({ id, guests, modifierIds: modifierIds ?? [] }))));
+      data.set("items", JSON.stringify(items.map(({ id, guests, modifierSelections, modifierIds }) => (
+        modifierSelections
+          ? { id, guests, modifiers: modifierSelections.map(({ id: modifierId, quantity }) => ({ id: modifierId, quantity })) }
+          : { id, guests, modifierIds: modifierIds ?? [] }
+      ))));
       data.set("termsAccepted", data.has("termsAccepted") ? "true" : "false");
       data.set("allergenAccepted", data.has("allergenAccepted") ? "true" : "false");
       const response = await fetch(apiUrl("/api/host/checkout"), { method: "POST", body: data });
@@ -95,7 +98,7 @@ export function HostCheckout() {
         >
           <ul className="space-y-5">
             {items.map((item) => <li key={item.id} className="flex min-h-[76px] items-center justify-between gap-3 rounded-xl border border-[#d8cdb8] bg-[#eee7da] px-4 md:px-5">
-              <div className="min-w-0"><p className="text-sm font-medium">{item.name}</p><p className="mt-1 text-xs text-accent-dark/60">{item.priceUnit === "package" ? `Serves ${item.minimumGuests ?? item.guests}` : `${item.guests} guests`} · {money.format(item.unitPrice / 100)}/{item.priceUnit}</p>{item.modifierNames?.length ? <p className="mt-1 text-xs text-primary">{item.modifierNames.join(", ")}</p> : null}</div>
+              <div className="min-w-0"><p className="text-sm font-medium">{item.name}</p><p className="mt-1 text-xs text-accent-dark/60">{item.priceUnit === "package" ? `Serves ${item.minimumGuests ?? item.guests}` : `${item.guests} guests`} · {money.format(item.unitPrice / 100)}/{item.priceUnit}</p>{hostModifierLabels(item).length ? <p className="mt-1 text-xs text-primary">{hostModifierLabels(item).join(", ")}</p> : null}</div>
               <p className="shrink-0 font-signika text-lg text-primary md:text-xl">{money.format(item.unitPrice * (item.priceUnit === "package" ? 1 : item.guests) / 100)}</p>
             </li>)}
           </ul>
@@ -119,17 +122,6 @@ export function HostCheckout() {
             <label className="block text-sm font-medium">Additional Notes
               <textarea name="notes" maxLength={1500} rows={3} placeholder="Dietary requirements, headcount, or other details..." className="mt-2 w-full resize-y rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 py-3 text-base outline-none placeholder:text-sm placeholder:text-accent-dark/35 focus:border-primary" />
             </label>
-
-            <div>
-              <p className="text-sm font-medium">Logo/Design <span className="font-normal text-accent-dark/55">(optional)</span></p>
-              <p className="mt-1 text-xs leading-relaxed text-accent-dark/60">If you&apos;d like us to use your logo or your own Design on the selected package/packaging, upload it here.</p>
-              <input ref={fileInput} className="sr-only" name="logo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFileName(event.target.files?.[0]?.name ?? "")} />
-              <button type="button" onClick={() => fileInput.current?.click()} className="mt-3 flex min-h-14 w-full min-w-0 items-center gap-3 overflow-hidden rounded-xl border border-dashed border-[#d8c49e] bg-[#f8f4ec] px-4 text-left text-sm text-accent-dark/60">
-                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#ebe5d9] text-primary" aria-hidden="true">↥</span>
-                <span className="truncate">{fileName || "Click to upload logo/Design"}</span>
-              </button>
-              <p className="mt-1 text-xs text-accent-dark/45">JPG, PNG or WebP · maximum 5 MB</p>
-            </div>
 
             <div className="space-y-4 border-b border-[#ded5c7] pb-4">
               <label className="flex items-start gap-2 text-xs leading-5 text-accent-dark/55">

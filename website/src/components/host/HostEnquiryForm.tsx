@@ -67,11 +67,14 @@ export function HostEnquiryForm() {
           <label className="block text-sm font-medium">Phone <span className="text-[#a83831]">*</span>
             <input className={control} name="phone" type="tel" inputMode="tel" required maxLength={15} defaultValue={defaultAustralianPhone} placeholder="+61 4xx xxx xxx" autoComplete="tel-national" onInput={(event) => { event.currentTarget.value = formatAustralianPhoneInput(event.currentTarget.value); }} />
           </label>
+          <label className="block text-sm font-medium">Address <span className="font-normal text-accent-dark/55">(optional)</span>
+            <input className={control} name="address" type="text" maxLength={500} autoComplete="street-address" />
+          </label>
           <label className="block text-sm font-medium">Preferred Date <span className="text-[#a83831]">*</span>
             <input className={control} name="preferredDate" type="date" required min={tomorrow} />
           </label>
           <label className="block text-sm font-medium">Additional Notes
-            <textarea className={`${control} min-h-[80px] resize-y py-3 placeholder:text-sm placeholder:text-accent-dark/35`} name="notes" maxLength={2000} rows={3} placeholder="Dietary requirements, delivery address, headcount..." />
+            <textarea className={`${control} min-h-[80px] resize-y py-3 placeholder:text-sm placeholder:text-accent-dark/35`} name="notes" maxLength={2000} rows={3} placeholder="Dietary requirements, headcount, or other details..." />
           </label>
           <div>
             <p className="text-sm font-medium">Logo/Design <span className="font-normal text-accent-dark/55">(optional)</span></p>

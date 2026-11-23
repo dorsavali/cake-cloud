@@ -68,7 +68,7 @@ export function ClubRegistration() {
           <p className="font-signika text-xs uppercase tracking-[0.22em] text-accent-dark/60">
             Your member number
           </p>
-          <p className="mt-2 font-kalnia text-3xl tracking-[0.14em] text-primary md:text-4xl">
+          <p className="mt-2 font-signika text-3xl tracking-[0.14em] text-primary md:text-4xl">
             {memberCode}
           </p>
         </div>
@@ -116,26 +116,9 @@ export function ClubRegistration() {
         </div>
 
         <label className="block font-signika text-sm font-medium text-accent-dark">
-          Street Address <span className="text-[#9b4d46]">*</span>
-          <input name="addressLine1" autoComplete="address-line1" maxLength={500} required className={`${inputClass} mt-2`} />
+          Address <span className="text-[#9b4d46]">*</span>
+          <input name="address" autoComplete="street-address" maxLength={500} required className={`${inputClass} mt-2`} />
         </label>
-
-        <div className="grid gap-5 sm:grid-cols-[1fr_8rem_8rem]">
-          <label className="block font-signika text-sm font-medium text-accent-dark">
-            Suburb <span className="text-[#9b4d46]">*</span>
-            <input name="suburb" autoComplete="address-level2" maxLength={100} required className={`${inputClass} mt-2`} />
-          </label>
-          <label className="block font-signika text-sm font-medium text-accent-dark">
-            State <span className="text-[#9b4d46]">*</span>
-            <select name="state" autoComplete="address-level1" defaultValue="WA" required className={`${inputClass} mt-2 appearance-none`}>
-              {['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'].map((state) => <option key={state}>{state}</option>)}
-            </select>
-          </label>
-          <label className="block font-signika text-sm font-medium text-accent-dark">
-            Postcode <span className="text-[#9b4d46]">*</span>
-            <input name="postcode" inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{4}" maxLength={4} required className={`${inputClass} mt-2`} />
-          </label>
-        </div>
 
         <label className="block font-signika text-sm font-medium text-accent-dark sm:max-w-[calc(50%-0.625rem)]">
           Date of Birth <span className="text-[#9b4d46]">*</span>

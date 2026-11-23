@@ -1,6 +1,12 @@
 export const hostRequestStorageKey = "cake-cloud:host-request:v1";
 export const hostRequestChangedEvent = "cake-cloud-host-request-change";
 
+export type HostModifierSelection = {
+  id: string;
+  name: string;
+  quantity: number;
+};
+
 export type HostRequestItem = {
   id: string;
   name: string;
@@ -11,9 +17,32 @@ export type HostRequestItem = {
   currency: string;
   minimumGuests?: number;
   maximumGuests?: number | null;
+  modifierSelections?: HostModifierSelection[];
+  /** Legacy fields kept so requests saved before quantity support still load. */
   modifierIds?: string[];
   modifierNames?: string[];
 };
+
+function isHostModifierSelection(value: unknown): value is HostModifierSelection {
+  if (!value || typeof value !== "object") return false;
+  const selection = value as Partial<HostModifierSelection>;
+  return (
+    typeof selection.id === "string" &&
+    typeof selection.name === "string" &&
+    Number.isInteger(selection.quantity) &&
+    (selection.quantity ?? 0) > 0 &&
+    (selection.quantity ?? 0) <= 999
+  );
+}
+
+export function hostModifierLabels(item: HostRequestItem) {
+  if (item.modifierSelections?.length) {
+    return item.modifierSelections.map(({ name, quantity }) =>
+      quantity > 1 ? `${name} × ${quantity}` : name,
+    );
+  }
+  return item.modifierNames ?? [];
+}
 
 function isHostRequestItem(value: unknown): value is HostRequestItem {
   if (!value || typeof value !== "object") return false;
@@ -32,6 +61,10 @@ function isHostRequestItem(value: unknown): value is HostRequestItem {
     (item.maximumGuests === undefined ||
       item.maximumGuests === null ||
       (Number.isInteger(item.maximumGuests) && item.maximumGuests > 0)) &&
+    (item.modifierSelections === undefined ||
+      (Array.isArray(item.modifierSelections) &&
+        item.modifierSelections.length <= 50 &&
+        item.modifierSelections.every(isHostModifierSelection))) &&
     (item.modifierIds === undefined ||
       (Array.isArray(item.modifierIds) &&
         item.modifierIds.every((id) => typeof id === "string"))) &&

@@ -1,5 +1,5 @@
 import { json, methodNotAllowed } from "../http/json.js";
-import { isAustralianPhone } from "../services/square-customer.js";
+import { isAustralianPhone, normalizeSquareAddress } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 
 const maxFileBytes = 5 * 1024 * 1024;
@@ -37,6 +37,7 @@ export async function handleHostEnquiry(request: Request, env: ApiEnv): Promise<
     const fullName = field(form, "fullName", 100, true);
     const email = field(form, "email", 254, true).toLowerCase();
     const phone = field(form, "phone", 30, true);
+    const address = normalizeSquareAddress(form.get("address"));
     const preferredDate = field(form, "preferredDate", 10, true);
     const notes = field(form, "notes", 2000);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email.");
@@ -68,6 +69,7 @@ export async function handleHostEnquiry(request: Request, env: ApiEnv): Promise<
       fullName,
       email,
       phone,
+      address: address || null,
       preferredDate,
       notes,
       logoKey,
