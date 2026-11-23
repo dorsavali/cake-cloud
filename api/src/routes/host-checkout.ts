@@ -1,5 +1,5 @@
 import { json, methodNotAllowed } from "../http/json.js";
-import { getCatalogItemSnapshots } from "../services/square.js";
+import { getCatalogItemSnapshots, getSquareBaseUrl, isSquareCheckoutEnabled } from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import { orderNumberFromSeed } from "../services/order-number.js";
@@ -32,7 +32,7 @@ function text(form: FormData, key: string, max: number, required = false) {
 
 export async function handleHostCheckout(request: Request, env: ApiEnv): Promise<Response> {
   if (request.method !== "POST") return methodNotAllowed();
-  if (env.SQUARE_ENVIRONMENT !== "sandbox" || !env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) return json({ error: "Square Sandbox checkout is not configured." }, 503);
+  if (!isSquareCheckoutEnabled(env) || !env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) return json({ error: "Square checkout is not configured." }, 503);
   const origin = request.headers.get("origin");
   if (origin && env.WEBSITE_ORIGIN && origin !== new URL(env.WEBSITE_ORIGIN).origin) return json({ error: "Invalid request origin." }, 403);
   const contentLength = Number(request.headers.get("content-length") || 0);
@@ -251,7 +251,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
       checkout_options: { redirect_url: returnUrl.href, allow_tipping: false, ask_for_shipping_address: false, enable_coupon: false, enable_loyalty: false },
       payment_note: `${reference} · Cake Cloud host request · ${fullName}\n${orderNote}`,
     };
-    const response = await fetch("https://connect.squareupsandbox.com/v2/online-checkout/payment-links", { method: "POST", headers: { authorization: `Bearer ${env.SQUARE_ACCESS_TOKEN}`, "Square-Version": "2026-08-19", "content-type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(20_000) });
+    const response = await fetch(`${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/online-checkout/payment-links`, { method: "POST", headers: { authorization: `Bearer ${env.SQUARE_ACCESS_TOKEN}`, "Square-Version": "2026-08-19", "content-type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(20_000) });
     const data = await response.json() as { payment_link?: { id?: string; url?: string; order_id?: string }; errors?: Array<{ code?: string }> };
     if (!response.ok) {
       const code = data.errors?.[0]?.code;

@@ -135,7 +135,12 @@ export async function handleSquareWebhook(
         .map((count) => count.catalog_object_id as string);
       await notifyDailyInventoryChanged(env, changedVariationIds);
     }
-  } catch {
+  } catch (error) {
+    console.error("[square] Webhook processing failed", {
+      eventId: event.event_id,
+      eventType: event.type,
+      error: error instanceof Error ? error.message : String(error),
+    });
     // Do not mark failed deliveries as processed: Square must retry them.
     return json({ error: "Payment verification temporarily unavailable" }, 503);
   }

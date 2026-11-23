@@ -4,6 +4,7 @@ import { CakeError, getPricedCake, pickupInstant, rushFee } from "./cake-checkou
 import type { ApiEnv } from "../types/env.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import { orderNumberFromSeed } from "../services/order-number.js";
+import { getSquareBaseUrl, isSquareCheckoutEnabled } from "../services/square.js";
 import {
   isAustralianPhone,
   normalizeSquareAddress,
@@ -14,8 +15,7 @@ import {
 
 export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): Promise<Response> {
   if (request.method !== "POST") return json({error:"Method not allowed"},405);
-  // This integration is explicitly Sandbox-only until production is requested.
-  if (env.SQUARE_ENVIRONMENT !== "sandbox" || !env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) return json({error:"Square Sandbox checkout is not configured."},503);
+  if(!isSquareCheckoutEnabled(env) || !env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID)return json({error:"Square checkout is not configured."},503);
   let body: Record<string, unknown>;
   try {
     const raw=await request.text();
@@ -105,7 +105,7 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
       payment_note:`${orderNumber} · Cake Cloud custom cake · ${name}`,
     };
     try {
-      const response=await fetch("https://connect.squareupsandbox.com/v2/online-checkout/payment-links",{
+      const response=await fetch(`${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/online-checkout/payment-links`,{
         method:"POST",
         headers:{authorization:"Bearer "+env.SQUARE_ACCESS_TOKEN,"Square-Version":"2026-08-19","content-type":"application/json"},
         body:JSON.stringify(payload),signal:AbortSignal.timeout(20000),

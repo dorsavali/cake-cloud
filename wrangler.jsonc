@@ -4,20 +4,15 @@
   "main": "./api/src/index.ts",
   "compatibility_date": "2026-09-01",
   "keep_vars": true,
-  "routes": [
-    {
-      "pattern": "cake-cloud.dorsavalli.com",
-      "custom_domain": true
-    }
-  ],
   "vars": {
-    "SQUARE_ENVIRONMENT": "sandbox",
+    // Runtime-specific values live outside source control:
+    // - local development reads SQUARE_ENVIRONMENT and WEBSITE_ORIGIN from .env
+    // - Cloudflare Workers use their own Variables and Secrets
     "SQUARE_TIMEZONE": "Australia/Perth",
-    "WEBSITE_ORIGIN": "https://cake-cloud.dorsavalli.com",
-    "EMAIL_ENABLED": "false",
+    "EMAIL_ENABLED": "true",
     "SMTP_HOST": "mail.cake-cloud.com.au",
-    "SMTP_PORT": "465",
-    "SMTP_SECURITY": "tls",
+    "SMTP_PORT": "587",
+    "SMTP_SECURITY": "starttls",
     "SMTP_HELLO_USERNAME": "hello-noreply@cake-cloud.com.au"
   },
   "secrets": {

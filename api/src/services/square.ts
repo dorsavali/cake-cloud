@@ -209,10 +209,15 @@ type SearchOrdersResponse = {
   cursor?: string;
 };
 
-const getSquareBaseUrl = (environment: ApiEnv["SQUARE_ENVIRONMENT"]) =>
+export const getSquareBaseUrl = (environment: ApiEnv["SQUARE_ENVIRONMENT"]) =>
   environment === "production"
     ? "https://connect.squareup.com"
     : "https://connect.squareupsandbox.com";
+
+export const isSquareCheckoutEnabled = (env: ApiEnv) =>
+  env.SQUARE_ENVIRONMENT === "sandbox" ||
+  (env.SQUARE_ENVIRONMENT === "production" &&
+    env.SQUARE_PRODUCTION_CHECKOUT_ENABLED === "true");
 
 const squareHeaders = (env: ApiEnv) => ({
   authorization: `Bearer ${env.SQUARE_ACCESS_TOKEN}`,

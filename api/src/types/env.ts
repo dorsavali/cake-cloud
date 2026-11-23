@@ -5,6 +5,7 @@ export interface ApiEnv {
   SQUARE_ACCESS_TOKEN: string;
   SQUARE_APPLICATION_ID: string;
   SQUARE_ENVIRONMENT: "sandbox" | "production";
+  SQUARE_PRODUCTION_CHECKOUT_ENABLED?: string;
   SQUARE_WEBHOOK_SIGNATURE_KEY: string;
   SQUARE_WEBHOOK_NOTIFICATION_URL: string;
   EMAIL_ENABLED?: string;

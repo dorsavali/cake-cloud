@@ -12,10 +12,10 @@ const perthPickup=days=>{
 };
 const body=()=>({cake,pickup:perthPickup(4),name:"Test Buyer",email:"test@example.com",phone:"0412 345 678",expectedTotal:14500,idempotencyKey:crypto.randomUUID(),termsAccepted:true,allergenAccepted:true});
 const req=b=>new Request("http://localhost/api/cake/checkout",{method:"POST",body:JSON.stringify(b)});
-test("rejects production and invalid amounts before Square",async t=>{
+test("rejects invalid environments and invalid amounts before Square",async t=>{
  let catalogCall=0;
  t.mock.method(globalThis,"fetch",async (_url,options)=>cakeCatalogResponse(catalogCall++%2===0?{body:JSON.stringify({object_types:["CATEGORY"]})}:options));
- assert.equal((await handleCustomCakeCheckout(req(body()),{...env,SQUARE_ENVIRONMENT:"production"})).status,503);
+ assert.equal((await handleCustomCakeCheckout(req(body()),{...env,SQUARE_ENVIRONMENT:"invalid"})).status,503);
  assert.equal((await handleCustomCakeCheckout(req({...body(),expectedTotal:1}),env)).status,409);
  assert.equal((await handleCustomCakeCheckout(req({...body(),pickup:perthPickup(1)}),env)).status,409);
  assert.equal((await handleCustomCakeCheckout(req({...body(),pickup:"2020-01-01T00:00"}),env)).status,400);
@@ -64,6 +64,27 @@ test("Square receives server price, fulfillment, and a stable retry key",async t
  assert.match(sent[0].order.fulfillments[0].pickup_details.note,/Australia\/Perth/);
  assert.equal(sent[0].pre_populated_data,undefined);
  assert.equal(sent[0].order.fulfillments[0].pickup_details.recipient.email_address,b.email);
+});
+test("production checkout uses the production Square API",async t=>{
+ let paymentLinkUrl="";
+ t.mock.method(globalThis,"fetch",async (url,options)=>{
+   if(isCakeCatalogRequest(url))return cakeCatalogResponse(options);
+   if(String(url).endsWith("/v2/customers/search"))return Response.json({customers:[]});
+   if(String(url).endsWith("/v2/customers"))return Response.json({customer:{id:"production-customer"}});
+   if(String(url).endsWith("/v2/online-checkout/payment-links")){
+     paymentLinkUrl=String(url);
+     return Response.json({payment_link:{id:"production-link",url:"https://square.link/u/test",order_id:"production-order"}});
+   }
+   const checkout_options=options.method==="PUT"?JSON.parse(options.body).payment_link.checkout_options:{};
+   return Response.json({payment_link:{id:"production-link",version:1,order_id:"production-order",checkout_options}});
+ });
+ const response=await handleCustomCakeCheckout(req(body()),{...env,SQUARE_ENVIRONMENT:"production",SQUARE_PRODUCTION_CHECKOUT_ENABLED:"true"});
+ assert.equal(response.status,200);
+ assert.equal(paymentLinkUrl,"https://connect.squareup.com/v2/online-checkout/payment-links");
+});
+test("local production catalog mode cannot create a live checkout",async()=>{
+ const response=await handleCustomCakeCheckout(req(body()),{...env,SQUARE_ENVIRONMENT:"production"});
+ assert.equal(response.status,503);
 });
 test("handles upstream failure without exposing credentials",async t=>{
  t.mock.method(globalThis,"fetch",async()=>{throw Error("test secret");});

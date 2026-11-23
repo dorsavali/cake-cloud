@@ -1,6 +1,7 @@
 import { json } from "../http/json.js";
 import {
   getCatalogItems,
+  isSquareCheckoutEnabled,
   SquareInventoryUnavailableError,
 } from "../services/square.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
@@ -39,8 +40,12 @@ type CartLine = {
 
 export async function handleCartCheckout(request: Request, env: ApiEnv): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  if (env.SQUARE_ENVIRONMENT !== "sandbox" || !env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) {
-    return json({ error: "Square Sandbox checkout is not configured." }, 503);
+  if (
+    !isSquareCheckoutEnabled(env) ||
+    !env.SQUARE_ACCESS_TOKEN ||
+    !env.SQUARE_LOCATION_ID
+  ) {
+    return json({ error: "Square checkout is not configured." }, 503);
   }
   try {
     const raw = await request.text();
