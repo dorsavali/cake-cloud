@@ -28,18 +28,30 @@ function parseDate(value: string) {
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 const pickupMinutes = ["00", "15", "30", "45"];
+const pickupTimeZone = "Australia/Perth";
 
-function pickupSlots(date: Date | undefined, firstPickup: Date) {
-  if (!date) return [];
+function minimumPickupDate(now: number) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: pickupTimeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((entry) => entry.type === type)?.value);
+  const date = new Date(part("year"), part("month") - 1, part("day"));
+  date.setDate(date.getDate() + 2);
+  return date;
+}
+
+function pickupSlots(date: Date | undefined, firstPickupDay: Date) {
+  if (!date || date < firstPickupDay) return [];
   const weekend = date.getDay() === 0 || date.getDay() === 6;
   const openingMinute = weekend ? 8 * 60 : 6 * 60 + 30;
   const closingMinute = weekend ? 16 * 60 : 17 * 60;
   const slots: string[] = [];
 
   for (let minute = openingMinute; minute <= closingMinute; minute += 15) {
-    const candidate = new Date(date);
-    candidate.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
-    if (candidate < firstPickup) continue;
     slots.push(`${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`);
   }
 
@@ -84,23 +96,18 @@ export function CakePickup({ date, time, quote, quoteError, now, onDateChange, o
   const [inputDraft, setInputDraft] = useState<string | null>(null);
   const input = inputDraft ?? [date, time].filter(Boolean).join(" ");
 
-  const firstPickup = new Date(now + 48 * 60 * 60 * 1000);
-  const partialMinute = firstPickup.getSeconds() > 0 || firstPickup.getMilliseconds() > 0;
-  firstPickup.setSeconds(0, 0);
-  firstPickup.setMinutes(Math.ceil((firstPickup.getMinutes() + (partialMinute ? 1 : 0)) / 15) * 15);
-  const firstPickupDay = new Date(firstPickup);
-  firstPickupDay.setHours(0, 0, 0, 0);
-  const availableSlots = pickupSlots(selected, firstPickup);
+  const firstPickupDay = minimumPickupDate(now);
+  const availableSlots = pickupSlots(selected, firstPickupDay);
   const hourOptions = [...new Set(availableSlots.map((slot) => slot.slice(0, 2)))];
   const selectedHour = timePattern.test(time) && hourOptions.includes(time.slice(0, 2))
     ? time.slice(0, 2)
     : "";
   const minuteOptions = selectedHour
     ? pickupMinutes.filter((minute) => availableSlots.includes(`${selectedHour}:${minute}`))
-    : pickupMinutes;
+    : [];
   const validDate = !!selected && availableSlots.includes(time);
   const unavailable = quote?.available === false;
-  const availability = unavailable ? "Not available (< 48 h)" : "Standard (free)";
+  const availability = unavailable ? "Not available (< 2 calendar days)" : "Standard (free)";
   const valid = validDate && quote?.available === true && !!quote.expires && quote.expires > now;
 
   function updateInput(value: string) {
@@ -178,13 +185,13 @@ export function CakePickup({ date, time, quote, quoteError, now, onDateChange, o
                 <span aria-hidden="true">{unavailable ? "⛔" : "🕒"}</span>
                 <div>
                   {availability}
-                  {unavailable && <p className="mt-1 text-xs text-[#e12727]">Please choose a date at least 48 hours from now.</p>}
+                  {unavailable && <p className="mt-1 text-xs text-[#e12727]">Please choose a pickup date at least 2 calendar days from today.</p>}
                 </div>
               </div>
             )}
           </div>
           <div className="flex flex-col gap-2 text-xs text-accent-dark md:flex-row md:items-center md:justify-between md:gap-4">
-            <span>Need Your Cake in Less Than 48 Hours?</span>
+            <span>Need Your Cake in Less Than 2 Calendar Days?</span>
             <button
               ref={contactTrigger}
               type="button"
@@ -225,7 +232,7 @@ export function CakePickup({ date, time, quote, quoteError, now, onDateChange, o
               if (!value) return;
               const text = `${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}`;
               let nextTime = time;
-              const slots = pickupSlots(value, firstPickup);
+              const slots = pickupSlots(value, firstPickupDay);
               if (time && !slots.includes(time)) {
                 nextTime = slots[0] ?? "";
                 onTimeChange(nextTime);
@@ -258,7 +265,9 @@ export function CakePickup({ date, time, quote, quoteError, now, onDateChange, o
                 value={selectedHour && minuteOptions.includes(time.slice(3)) ? time.slice(3) : "Choose"}
                 options={minuteOptions}
                 onChange={(minute) => {
-                  const value = `${selectedHour || hourOptions[0]}:${minute}`;
+                  const hour = selectedHour || hourOptions[0];
+                  if (!hour) return;
+                  const value = `${hour}:${minute}`;
                   onTimeChange(value);
                   setInputDraft(null);
                 }}

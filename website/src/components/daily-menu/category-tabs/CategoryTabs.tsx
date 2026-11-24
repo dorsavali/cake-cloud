@@ -19,6 +19,13 @@ export const dailyMenuCategories: readonly DailyMenuCategoryOption[] = [
   { id: "todays-offer", label: "Today's Offer", squareName: "today's offer website", filter: "none" },
 ] as const;
 
+const allCategory: DailyMenuCategoryOption = {
+  id: "all",
+  label: "All",
+  squareName: "",
+  filter: "none",
+};
+
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
@@ -58,7 +65,8 @@ export function buildDailyMenuCategories(
     })
     .sort((left, right) => left.label.localeCompare(right.label));
 
-  return [...known, ...discovered];
+  const categories = [...known, ...discovered];
+  return categories.length > 0 ? [allCategory, ...categories] : [];
 }
 
 type CategoryTabsProps = {

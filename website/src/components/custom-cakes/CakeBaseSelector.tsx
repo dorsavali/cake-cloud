@@ -330,7 +330,7 @@ function CakeFlow({ design, onExit }: { design: CakeDesign; onExit: () => void }
 
   const currency = size?.price.currency ?? "AUD";
   const unavailable = quote?.available === false;
-  const availability = unavailable ? "Not available (< 48 h)" : "Standard (free)";
+  const availability = unavailable ? "Not available (< 2 calendar days)" : "Standard (free)";
   const valid = !!size && !!pickupValue && quote?.available === true && !!quote.expires && quote.expires > now;
 
   const summary: CakeSummaryItem[] = useMemo(() => [

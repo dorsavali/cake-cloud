@@ -66,14 +66,6 @@ function ChatIcon() {
   return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-5"><path d="M20 11.5a7.5 7.5 0 0 1-11.3 6.5L4 19l1.1-4.3A7.5 7.5 0 1 1 20 11.5Z" stroke="currentColor" strokeWidth="1.7"/></svg>;
 }
 
-function InstagramIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-5"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>;
-}
-
-function FacebookIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="currentColor"><path d="M14 21v-8h2.8l.4-3H14V8.1c0-.9.3-1.6 1.7-1.6h1.7V3.8c-.8-.1-1.6-.2-2.4-.2-2.4 0-4 1.4-4 4.1V10H8.5v3H11v8h3Z"/></svg>;
-}
-
 function PolicyBlock({ block }: { block: string }) {
   if (block.startsWith("- ")) {
     return <ul className="list-disc space-y-1 pl-5">{block.split("\n").map((item) => <li key={item}>{item.replace(/^- /, "")}</li>)}</ul>;
@@ -133,11 +125,9 @@ export default function AboutPage() {
             <p className="font-signika text-[9px] uppercase tracking-[0.22em] text-accent-dark/50">Find Us</p>
             <h2 className="mt-4 font-kalnia text-[25px] font-medium md:text-[27px]">Visit the Boutique</h2>
             <div className="mt-5 rounded-xl border border-[#ddd2bf] bg-[#faf7f0] p-5 font-signika text-xs text-accent-dark/65 md:p-6">
-              <a href="https://www.google.com/maps/search/?api=1&query=181+Adelaide+Terrace+Perth+WA+6004" target="_blank" rel="noreferrer" className="flex items-start gap-3 text-accent-dark"><span className="text-primary"><LocationIcon /></span><span><strong className="block font-medium">181 Adelaide Terrace</strong><span className="mt-1 block text-accent-dark/55">Perth WA 6004</span></span></a>
-              <a href="https://wa.me/61413681344" target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 whitespace-nowrap text-primary"><ChatIcon /> WhatsApp Us</a>
-              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-primary">
-                <span className="inline-flex items-center gap-2 whitespace-nowrap"><InstagramIcon /> Instagram</span>
-                <span className="inline-flex items-center gap-2 whitespace-nowrap"><FacebookIcon /> Facebook</span>
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-primary">
+                <a href="https://www.google.com/maps/search/?api=1&query=181+Adelaide+Terrace+Perth+WA+6004" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 whitespace-nowrap"><LocationIcon /><span className="font-medium">181 Adelaide Terrace, Perth WA 6004</span></a>
+                <a href="https://wa.me/61413681344" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 whitespace-nowrap"><ChatIcon /> WhatsApp Us</a>
               </div>
             </div>
           </section>

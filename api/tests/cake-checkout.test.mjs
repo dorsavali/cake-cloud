@@ -35,9 +35,12 @@ test("pickup times follow opening hours in 15-minute intervals",()=>{
   assert.throws(()=>pickupInstant(value,"Australia/Perth"),/opening hours/);
  }
 });
-test("rush boundaries",()=>{
- const now=1000000000000;
- for(const [h,available,fee] of [[-1,false,0],[24,false,0],[47.999,false,0],[48,true,0],[72,true,0]])assert.deepEqual(rushFee(now+h*3600000,now),{available,fee});
+test("pickup availability uses Perth calendar days instead of elapsed hours",()=>{
+ const now=Date.parse("2026-11-24T15:30:00Z"); // 23:30 on 24 November in Perth
+ const pickup=date=>pickupInstant(`${date}T06:30`,"Australia/Perth");
+ assert.deepEqual(rushFee(pickup("2026-11-25"),now,"Australia/Perth"),{available:false,fee:0});
+ assert.deepEqual(rushFee(pickup("2026-11-26"),now,"Australia/Perth"),{available:true,fee:0});
+ assert.deepEqual(rushFee(pickup("2026-11-27"),now,"Australia/Perth"),{available:true,fee:0});
 });
 test("quote endpoint calculates from the Square catalog",async t=>{
  let call=0;

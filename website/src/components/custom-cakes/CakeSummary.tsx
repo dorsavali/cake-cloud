@@ -56,7 +56,7 @@ export function CakeSummaryDetails({ summary, pickup, availability, quote, unava
           </div>
         )}
       </dl>
-      {unavailable && <p className={errorText} role="alert">Please choose a pickup time at least 48 hours from now.</p>}
+      {unavailable && <p className={errorText} role="alert">Please choose a pickup date at least 2 calendar days from today.</p>}
     </div>
   );
 }

@@ -164,9 +164,25 @@ export function pickupInstant(value: unknown, zone: string) {
   return instant;
 }
 
-export function rushFee(instant: number, now = Date.now()) {
-  const hours = (instant - now) / 3600000;
-  return { available: hours >= 48, fee: 0 };
+function localDate(timestamp: number, zone: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(timestamp));
+}
+
+function addCalendarDays(value: string, days: number) {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export function rushFee(instant: number, now = Date.now(), zone = "Australia/Perth") {
+  const firstPickupDate = addCalendarDays(localDate(now, zone), 2);
+  return { available: localDate(instant, zone) >= firstPickupDate, fee: 0 };
 }
 
 export async function handleCakeCheckout(request: Request, env: ApiEnv) {
@@ -177,8 +193,9 @@ export async function handleCakeCheckout(request: Request, env: ApiEnv) {
     const body = object(JSON.parse(raw));
     const { subtotal } = await getPricedCake(env, body.cake);
     if (!body.pickup) return json({ subtotal, total: subtotal, fee: 0 });
-    const instant = pickupInstant(body.pickup, env.SQUARE_TIMEZONE || "Australia/Perth");
-    const { available, fee } = rushFee(instant);
+    const timeZone = env.SQUARE_TIMEZONE || "Australia/Perth";
+    const instant = pickupInstant(body.pickup, timeZone);
+    const { available, fee } = rushFee(instant, Date.now(), timeZone);
     return json({ subtotal, fee, total: subtotal + fee, available, expires: Date.now() + 15 * 60000 });
   } catch (error) {
     if (error instanceof CakeError) {

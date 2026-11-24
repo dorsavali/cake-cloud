@@ -209,11 +209,13 @@ export function DailyMenuCatalog() {
       setLoadState("loading");
       const params = new URLSearchParams({
         view: "cards",
-        category: category.squareName,
         sort: sortValues[sortBy],
         page: String(currentPage),
         limit: String(pageSize),
       });
+      if (category.squareName) {
+        params.set("category", category.squareName);
+      }
       if (category.filter === "drink-types" && productType) {
         params.set("productType", productType);
       }

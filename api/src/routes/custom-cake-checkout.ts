@@ -36,8 +36,8 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
     const timeZone=env.SQUARE_TIMEZONE || "Australia/Perth";
     const instant=pickupInstant(body.pickup,timeZone);
     const pickupLocal=String(body.pickup).replace("T", " ");
-    const {available}=rushFee(instant);
-    if(!available)return json({error:"Please choose a pickup time at least 48 hours from now."},409);
+    const {available}=rushFee(instant,Date.now(),timeZone);
+    if(!available)return json({error:"Please choose a pickup date at least 2 calendar days from today."},409);
     const total=subtotal;
     // Expected total is only a change guard, never the source of the price.
     if(body.expectedTotal!==total)return json({error:"The total changed. Return to Summary to review the updated price."},409);
