@@ -74,7 +74,7 @@ function ModifierDropdown({
         />
       </button>
       <div
-        aria-hidden={!open}
+        inert={!open}
         className={`grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none ${open ? "grid-rows-[1fr] opacity-100" : "pointer-events-none grid-rows-[0fr] opacity-0"}`}
       >
         <div className="min-h-0 overflow-hidden">

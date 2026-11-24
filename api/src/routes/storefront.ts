@@ -122,7 +122,9 @@ export async function handleProductCards(
     const products = await getInventoryAwareDailyMenu(env);
     const categoryProducts = products.filter(
       (product) =>
-        !category || product.categories.some((name) => normalize(name) === category),
+        category
+          ? product.categories.some((name) => normalize(name) === category)
+          : product.dailyMenuCategories.length > 0,
     );
 
     // Facets are computed from the whole category (ignoring the active allergen
