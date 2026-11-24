@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 
 import { HostCheckout } from "@/components/host";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Host Checkout | Cake Cloud",
+export const metadata: Metadata = createPageMetadata({
+  title: "Host Checkout",
   description: "Complete your Cake Cloud host package request.",
-};
+  path: "/host/checkout",
+  noIndex: true,
+});
 
 export default function HostCheckoutPage() {
   return (

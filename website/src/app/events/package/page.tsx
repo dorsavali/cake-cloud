@@ -3,11 +3,14 @@ import { Suspense } from "react";
 
 import { HostPackageDetail, HostRequestBar } from "@/components/host";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Host package | Cake Cloud",
+export const metadata: Metadata = createPageMetadata({
+  title: "Host Package",
   description: "Explore a ready-to-book Cake Cloud hosting package.",
-};
+  path: "/host/package",
+  noIndex: true,
+});
 
 export default function HostPackagePage() {
   return (

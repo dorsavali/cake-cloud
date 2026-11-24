@@ -3,12 +3,14 @@ import type { Metadata } from "next";
 import { HostPackages, HostRequestBar } from "@/components/host";
 import { Footer } from "@/components/layout/footer";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Host with Cake Cloud",
+export const metadata: Metadata = createPageMetadata({
+  title: "Event Hosting & Packages",
   description:
     "Ready-to-book Cake Cloud packages for corporate events, celebrations, and gatherings.",
-};
+  path: "/host",
+});
 
 export default function EventsPage() {
   return (

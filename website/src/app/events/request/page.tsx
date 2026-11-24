@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 
 import { HostRequestReview } from "@/components/host";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Review Request | Cake Cloud",
+export const metadata: Metadata = createPageMetadata({
+  title: "Review Request",
   description: "Review your Cake Cloud host package request.",
-};
+  path: "/host/request",
+  noIndex: true,
+});
 
 export default function HostRequestPage() {
   return (

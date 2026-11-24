@@ -3,11 +3,13 @@ import { Suspense } from "react";
 
 import { CakeBaseSelector } from "@/components/custom-cakes/CakeBaseSelector";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Custom Cakes | Cake Cloud",
-  description: "Choose a base for your personalised Cake Cloud celebration cake.",
-};
+export const metadata: Metadata = createPageMetadata({
+  title: "Custom Cakes",
+  description: "Design a personalised Cake Cloud celebration cake for birthdays, weddings, and special occasions in Perth.",
+  path: "/custom-cakes",
+});
 
 export default function CustomCakesPage() {
   return (

@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 
 import { ClubRegistration } from "@/components/club/ClubRegistration";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Cake Cloud Club",
+export const metadata: Metadata = createPageMetadata({
+  title: "Club Membership",
   description: "Join the Cake Cloud Club and receive your personal member number.",
-};
+  path: "/club",
+});
 
 export default function ClubPage() {
   return (

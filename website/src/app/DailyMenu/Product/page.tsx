@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import {
@@ -5,6 +6,14 @@ import {
   ProductDetailLoading,
 } from "@/components/daily-menu/product-detail";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Daily Menu Item",
+  description: "View details and options for a Cake Cloud daily menu item.",
+  path: "/DailyMenu/Product",
+  noIndex: true,
+});
 
 export default function ProductPage() {
   return (

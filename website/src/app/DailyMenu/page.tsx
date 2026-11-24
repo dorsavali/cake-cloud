@@ -1,9 +1,18 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { DailyMenuCatalog } from "@/components/daily-menu/catalog";
 import { MenuIntro } from "@/components/daily-menu/menu-intro";
 import { Footer } from "@/components/layout/footer";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Daily Menu",
+  description:
+    "Browse today's fresh cakes, pastries, drinks and boutique bakes available from Cake Cloud in East Perth.",
+  path: "/DailyMenu",
+});
 
 export default function DailyMenuPage() {
   return (

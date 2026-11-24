@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 
 import { Footer } from "@/components/layout/footer";
 import { DesktopHeader, MobileHeader } from "@/components/layout/header";
+import { createPageMetadata } from "@/lib/seo";
 
 import { policySource } from "./policy-source";
 import { PolicyAccordion } from "./PolicyAccordion";
 
-export const metadata: Metadata = {
-  title: "About | Cake Cloud",
+export const metadata: Metadata = createPageMetadata({
+  title: "About",
   description: "Discover Cake Cloud Boutique, our story, and how to order from our East Perth kitchen.",
-};
+  path: "/about",
+});
 
 const steps = [
   { icon: "🛒", title: "1. Browse", text: "Explore our fresh bakes or custom cake options." },
