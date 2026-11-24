@@ -18,40 +18,71 @@ type ProductsResponse = {
   }>;
 };
 
+type RecommendationsState = "loading" | "ready" | "empty" | "error";
+
 export function ProductRecommendations() {
   const [products, setProducts] = useState<RecommendedProduct[]>([]);
-  const [error, setError] = useState(false);
+  const [state, setState] = useState<RecommendationsState>("loading");
 
   useEffect(() => {
-    const loadProducts = async () => {
+    let cancelled = false;
+    let retryTimer: number | undefined;
+
+    const loadProducts = async (attempt = 0) => {
+      let status: number | null = null;
       try {
         const response = await fetch(apiUrl("/api/recommendations"));
+        status = response.status;
         if (!response.ok) throw new Error("Recommendations request failed");
 
         const data = (await response.json()) as ProductsResponse;
+        const items = data.items ?? [];
+        if (!Array.isArray(items)) {
+          throw new Error("Invalid recommendations response");
+        }
+        if (cancelled) return;
+
+        if (items.length === 0) {
+          setProducts([]);
+          setState("empty");
+          return;
+        }
+
         setProducts(
-          (data.items ?? []).map((item) => ({
+          items.map((item) => ({
             ...item,
             image: item.image,
             imageAlt: item.name,
             href: `/DailyMenu/Product?id=${encodeURIComponent(item.id)}`,
           })),
         );
-        setError(false);
-      } catch {
+        setState("ready");
+      } catch (error) {
+        console.error("[recommendations] failed", { status, error });
+        if (cancelled) return;
+
+        if (attempt === 0) {
+          retryTimer = window.setTimeout(() => void loadProducts(1), 3_000);
+          return;
+        }
+
         if (process.env.NODE_ENV === "development") {
           setProducts(recommendedProducts);
-          setError(false);
+          setState(recommendedProducts.length > 0 ? "ready" : "empty");
         } else {
-          setError(true);
+          setState("error");
         }
       }
     };
 
     void loadProducts();
-    const intervalId = window.setInterval(loadProducts, 30_000);
-    return () => window.clearInterval(intervalId);
+    return () => {
+      cancelled = true;
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+    };
   }, []);
+
+  if (state === "empty") return null;
 
   return (
     <section
@@ -76,27 +107,29 @@ export function ProductRecommendations() {
           </Link>
         </div>
 
-        {error && (
+        {state === "error" && (
           <p className="mt-6 font-signika text-base text-accent-dark">
             Products are temporarily unavailable.
           </p>
         )}
 
-        {!error && products.length === 0 && (
+        {state === "loading" && (
           <p className="mt-6 font-signika text-base text-accent-dark">
             Loading products...
           </p>
         )}
 
-        <div className="mt-5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mt-4">
-          <ul className="flex w-max gap-2.5 lg:grid lg:w-full lg:grid-cols-4 lg:gap-4">
-            {products.slice(0, 4).map((product) => (
-              <li key={product.id} className="lg:min-w-0">
-                <ProductCard product={product} />
-              </li>
-            ))}
-          </ul>
-        </div>
+        {state === "ready" && (
+          <div className="mt-5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mt-4">
+            <ul className="flex w-max gap-2.5 lg:grid lg:w-full lg:grid-cols-4 lg:gap-4">
+              {products.slice(0, 4).map((product) => (
+                <li key={product.id} className="lg:min-w-0">
+                  <ProductCard product={product} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </section>
   );

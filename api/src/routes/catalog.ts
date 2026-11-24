@@ -18,9 +18,10 @@ const catalogCache = new Map<
   { expiresAt: number; items: CatalogItems }
 >();
 const catalogRequests = new Map<string, Promise<CatalogItems>>();
-// Webhooks normally refresh this immediately. The short TTL is a fallback for
-// missed deliveries and keeps local development consistent with production.
-const catalogCacheDurationMs = 135 * 60 * 1000;
+// Each Worker isolate has its own in-memory cache. Webhooks and cron only
+// refresh one isolate, so this TTL is the maximum staleness for every other
+// data center. Keep it short.
+const catalogCacheDurationMs = 2 * 60 * 1000;
 
 const catalogCacheKey = (env: ApiEnv, variant = "full") =>
   `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${variant}`;
