@@ -1,4 +1,6 @@
 import { json, methodNotAllowed } from "../http/json.js";
+import { sendSubmissionNotifications } from "../email/submission-notifications.js";
+import { emailSendingEnabled } from "../email/smtp.js";
 import { isAustralianPhone, normalizeSquareAddress } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 
@@ -51,6 +53,7 @@ export async function handleHostEnquiry(request: Request, env: ApiEnv): Promise<
     if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate) || date.toISOString().slice(0, 10) !== preferredDate || date < tomorrow) throw new Error("Choose a future preferred date.");
 
     const id = crypto.randomUUID();
+    const reference = `HE-${id.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
     const logo = form.get("logo");
     let logoKey: string | null = null;
     if (logo instanceof File && logo.size > 0) {
@@ -65,6 +68,7 @@ export async function handleHostEnquiry(request: Request, env: ApiEnv): Promise<
 
     const record = {
       id,
+      reference,
       type: "complex-hosting-enquiry",
       fullName,
       email,
@@ -75,12 +79,47 @@ export async function handleHostEnquiry(request: Request, env: ApiEnv): Promise<
       logoKey,
       submittedAt: new Date().toISOString(),
       status: "new",
-      notification: { status: "pending_configuration", recipient: null },
+      notification: {
+        status: emailSendingEnabled(env) ? "pending" : "disabled",
+        sentAt: undefined as string | undefined,
+        error: undefined as string | undefined,
+      },
     };
     const recordKey = `host-enquiries/${id}/enquiry.json`;
     await env.CAKE_BRIEFS.put(recordKey, JSON.stringify(record), { httpMetadata: { contentType: "application/json" } });
     stored.push(recordKey);
-    return json({ received: true, reference: id }, 201);
+    if (emailSendingEnabled(env)) {
+      try {
+        await sendSubmissionNotifications(env, {
+          reference,
+          submissionType: "Host / event enquiry",
+          customerName: fullName,
+          customerEmail: email,
+          customerPhone: phone,
+          requestedDate: preferredDate,
+          details: [
+            ...(address ? [{ label: "Address", value: address }] : []),
+            ...(notes ? [{ label: "Notes", value: notes }] : []),
+            { label: "Logo uploaded", value: logoKey ? "Yes" : "No" },
+          ],
+          storagePath: `host-enquiries/${id}/`,
+        });
+        record.notification = { status: "sent", sentAt: new Date().toISOString(), error: undefined };
+      } catch (notificationError) {
+        record.notification = {
+          status: "failed",
+          sentAt: undefined,
+          error: notificationError instanceof Error ? notificationError.message : "Email delivery failed",
+        };
+      }
+      await env.CAKE_BRIEFS.put(recordKey, JSON.stringify(record), { httpMetadata: { contentType: "application/json" } });
+    }
+
+    return json({
+      received: true,
+      reference,
+      confirmationEmailSent: record.notification.status === "sent",
+    }, 201);
   } catch (error) {
     if (stored.length) await env.CAKE_BRIEFS.delete(stored).catch(() => undefined);
     return json({ error: error instanceof Error ? error.message : "Could not submit enquiry." }, 400);

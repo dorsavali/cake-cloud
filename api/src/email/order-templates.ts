@@ -33,6 +33,17 @@ export type OrderEmailAddresses = {
   orders: string;
 };
 
+export type SubmissionEmailData = {
+  reference: string;
+  submissionType: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  requestedDate: string;
+  details: Array<{ label: string; value: string }>;
+  storagePath: string;
+};
+
 const publicContactEmail = "info@cake-cloud.com.au";
 const emailFooterLogoUrl = "https://cake-cloud.com.au/images/logo/logoEmail.png";
 const googleReviewsUrl =
@@ -186,6 +197,88 @@ function emailDocument({
     </table>
   </body>
 </html>`;
+}
+
+const submissionDetails = (data: SubmissionEmailData, includeContact: boolean) => `
+  <table class="detail-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin-bottom:24px;background:#f3eee5;border:1px solid #ded1b8;border-radius:12px;">
+    <tr><td class="detail-card-cell" style="padding:18px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        ${detailRow("Reference", data.reference)}
+        ${detailRow("Request type", data.submissionType)}
+        ${detailRow("Requested date", data.requestedDate)}
+        ${includeContact ? detailRow("Customer", data.customerName) : ""}
+        ${includeContact ? detailRow("Email", data.customerEmail) : ""}
+        ${includeContact ? detailRow("Phone", data.customerPhone) : ""}
+        ${data.details.map(({ label, value }) => detailRow(label, value)).join("")}
+      </table>
+    </td></tr>
+  </table>`;
+
+export function renderCustomerSubmissionEmail(
+  data: SubmissionEmailData,
+  addresses: OrderEmailAddresses,
+): RenderedEmail {
+  const subject = `We received your Cake Cloud request ${data.reference}`;
+  const html = emailDocument({
+    preheader: `Your ${data.submissionType.toLowerCase()} has been received.`,
+    eyebrow: "Request received",
+    title: `Thank you, ${data.customerName}!`,
+    introduction: "We have received your request. Our team will review the details and contact you within 24 hours to discuss the next steps.",
+    supportEmail: publicContactEmail,
+    content: `${submissionDetails(data, false)}
+      <div class="email-note" style="margin-top:26px;padding:17px 19px;border-left:4px solid #b9a47a;background:#f3eee5;font-size:13px;line-height:21px;color:#6f696f;">
+        Please keep reference <strong style="color:#464248;">${escapeHtml(data.reference)}</strong> handy if you contact us about this request.
+      </div>`,
+  });
+  const text = [
+    `We received your Cake Cloud request ${data.reference}`,
+    `Hi ${data.customerName}, our team will contact you within 24 hours.`,
+    `Request type: ${data.submissionType}`,
+    `Requested date: ${data.requestedDate}`,
+    `Reference: ${data.reference}`,
+    `Need help? Email ${publicContactEmail}`,
+  ].join("\n");
+  return {
+    subject,
+    from: `Cake Cloud <${addresses.hello}>`,
+    replyTo: publicContactEmail,
+    to: data.customerEmail,
+    html,
+    text,
+  };
+}
+
+export function renderInternalSubmissionEmail(
+  data: SubmissionEmailData,
+  addresses: OrderEmailAddresses,
+): RenderedEmail {
+  const subject = `New ${data.submissionType} ${data.reference} · ${data.customerName}`;
+  const html = emailDocument({
+    preheader: `${data.customerName} submitted a new ${data.submissionType.toLowerCase()}.`,
+    eyebrow: "New website request",
+    title: `${data.reference} needs review`,
+    introduction: "A new website request has been saved. Reply to this email to contact the customer.",
+    supportEmail: publicContactEmail,
+    content: `${submissionDetails(data, true)}
+      <div class="email-note" style="margin-top:26px;padding:17px 19px;border-left:4px solid #b9a47a;background:#fff8ea;font-size:13px;line-height:21px;color:#6f696f;">
+        <strong style="display:block;padding-bottom:5px;color:#464248;">R2 storage</strong>${escapeHtml(data.storagePath)}
+      </div>`,
+  });
+  const text = [
+    `New ${data.submissionType} ${data.reference}`,
+    `${data.customerName} · ${data.customerEmail} · ${data.customerPhone}`,
+    `Requested date: ${data.requestedDate}`,
+    ...data.details.map(({ label, value }) => `${label}: ${value}`),
+    `R2 storage: ${data.storagePath}`,
+  ].join("\n");
+  return {
+    subject,
+    from: `Cake Cloud Orders <${addresses.orders}>`,
+    replyTo: data.customerEmail,
+    to: addresses.orders,
+    html,
+    text,
+  };
 }
 
 const orderTable = (data: OrderEmailData) => `

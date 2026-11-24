@@ -1,4 +1,6 @@
 import { json, methodNotAllowed } from "../http/json.js";
+import { sendSubmissionNotifications } from "../email/submission-notifications.js";
+import { emailSendingEnabled } from "../email/smtp.js";
 import { isAustralianPhone } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 
@@ -53,6 +55,7 @@ export async function handleCakeBrief(request: Request, env: ApiEnv): Promise<Re
     const files = form.getAll("images").filter((item): item is File => item instanceof File && item.size > 0);
     if (files.length > maxFiles) throw new Error("Upload up to " + maxFiles + " images");
     const id = crypto.randomUUID();
+    const reference = `FC-${id.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
     for (let index = 0; index < files.length; index++) {
       const file = files[index];
       if (file.size > maxFileBytes || !allowedTypes.has(file.type)) throw new Error("Images must be JPG, PNG, or WebP and no larger than 5 MB each");
@@ -63,11 +66,60 @@ export async function handleCakeBrief(request: Request, env: ApiEnv): Promise<Re
       await env.CAKE_BRIEFS.put(key, bytes.buffer, { httpMetadata: { contentType: file.type }, customMetadata: { originalName: file.name.slice(0, 200) } });
       stored.push(key);
     }
-    const record = { id, description, inspiration, pickupDate, name, email, phone, images: [...stored], submittedAt: new Date().toISOString(), status: "new" };
+    const record = {
+      id,
+      reference,
+      description,
+      inspiration,
+      pickupDate,
+      name,
+      email,
+      phone,
+      images: [...stored],
+      submittedAt: new Date().toISOString(),
+      status: "new",
+      notification: {
+        status: emailSendingEnabled(env) ? "pending" : "disabled",
+        sentAt: undefined as string | undefined,
+        error: undefined as string | undefined,
+      },
+    };
     const recordKey = "briefs/" + id + "/brief.json";
     await env.CAKE_BRIEFS.put(recordKey, JSON.stringify(record), { httpMetadata: { contentType: "application/json" } });
     stored.push(recordKey);
-    return json({ received: true, reference: id }, 201);
+
+    if (emailSendingEnabled(env)) {
+      try {
+        await sendSubmissionNotifications(env, {
+          reference,
+          submissionType: "Custom cake brief",
+          customerName: name,
+          customerEmail: email,
+          customerPhone: phone,
+          requestedDate: pickupDate,
+          details: [
+            { label: "Cake brief", value: description },
+            ...(inspiration ? [{ label: "Inspiration", value: inspiration }] : []),
+            { label: "Reference images", value: String(files.length) },
+          ],
+          storagePath: `briefs/${id}/`,
+        });
+        record.notification = { status: "sent", sentAt: new Date().toISOString(), error: undefined };
+      } catch (notificationError) {
+        record.notification = {
+          status: "failed",
+          sentAt: undefined,
+          error: notificationError instanceof Error ? notificationError.message : "Email delivery failed",
+        };
+      }
+      await env.CAKE_BRIEFS.put(recordKey, JSON.stringify(record), { httpMetadata: { contentType: "application/json" } });
+    }
+
+    return json({
+      received: true,
+      reference,
+      confirmationEmailSent: record.notification.status === "sent",
+    }, 201);
   } catch (error) {
     if (stored.length) await env.CAKE_BRIEFS.delete(stored).catch(() => undefined);
     return json({ error: error instanceof Error ? error.message : "Could not submit brief." }, 400);

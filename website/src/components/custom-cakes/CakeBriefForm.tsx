@@ -108,6 +108,7 @@ export function CakeBriefForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const minimumDate = useSyncExternalStore(
@@ -164,8 +165,14 @@ export function CakeBriefForm() {
             </p>
 
             <p className="mt-2 font-signika text-sm text-[#a8976d]">
-              Ref #FC-{reference.slice(0, 5).toUpperCase()}
+              Ref #{reference}
             </p>
+
+            {!confirmationEmailSent ? (
+              <p className="mt-3 max-w-md font-signika text-sm leading-6 text-[#a83831]">
+                We could not send the confirmation email. Please save your reference and contact us if you need help.
+              </p>
+            ) : null}
 
             <Link
               href="/"
@@ -236,6 +243,7 @@ export function CakeBriefForm() {
                   setEmail("");
                   setPhone("");
                   setFiles([]);
+                  setConfirmationEmailSent(data.confirmationEmailSent !== false);
                   setReference(data.reference);
                 } catch (submitError) {
                   setError(

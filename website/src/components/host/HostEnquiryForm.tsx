@@ -12,6 +12,7 @@ export function HostEnquiryForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
   const [fileName, setFileName] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const tomorrow = useMemo(() => {
@@ -31,8 +32,9 @@ export function HostEnquiryForm() {
     setError("");
     try {
       const response = await fetch(apiUrl("/api/host/enquiry"), { method: "POST", body: data });
-      const result = await response.json() as { received?: boolean; reference?: string; error?: string };
+      const result = await response.json() as { received?: boolean; reference?: string; confirmationEmailSent?: boolean; error?: string };
       if (!response.ok || !result.received || !result.reference) throw new Error(result.error || "Could not submit enquiry.");
+      setConfirmationEmailSent(result.confirmationEmailSent !== false);
       setReference(result.reference);
       form.reset();
       setFileName("");
@@ -51,8 +53,9 @@ export function HostEnquiryForm() {
       {reference ? (
         <div className="mt-8 rounded-2xl border border-[#d8cdb8] bg-[#f8f3e9] p-7 font-signika text-accent-dark/70">
           <h2 className="font-kalnia text-2xl text-accent-dark">Request received</h2>
-          <p className="mt-3">Thank you. Your enquiry has been saved and Cake Cloud can follow it using reference:</p>
-          <p className="mt-2 font-medium text-primary">{reference}</p>
+          <p className="mt-3">Thank you. Your enquiry has been received. Our team will review the details and contact you within 24 hours.</p>
+          <p className="mt-2 font-medium text-primary">Ref #{reference}</p>
+          {!confirmationEmailSent ? <p className="mt-3 text-sm leading-6 text-[#a83831]">We could not send the confirmation email. Please save your reference and contact us if you need help.</p> : null}
           <Link href="/host" className="mt-6 inline-flex min-h-11 items-center rounded-full bg-primary px-6 font-kalnia text-sm text-white">Back to Packages</Link>
         </div>
       ) : (

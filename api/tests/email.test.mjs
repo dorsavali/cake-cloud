@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 import {
   renderCustomerOrderEmail,
+  renderCustomerSubmissionEmail,
   renderInternalOrderEmail,
+  renderInternalSubmissionEmail,
 } from "../dist/email/order-templates.js";
 import { buildMimeMessage } from "../dist/email/smtp.js";
 import { formatPickup, sendPaidOrderNotifications } from "../dist/email/order-notifications.js";
@@ -61,6 +63,31 @@ test("email MIME contains both text and HTML alternatives", () => {
   assert.match(mime, /Content-Type: text\/plain; charset=UTF-8/);
   assert.match(mime, /Content-Type: text\/html; charset=UTF-8/);
   assert.match(mime, /To: buyer@example\.com/);
+});
+
+test("form submissions email Orders and confirm the customer from Hello", () => {
+  const submission = {
+    reference: "FC-12AB34CD",
+    submissionType: "Custom cake brief",
+    customerName: "Test Customer",
+    customerEmail: "customer@example.com",
+    customerPhone: "+61 412 345 678",
+    requestedDate: "2026-12-01",
+    details: [{ label: "Reference images", value: "2" }],
+    storagePath: "briefs/test-id/",
+  };
+  const customer = renderCustomerSubmissionEmail(submission, addresses);
+  const internal = renderInternalSubmissionEmail(submission, addresses);
+
+  assert.equal(customer.from, "Cake Cloud <customer-orders@example.test>");
+  assert.equal(customer.to, "customer@example.com");
+  assert.match(customer.subject, /FC-12AB34CD/);
+  assert.match(customer.text, /contact you within 24 hours/i);
+  assert.equal(internal.from, "Cake Cloud Orders <internal-orders@example.test>");
+  assert.equal(internal.to, "internal-orders@example.test");
+  assert.equal(internal.replyTo, "customer@example.com");
+  assert.match(internal.subject, /FC-12AB34CD/);
+  assert.match(internal.text, /briefs\/test-id\//);
 });
 
 test("paid-order notifications do nothing until email is enabled", async (t) => {
