@@ -147,7 +147,7 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
           const selectedNames = list.modifiers
             .filter((modifier) => modifierIds.includes(modifier.id))
             .map((modifier) => modifier.name);
-          return [list.name, selectedNames.join(", ") || "None"];
+          return [list.name, selectedNames.join(", ") || "Default"];
         }),
       );
       const expectsSize = product.variations.length > 1 || isDrink || isWholeCake;

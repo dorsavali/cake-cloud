@@ -1104,7 +1104,16 @@ export async function getCakeDesigns(env: ApiEnv): Promise<CakeDesign[]> {
                 : null;
             return [];
           }
-          const modifiers = (data.modifiers ?? [])
+          const modifiers = [...(data.modifiers ?? [])]
+            .sort((left, right) => {
+              const leftData =
+                left.modifier_data ??
+                (left.id ? modifierObjects.get(left.id)?.modifier_data : undefined);
+              const rightData =
+                right.modifier_data ??
+                (right.id ? modifierObjects.get(right.id)?.modifier_data : undefined);
+              return (leftData?.ordinal ?? 0) - (rightData?.ordinal ?? 0);
+            })
             .map((modifier) =>
               modifierFor(
                 modifier,

@@ -305,7 +305,7 @@ export function ProductDetail() {
       const selectedNames = list.modifiers
         .filter((modifier) => selectedIds.includes(modifier.id))
         .map((modifier) => modifier.name);
-      return [list.name, selectedNames.join(", ") || "None"];
+      return [list.name, selectedNames.join(", ") || "Default"];
     }),
   );
   const modifierSelectionValid = product.modifierLists.every((list) => {

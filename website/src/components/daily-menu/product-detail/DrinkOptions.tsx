@@ -56,7 +56,7 @@ function ModifierDropdown({
   const selectedLabel = selectedModifiers.length > 0
     ? selectedModifiers.map(optionLabel).join(", ")
     : optional
-      ? "None"
+      ? "Default"
       : `Choose ${list.name}`;
 
   return (
@@ -99,7 +99,7 @@ function ModifierDropdown({
                 <span aria-hidden="true" className="w-5 shrink-0 text-primary">
                   {selectedModifierIds.length === 0 ? "✓" : ""}
                 </span>
-                <span>None</span>
+                <span>Default</span>
               </button>
             ) : null}
             {list.modifiers.map((modifier) => {
@@ -205,7 +205,7 @@ export function ModifierOptions({
               className="peer sr-only"
             />
             <span className="block rounded-full border border-luxury-accent px-5 py-2 text-xs transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary lg:text-sm">
-              None
+              Default
             </span>
           </label>
         ) : null}
