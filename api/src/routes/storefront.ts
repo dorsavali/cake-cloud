@@ -1,8 +1,5 @@
 import { json, methodNotAllowed } from "../http/json.js";
-import {
-  refreshStorefrontInventory,
-  stripInventoryMetadata,
-} from "../services/square.js";
+import { stripInventoryMetadata } from "../services/square.js";
 import { getCachedCatalogItems } from "./catalog.js";
 import type { ApiEnv } from "../types/env.js";
 
@@ -31,10 +28,8 @@ const dailyMenuCatalogOptions = {
   variant: "daily-menu",
 } as const;
 
-const getInventoryAwareDailyMenu = async (env: ApiEnv) => {
-  const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
-  return refreshStorefrontInventory(env, products);
-};
+const getInventoryAwareDailyMenu = (env: ApiEnv) =>
+  getCachedCatalogItems(env, dailyMenuCatalogOptions);
 
 const recommendedRank = (product: CatalogProduct) => {
   const raw = product.customAttributes.recommended_rank;

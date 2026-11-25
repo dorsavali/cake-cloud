@@ -16,6 +16,18 @@ export interface ApiEnv {
   SMTP_HELLO_PASSWORD?: string;
   SMTP_ORDERS_USERNAME?: string;
   SMTP_ORDERS_PASSWORD?: string;
+  CF_VERSION_METADATA?: { id: string };
+  STOREFRONT_CACHE?: {
+    get(key: string): Promise<{ etag: string; json<T>(): Promise<T> } | null>;
+    put(
+      key: string,
+      value: string,
+      options: {
+        onlyIf: { etagMatches: string } | { etagDoesNotMatch: string };
+        httpMetadata: { contentType: string };
+      },
+    ): Promise<object | null>;
+  };
   CAKE_BRIEFS?: {
     put(key: string, value: ReadableStream | ArrayBuffer | string, options?: { httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }): Promise<unknown>;
     delete(keys: string | string[]): Promise<void>;

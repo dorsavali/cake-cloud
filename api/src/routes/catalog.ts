@@ -13,152 +13,110 @@ type CatalogOptions = {
   variant?: string;
 };
 
-const catalogCache = new Map<
-  string,
-  { expiresAt: number; items: CatalogItems }
->();
-const catalogRequests = new Map<string, Promise<CatalogItems>>();
-// Each Worker isolate has its own in-memory cache. Webhooks and cron only
-// refresh one isolate, so this TTL is the maximum staleness for every other
-// data center. Keep it short.
-const catalogCacheDurationMs = 2 * 60 * 1000;
+type CatalogSnapshot = {
+  refreshedAt: number;
+  workerVersion?: string;
+  items: CatalogItems;
+};
 
-const catalogCacheKey = (env: ApiEnv, variant = "full") =>
-  `${env.SQUARE_ENVIRONMENT}:${env.SQUARE_APPLICATION_ID}:${variant}`;
+type SnapshotBucket = NonNullable<ApiEnv["STOREFRONT_CACHE"]>;
 
-function setCatalogCache(
-  env: ApiEnv,
-  items: CatalogItems,
-  options: CatalogOptions = {},
-): void {
-  catalogCache.set(catalogCacheKey(env, options.variant), {
-    expiresAt: Date.now() + catalogCacheDurationMs,
-    items,
-  });
+const snapshotKey = (env: ApiEnv) =>
+  `storefront/v1/${env.SQUARE_ENVIRONMENT}/${encodeURIComponent(env.SQUARE_APPLICATION_ID)}/${encodeURIComponent(env.SQUARE_LOCATION_ID ?? "all")}/menu.json`;
+
+async function readSnapshot(bucket: SnapshotBucket, key: string) {
+  const object = await bucket.get(key);
+  if (!object) return null;
+  const snapshot = await object.json<CatalogSnapshot>();
+  if (!Array.isArray(snapshot.items) || !Number.isFinite(snapshot.refreshedAt)) {
+    throw new Error("Invalid storefront snapshot");
+  }
+  return { snapshot, etag: object.etag };
 }
 
-async function refreshCatalogVariant(
+async function refreshSnapshot(
   env: ApiEnv,
-  options: CatalogOptions = {},
+  bucket: SnapshotBucket,
+  key: string,
+  current: Awaited<ReturnType<typeof readSnapshot>>,
+  reason: "startup" | "scheduled" | "change",
 ): Promise<CatalogItems> {
-  const cacheKey = catalogCacheKey(env, options.variant);
-  const existingRequest = catalogRequests.get(cacheKey);
-  if (existingRequest) return existingRequest;
+  const workerVersion = env.CF_VERSION_METADATA?.id;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (reason === "startup" && current && current.snapshot.workerVersion === workerVersion) {
+      return current.snapshot.items;
+    }
 
-  const request = getCatalogItems(env, options)
-    .then((items) => {
-      setCatalogCache(env, items, options);
-      return items;
-    })
-    .finally(() => catalogRequests.delete(cacheKey));
-
-  catalogRequests.set(cacheKey, request);
-  return request;
+    const items = await getCatalogItems(env, {
+      includePopularity: reason !== "change" || !current,
+      requireInventory: true,
+    });
+    if (reason === "change" && current) {
+      const previousScores = Object.fromEntries(
+        current.snapshot.items.map(({ id, popularityScore }) => [id, popularityScore]),
+      );
+      for (const item of items) item.popularityScore = previousScores[item.id] ?? 0;
+    }
+    const snapshot: CatalogSnapshot = {
+      refreshedAt: Date.now(),
+      workerVersion,
+      items,
+    };
+    const saved = await bucket.put(key, JSON.stringify(snapshot), {
+      onlyIf: current ? { etagMatches: current.etag } : { etagDoesNotMatch: "*" },
+      httpMetadata: { contentType: "application/json" },
+    });
+    if (saved) return items;
+    current = await readSnapshot(bucket, key);
+  }
+  throw new Error("Concurrent storefront refresh did not settle");
 }
 
 export async function getCachedCatalogItems(
   env: ApiEnv,
   options: CatalogOptions = {},
 ): Promise<CatalogItems> {
-  const cacheKey = catalogCacheKey(env, options.variant);
-  const cached = catalogCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.items;
+  const bucket = env.STOREFRONT_CACHE;
+  if (!bucket) return getCatalogItems(env, options);
 
-  const existingRequest = catalogRequests.get(cacheKey);
-  if (existingRequest) {
-    try {
-      return await existingRequest;
-    } catch (error) {
-      if (cached) {
-        console.error("[catalog] Refresh failed, serving stale cache", {
-          variant: options.variant ?? "full",
-          cacheAgeSeconds: Math.round(
-            (Date.now() - (cached.expiresAt - catalogCacheDurationMs)) / 1000,
-          ),
-          error: error instanceof Error ? error.message : String(error),
-        });
-        return cached.items;
-      }
-      throw error;
-    }
-  }
-
-  const request = getCatalogItems(env, options)
-    .then((items) => {
-      setCatalogCache(env, items, options);
-      return items;
-    })
-    .finally(() => catalogRequests.delete(cacheKey));
-
-  catalogRequests.set(cacheKey, request);
+  const key = snapshotKey(env);
+  const current = await readSnapshot(bucket, key);
   try {
-    return await request;
+    return await refreshSnapshot(env, bucket, key, current, "startup");
   } catch (error) {
-    // An expired response is safer than taking the storefront offline while
-    // Square is temporarily unavailable. Scheduled/webhook refreshes will
-    // replace it atomically as soon as a fresh request succeeds.
-    if (cached) {
-      console.error("[catalog] Refresh failed, serving stale cache", {
-        variant: options.variant ?? "full",
-        cacheAgeSeconds: Math.round(
-          (Date.now() - (cached.expiresAt - catalogCacheDurationMs)) / 1000,
-        ),
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return cached.items;
-    }
-    throw error;
+    if (!current) throw error;
+    console.error("[catalog] Refresh failed, serving stale cache", {
+      variant: options.variant ?? "full",
+      cacheAgeSeconds: Math.round((Date.now() - current.snapshot.refreshedAt) / 1000),
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return current.snapshot.items;
   }
+}
+
+async function refreshCatalog(
+  env: ApiEnv,
+  reason: "scheduled" | "change",
+): Promise<void> {
+  const bucket = env.STOREFRONT_CACHE;
+  if (!bucket) {
+    await getCatalogItems(env, { includePopularity: reason === "scheduled" });
+    return;
+  }
+  const key = snapshotKey(env);
+  await refreshSnapshot(env, bucket, key, await readSnapshot(bucket, key), reason);
 }
 
 export async function refreshCatalogCache(env: ApiEnv): Promise<void> {
-  const items = await refreshCatalogVariant(env);
-
-  // The scheduled full refresh can also warm the lightweight daily-menu
-  // variant without making a second request to Square.
-  setCatalogCache(env, items, {
-    includePopularity: false,
-    variant: "daily-menu",
-  });
-  setCatalogCache(env, items, {
-    includeInventory: false,
-    includePopularity: false,
-    variant: "host",
-  });
+  await refreshCatalog(env, "scheduled");
 }
 
-export async function refreshDailyMenuCatalogCache(
-  env: ApiEnv,
-): Promise<void> {
-  await refreshCatalogVariant(env, {
-    includePopularity: false,
-    variant: "daily-menu",
-  });
-}
-
-export async function refreshStorefrontCatalogCaches(
-  env: ApiEnv,
-): Promise<void> {
-  const items = await getCatalogItems(env, {
-    includePopularity: false,
-  });
-  setCatalogCache(env, items, {
-    includePopularity: false,
-    variant: "daily-menu",
-  });
-  setCatalogCache(env, items, {
-    includeInventory: false,
-    includePopularity: false,
-    variant: "host",
-  });
+export async function refreshStorefrontCatalogCaches(env: ApiEnv): Promise<void> {
+  await refreshCatalog(env, "change");
 }
 
 export async function refreshHostCatalogCache(env: ApiEnv): Promise<void> {
-  await refreshCatalogVariant(env, {
-    includeInventory: false,
-    includePopularity: false,
-    variant: "host",
-  });
+  await refreshCatalog(env, "change");
 }
 
 export async function handleCatalogItems(

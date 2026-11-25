@@ -28,7 +28,10 @@
     ]
   },
   "triggers": {
-    "crons": ["0 */2 * * *"]
+    "crons": ["0 */2 * * *", "0 0,12 * * *"]
+  },
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
   },
   "observability": {
     "enabled": true
@@ -37,6 +40,10 @@
     "mode": "smart"
   },
   "r2_buckets": [
+    {
+      "binding": "STOREFRONT_CACHE",
+      "bucket_name": "cake-cloud-briefs"
+    },
     {
       "binding": "CAKE_BRIEFS",
       "bucket_name": "cake-cloud-briefs"
