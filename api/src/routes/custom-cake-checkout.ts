@@ -4,7 +4,8 @@ import { CakeError, getPricedCake, pickupInstant, rushFee } from "./cake-checkou
 import type { ApiEnv } from "../types/env.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import { orderNumberFromSeed } from "../services/order-number.js";
-import { getSquareBaseUrl, isSquareCheckoutEnabled } from "../services/square.js";
+import { getCakeDesigns, isSquareCheckoutEnabled } from "../services/square.js";
+import { squareFetch } from "../services/square-api.js";
 import {
   isAustralianPhone,
   normalizeSquareAddress,
@@ -31,7 +32,7 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
     if(!name || name.length>100 || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new CakeError("Enter a valid full name and email.");
     if(!isAustralianPhone(phone))throw new CakeError("Enter a valid Australian phone number.");
     if(typeof body.idempotencyKey!=="string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey))throw new CakeError("Invalid checkout request");
-    const priced=await getPricedCake(env, body.cake);
+    const priced=await getPricedCake(env, body.cake, getCakeDesigns);
     const subtotal=priced.subtotal;
     const timeZone=env.SQUARE_TIMEZONE || "Australia/Perth";
     const instant=pickupInstant(body.pickup,timeZone);
@@ -105,10 +106,8 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
       payment_note:`${orderNumber} · Cake Cloud custom cake · ${name}`,
     };
     try {
-      const response=await fetch(`${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/online-checkout/payment-links`,{
-        method:"POST",
-        headers:{authorization:"Bearer "+env.SQUARE_ACCESS_TOKEN,"Square-Version":"2026-08-19","content-type":"application/json"},
-        body:JSON.stringify(payload),signal:AbortSignal.timeout(20000),
+      const response=await squareFetch(env, "/v2/online-checkout/payment-links", {
+        method: "POST", body: payload, timeoutMs: 20_000,
       });
       const data=await response.json() as {payment_link?:{id?:string;url?:string;order_id?:string};errors?:{code?:string}[]};
       if(!response.ok || !data.payment_link?.id || !data.payment_link.url || !data.payment_link.order_id)return json({error:"Square could not create the checkout page. Please retry.",code:data.errors?.[0]?.code},502);

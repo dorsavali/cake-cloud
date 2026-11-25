@@ -1,7 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 
 import { configureCheckoutReturn } from "../services/checkout-return.js";
-import { reconcileOrder, squareApi } from "../services/payment-verification.js";
+import { reconcileOrder } from "../services/payment-verification.js";
+import { squareApi, squareFetch } from "../services/square-api.js";
 import { getFreshInventoryByVariation } from "../services/square.js";
 import type { ApiEnv } from "../types/env.js";
 import { expireDailyInventoryReservation } from "./daily-inventory-expiration.js";
@@ -151,18 +152,10 @@ export class DailyInventoryReservations extends DurableObject<ApiEnv> {
     let current = reservation;
     if (!current.paymentLink) {
       if (!current.checkoutPayload) throw new Error("Checkout payload is unavailable");
-      const baseUrl = this.env.SQUARE_ENVIRONMENT === "production"
-        ? "https://connect.squareup.com"
-        : "https://connect.squareupsandbox.com";
-      const response = await fetch(`${baseUrl}/v2/online-checkout/payment-links`, {
+      const response = await squareFetch(this.env, "/v2/online-checkout/payment-links", {
         method: "POST",
-        headers: {
-          authorization: `Bearer ${this.env.SQUARE_ACCESS_TOKEN}`,
-          "Square-Version": "2026-08-19",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(current.checkoutPayload),
-        signal: AbortSignal.timeout(20_000),
+        body: current.checkoutPayload,
+        timeoutMs: 20_000,
       });
       const data = await response.json().catch(() => ({})) as {
         payment_link?: SquarePaymentLink;
@@ -228,20 +221,10 @@ export class DailyInventoryReservations extends DurableObject<ApiEnv> {
       (stored) => ({ ...stored, status: "deleting-link" }),
     );
 
-    const baseUrl = this.env.SQUARE_ENVIRONMENT === "production"
-      ? "https://connect.squareup.com"
-      : "https://connect.squareupsandbox.com";
-    const response = await fetch(
-      `${baseUrl}/v2/online-checkout/payment-links/${encodeURIComponent(reservation.paymentLink.id)}`,
-      {
-        method: "DELETE",
-        headers: {
-          authorization: `Bearer ${this.env.SQUARE_ACCESS_TOKEN}`,
-          "Square-Version": "2026-08-19",
-          "content-type": "application/json",
-        },
-        signal: AbortSignal.timeout(15_000),
-      },
+    const response = await squareFetch(
+      this.env,
+      `/v2/online-checkout/payment-links/${encodeURIComponent(reservation.paymentLink.id)}`,
+      { method: "DELETE" },
     );
 
     if (response.ok) {

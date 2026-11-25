@@ -3,16 +3,6 @@ import { stripInventoryMetadata } from "../services/square.js";
 import { getCachedCatalogItems } from "./catalog.js";
 import type { ApiEnv } from "../types/env.js";
 
-const responseCacheHeaders = {
-  "cache-control": "public, max-age=30, s-maxage=60, stale-while-revalidate=60",
-};
-const inventoryResponseHeaders = {
-  // Inventory is already cached on the API side and refreshed by Square
-  // webhooks. Browser/CDN caching here would keep sold-out cards stale even
-  // after the server cache has the new stock count.
-  "cache-control": "no-store",
-};
-
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
@@ -23,13 +13,8 @@ const toPublicProduct = <T extends CatalogProduct>(product: T) => {
 };
 
 type CatalogProduct = Awaited<ReturnType<typeof getCachedCatalogItems>>[number];
-const dailyMenuCatalogOptions = {
-  includePopularity: false,
-  variant: "daily-menu",
-} as const;
-
 const getInventoryAwareDailyMenu = (env: ApiEnv) =>
-  getCachedCatalogItems(env, dailyMenuCatalogOptions);
+  getCachedCatalogItems(env);
 
 const recommendedRank = (product: CatalogProduct) => {
   const raw = product.customAttributes.recommended_rank;
@@ -65,11 +50,11 @@ export async function handleCategories(
   if (request.method !== "GET") return methodNotAllowed();
 
   try {
-    const products = await getCachedCatalogItems(env, dailyMenuCatalogOptions);
+    const products = await getCachedCatalogItems(env);
     const categories = [...new Set(products.flatMap((product) => product.dailyMenuCategories))]
       .filter(Boolean)
       .sort((left, right) => left.localeCompare(right));
-    return json({ categories }, 200, responseCacheHeaders);
+    return json({ categories });
   } catch (error) {
     console.error("[api] Categories endpoint failed", {
       error: error instanceof Error ? error.message : String(error),
@@ -89,7 +74,7 @@ export async function handleProductDetail(
     const products = await getInventoryAwareDailyMenu(env);
     const product = products.find((item) => item.id === productId);
     if (!product) return json({ error: "Product not found" }, 404);
-    return json({ product: toPublicProduct(product) }, 200, inventoryResponseHeaders);
+    return json({ product: toPublicProduct(product) });
   } catch (error) {
     console.error("[api] Product detail endpoint failed", {
       productId,
@@ -184,8 +169,6 @@ export async function handleProductCards(
         totalPages: Math.max(1, Math.ceil(filtered.length / limit)),
         allergenOptions,
       },
-      200,
-      inventoryResponseHeaders,
     );
   } catch (error) {
     console.error("[api] Products endpoint failed", {
@@ -214,8 +197,6 @@ export async function handleInventorySnapshot(
           available: product.available,
         })),
       },
-      200,
-      inventoryResponseHeaders,
     );
   } catch (error) {
     console.error("[api] Inventory endpoint failed", {
@@ -254,8 +235,6 @@ export async function handleRecommendations(
 
     return json(
       { items: picks.map(toCard) },
-      200,
-      inventoryResponseHeaders,
     );
   } catch (error) {
     console.error("[api] Recommendations endpoint failed", {

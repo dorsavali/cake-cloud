@@ -14,14 +14,12 @@ export default {
     return (await handleApiRequest(request, env)) ?? env.ASSETS.fetch(request);
   },
   scheduled(
-    controller: { cron: string },
+    _controller: unknown,
     env: WorkerEnv,
     context: WorkerExecutionContext,
   ): void {
     context.waitUntil(
-      controller.cron === "0 0,12 * * *"
-        ? refreshCatalogCache(env)
-        : refreshCakeCatalogCache(env),
+      Promise.all([refreshCatalogCache(env), refreshCakeCatalogCache(env)]),
     );
   },
 };

@@ -1,5 +1,6 @@
 import { json, methodNotAllowed } from "../http/json.js";
-import { getCatalogItemSnapshots, getSquareBaseUrl, isSquareCheckoutEnabled } from "../services/square.js";
+import { getCatalogItemSnapshots, isSquareCheckoutEnabled } from "../services/square.js";
+import { squareFetch } from "../services/square-api.js";
 import { expectedValue, signValue } from "../services/payment-verification.js";
 import { configureCheckoutReturn } from "../services/checkout-return.js";
 import { orderNumberFromSeed } from "../services/order-number.js";
@@ -15,10 +16,7 @@ import {
   upsertSquareCustomer,
 } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
-import {
-  getCachedCatalogItems,
-  refreshHostCatalogCache,
-} from "./catalog.js";
+import { getCachedCatalogItems } from "./catalog.js";
 
 const maxRequestBytes = 100_000;
 const normalize = (value: string) => value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
@@ -63,13 +61,9 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     try { requested = JSON.parse(text(form, "items", 10_000, true)); } catch { throw new Error("Invalid package request."); }
     if (!Array.isArray(requested) || requested.length < 1 || requested.length > 20) throw new Error("Your package request is empty or too large.");
 
-    // Client storage supplies only identifiers and counts. Names, prices and
-    // limits are always reloaded from the authoritative Square catalog here.
-    const products = await getCachedCatalogItems(env, {
-      includeInventory: false,
-      includePopularity: false,
-      variant: "host",
-    });
+    // Client input supplies identifiers and counts. Verify current prices and
+    // availability against Square before creating a payment link.
+    const products = await getCachedCatalogItems(env);
     const hostProducts = products.filter((product) => {
       const section = normalize(String(product.customAttributes.site_section ?? ""));
       return section === "host" || product.categories.some((category) => {
@@ -127,11 +121,6 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
         liveProduct.price.amount < 1 ||
         changed
       ) {
-        await refreshHostCatalogCache(env).catch((error) => {
-          console.error("[square] Host catalog refresh after checkout mismatch failed", {
-            error: error instanceof Error ? error.message : String(error),
-          });
-        });
         throw new Error("A package changed or is no longer available. Review your request and try again.");
       }
       const requestedQuantities = new Map(
@@ -251,7 +240,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
       checkout_options: { redirect_url: returnUrl.href, allow_tipping: false, ask_for_shipping_address: false, enable_coupon: false, enable_loyalty: false },
       payment_note: `${reference} · Cake Cloud host request · ${fullName}\n${orderNote}`,
     };
-    const response = await fetch(`${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/online-checkout/payment-links`, { method: "POST", headers: { authorization: `Bearer ${env.SQUARE_ACCESS_TOKEN}`, "Square-Version": "2026-08-19", "content-type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(20_000) });
+    const response = await squareFetch(env, "/v2/online-checkout/payment-links", { method: "POST", body: payload, timeoutMs: 20_000 });
     const data = await response.json() as { payment_link?: { id?: string; url?: string; order_id?: string }; errors?: Array<{ code?: string }> };
     if (!response.ok) {
       const code = data.errors?.[0]?.code;

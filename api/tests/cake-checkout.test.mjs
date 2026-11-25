@@ -1,7 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {priceCake,pickupInstant,rushFee,handleCakeCheckout} from "../dist/routes/cake-checkout.js";
-import {cake,cakeCatalogResponse,cakeDesigns} from "./helpers/cake-fixture.mjs";
+import {cake,cakeDesigns} from "./helpers/cake-fixture.mjs";
 const env={SQUARE_ACCESS_TOKEN:"test-only-secret",SQUARE_APPLICATION_ID:"app",SQUARE_LOCATION_ID:"loc",SQUARE_ENVIRONMENT:"sandbox",SQUARE_TIMEZONE:"Australia/Perth"};
 const req=(path,body)=>new Request("http://localhost/api/cake/"+path,{method:"POST",body:JSON.stringify(body)});
 test("server owns prices and validates options",()=>{
@@ -42,16 +42,22 @@ test("pickup availability uses Perth calendar days instead of elapsed hours",()=
  assert.deepEqual(rushFee(pickup("2026-11-26"),now,"Australia/Perth"),{available:true,fee:0});
  assert.deepEqual(rushFee(pickup("2026-11-27"),now,"Australia/Perth"),{available:true,fee:0});
 });
-test("quote endpoint calculates from the Square catalog",async t=>{
- let call=0;
- t.mock.method(globalThis,"fetch",async (_url,options)=>cakeCatalogResponse(call++===0?{body:JSON.stringify({object_types:["CATEGORY"]})}:options));
+test("quote endpoint calculates from the R2 catalog without contacting Square",async t=>{
+ const fetch = t.mock.method(globalThis,"fetch",async ()=>{ throw new Error("Unexpected Square request"); });
+ const quoteEnv = {
+  ...env,
+  STOREFRONT_CACHE: {
+   get: async () => ({etag:"test",json:async ()=>({items:cakeDesigns,refreshedAt:Date.now()})}),
+  },
+ };
  const future=new Date(Date.now()+96*3600000);
  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Australia/Perth",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(future);
  const part=type=>parts.find(entry=>entry.type===type).value;
  const pickup=`${part("year")}-${part("month")}-${part("day")}T10:00`;
- const response=await handleCakeCheckout(req("quote",{cake,pickup,total:1}),env);
+ const response=await handleCakeCheckout(req("quote",{cake,pickup,total:1}),quoteEnv);
  const quote=await response.json();
  assert.equal(quote.total,14500);
  assert.equal(quote.available,true);
  assert.equal(quote.token,undefined);
+ assert.equal(fetch.mock.callCount(),0);
 });

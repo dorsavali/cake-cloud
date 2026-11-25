@@ -1,5 +1,6 @@
 import type { ApiEnv } from "../types/env.js";
-import { signValue, squareApi } from "./payment-verification.js";
+import { signValue } from "./payment-verification.js";
+import { squareApi } from "./square-api.js";
 
 type PaymentLink = {
   id: string;
@@ -14,7 +15,7 @@ export async function configureCheckoutReturn(env: ApiEnv, linkId: string, order
   const returnUrl = new URL(returnPath, env.WEBSITE_ORIGIN || "http://localhost:3000");
   // A fragment avoids sending the read-only receipt token in HTTP referrers.
   returnUrl.hash = new URLSearchParams({ orderId, token: await signValue(env, "receipt:" + orderId) }).toString();
-  const path = "/v2/online-checkout/payment-links/" + encodeURIComponent(linkId);
+  const path = `/v2/online-checkout/payment-links/${encodeURIComponent(linkId)}` as const;
   for (let attempt = 0; attempt < 3; attempt++) {
     const { payment_link: link } = await squareApi<{ payment_link: PaymentLink }>(env, path);
     if (!link || link.id !== linkId || link.order_id !== orderId) throw new Error("Checkout order mismatch");

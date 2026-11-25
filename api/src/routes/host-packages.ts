@@ -6,10 +6,6 @@ import {
   hostPackagePriceUnit,
 } from "../services/host-package.js";
 
-const responseCacheHeaders = {
-  "cache-control": "public, max-age=30, s-maxage=60, stale-while-revalidate=60",
-};
-
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
@@ -56,11 +52,7 @@ export async function handleHostPackages(
   if (request.method !== "GET") return methodNotAllowed();
 
   try {
-    const products = await getCachedCatalogItems(env, {
-      includeInventory: false,
-      includePopularity: false,
-      variant: "host",
-    });
+    const products = await getCachedCatalogItems(env);
     const packages = products
       .filter((product) => {
         const section = normalize(
@@ -115,7 +107,7 @@ export async function handleHostPackages(
       ...new Set(packages.flatMap((hostPackage) => hostPackage.categories)),
     ].sort((left, right) => left.localeCompare(right));
 
-    return json({ packages, categories }, 200, responseCacheHeaders);
+    return json({ packages, categories });
   } catch {
     return json({ error: "Host packages are temporarily unavailable" }, 502);
   }

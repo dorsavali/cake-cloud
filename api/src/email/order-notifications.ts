@@ -1,5 +1,5 @@
 import type { ApiEnv } from "../types/env.js";
-import { squareApi } from "../services/payment-verification.js";
+import { squareApi } from "../services/square-api.js";
 import {
   renderCustomerOrderEmail,
   renderInternalOrderEmail,

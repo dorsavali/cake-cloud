@@ -105,7 +105,6 @@ export function DailyMenuCatalog() {
   const [totalPages, setTotalPages] = useState(1);
   const productsStartRef = useRef<HTMLDivElement>(null);
   const lastInventoryRefreshRef = useRef(0);
-  const hasTrackedInventoryRef = useRef(false);
   const activeCategory =
     categories.find((item) => item.id === selectedCategory)?.id ??
     categories.find((item) => item.id === requestedCategory)?.id ??
@@ -157,7 +156,6 @@ export function DailyMenuCatalog() {
 
     const refreshVisibleInventory = async () => {
       if (document.visibilityState !== "visible") return;
-      if (!hasTrackedInventoryRef.current) return;
 
       const now = Date.now();
       if (now - lastInventoryRefreshRef.current < 15_000) return;
@@ -233,9 +231,6 @@ export function DailyMenuCatalog() {
         if (!isActive) return;
 
         const nextProducts = data.items ?? [];
-        hasTrackedInventoryRef.current = nextProducts.some(
-          (product) => product.stock !== null,
-        );
         setProducts(nextProducts);
         setTotalResults(data.total ?? 0);
         setTotalPages(data.totalPages ?? 1);

@@ -1,4 +1,5 @@
 import type { ApiEnv } from "../types/env.js";
+import { squareFetch } from "./square-api.js";
 
 type SquareMoney = { amount?: number; currency?: string };
 type SquareModifierOverride = {
@@ -209,20 +210,10 @@ type SearchOrdersResponse = {
   cursor?: string;
 };
 
-export const getSquareBaseUrl = (environment: ApiEnv["SQUARE_ENVIRONMENT"]) =>
-  environment === "production"
-    ? "https://connect.squareup.com"
-    : "https://connect.squareupsandbox.com";
-
 export const isSquareCheckoutEnabled = (env: ApiEnv) =>
   env.SQUARE_ENVIRONMENT === "sandbox" ||
   (env.SQUARE_ENVIRONMENT === "production" &&
     env.SQUARE_PRODUCTION_CHECKOUT_ENABLED === "true");
-
-const squareHeaders = (env: ApiEnv) => ({
-  authorization: `Bearer ${env.SQUARE_ACCESS_TOKEN}`,
-  "square-version": "2026-08-19",
-});
 
 const squareResponseLog = (stage: string, response: Response) => ({
   stage,
@@ -246,23 +237,16 @@ async function getInventoryByVariation(
 
   try {
     do {
-      const response = await fetch(
-        `${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/inventory/counts/batch-retrieve`,
-        {
-          method: "POST",
-          headers: {
-            ...squareHeaders(env),
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            catalog_object_ids: variationIds,
-            location_ids: [env.SQUARE_LOCATION_ID],
-            states: ["IN_STOCK"],
-            limit: 1000,
-            cursor,
-          }),
+      const response = await squareFetch(env, "/v2/inventory/counts/batch-retrieve", {
+        method: "POST",
+        body: {
+          catalog_object_ids: variationIds,
+          location_ids: [env.SQUARE_LOCATION_ID],
+          states: ["IN_STOCK"],
+          limit: 1000,
+          cursor,
         },
-      );
+      });
 
       if (!response.ok) {
         console.error(
@@ -302,10 +286,7 @@ export async function getFreshInventoryByVariation(
 }
 
 async function getPopularityByVariation(env: ApiEnv): Promise<Map<string, number>> {
-  const baseUrl = getSquareBaseUrl(env.SQUARE_ENVIRONMENT);
-  const locationsResponse = await fetch(`${baseUrl}/v2/locations`, {
-    headers: squareHeaders(env),
-  });
+  const locationsResponse = await squareFetch(env, "/v2/locations");
   if (!locationsResponse.ok) {
     console.error(
       "[square] Locations request failed",
@@ -328,13 +309,9 @@ async function getPopularityByVariation(env: ApiEnv): Promise<Map<string, number
     let cursor: string | undefined;
 
     do {
-      const response = await fetch(`${baseUrl}/v2/orders/search`, {
+      const response = await squareFetch(env, "/v2/orders/search", {
         method: "POST",
-        headers: {
-          ...squareHeaders(env),
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
           location_ids: locationBatch,
           cursor,
           limit: 1000,
@@ -353,7 +330,7 @@ async function getPopularityByVariation(env: ApiEnv): Promise<Map<string, number
               sort_order: "DESC",
             },
           },
-        }),
+        },
       });
 
       if (!response.ok) {
@@ -466,12 +443,7 @@ export async function getCatalogItems(
     });
     if (cursor) params.set("cursor", cursor);
 
-    const response = await fetch(
-      `${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/catalog/list?${params}`,
-      {
-        headers: squareHeaders(env),
-      },
-    );
+    const response = await squareFetch(env, `/v2/catalog/list?${params}`);
 
     if (!response.ok) {
       console.error(
@@ -867,16 +839,11 @@ export async function getCakeDesigns(env: ApiEnv): Promise<CakeDesign[]> {
     throw new Error("Square access token is not configured");
   }
 
-  const searchUrl = `${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/catalog/search`;
   const search = async (
     body: Record<string, unknown>,
     stage: string,
   ): Promise<SquareCatalogListResponse> => {
-    const response = await fetch(searchUrl, {
-      method: "POST",
-      headers: { ...squareHeaders(env), "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    const response = await squareFetch(env, "/v2/catalog/search", { method: "POST", body });
     if (!response.ok) {
       console.error(
         "[square] Cake catalog request failed",
@@ -1242,18 +1209,10 @@ export async function getCatalogItemSnapshots(
   const uniqueIds = [...new Set(itemIds)].filter(Boolean);
   if (uniqueIds.length === 0) return new Map();
 
-  const response = await fetch(
-    `${getSquareBaseUrl(env.SQUARE_ENVIRONMENT)}/v2/catalog/batch-retrieve`,
-    {
-      method: "POST",
-      headers: squareHeaders(env),
-      body: JSON.stringify({
-        object_ids: uniqueIds,
-        include_related_objects: false,
-      }),
-      signal: AbortSignal.timeout(15_000),
-    },
-  );
+  const response = await squareFetch(env, "/v2/catalog/batch-retrieve", {
+    method: "POST",
+    body: { object_ids: uniqueIds, include_related_objects: false },
+  });
   if (!response.ok) {
     console.error(
       "[square] Checkout catalog validation failed",

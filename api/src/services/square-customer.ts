@@ -1,4 +1,5 @@
 import type { ApiEnv } from "../types/env.js";
+import { squareFetch } from "./square-api.js";
 
 type SquareCustomer = {
   id?: string;
@@ -57,24 +58,11 @@ export type ClubMember = {
 
 async function squareCustomerRequest<T>(
   env: ApiEnv,
-  path: string,
+  path: `/v2/${string}`,
   method: "POST" | "PUT",
   body: unknown,
 ): Promise<T> {
-  const baseUrl =
-    env.SQUARE_ENVIRONMENT === "production"
-      ? "https://connect.squareup.com"
-      : "https://connect.squareupsandbox.com";
-  const response = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers: {
-      authorization: `Bearer ${env.SQUARE_ACCESS_TOKEN}`,
-      "Square-Version": "2026-08-19",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15_000),
-  });
+  const response = await squareFetch(env, path, { method, body });
 
   if (!response.ok) {
     const result = (await response.json().catch(() => ({}))) as {

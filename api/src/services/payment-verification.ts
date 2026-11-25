@@ -1,14 +1,9 @@
 import type { ApiEnv } from "../types/env.js";
 import { json } from "../http/json.js";
+import { squareApi } from "./square-api.js";
 type Money={amount?:number;currency?:string};
 type Order={id:string;version:number;location_id?:string;reference_id?:string;total_money?:Money;metadata?:Record<string,string>;tenders?:{payment_id?:string;id?:string}[]};
 type Payment={id:string;order_id?:string;location_id?:string;status?:string;amount_money?:Money;refunded_money?:Money};
-export async function squareApi<T>(env:ApiEnv,path:string,body?:unknown):Promise<T>{
- const r=await fetch((env.SQUARE_ENVIRONMENT==="production"?"https://connect.squareup.com":"https://connect.squareupsandbox.com")+path,{
- method:body?"PUT":"GET",headers:{authorization:"Bearer "+env.SQUARE_ACCESS_TOKEN,"Square-Version":"2026-08-19","content-type":"application/json"},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(15000)});
- if(!r.ok)throw new Error("Square verification unavailable");
- return r.json() as Promise<T>;
-}
 async function hmac(env:ApiEnv){
  return crypto.subtle.importKey("raw",new TextEncoder().encode("cake-verification-v1:"+env.SQUARE_ACCESS_TOKEN),{name:"HMAC",hash:"SHA-256"},false,["sign","verify"]);
 }
@@ -23,7 +18,7 @@ export type VerifiedStatus="pending"|"paid"|"failed"|"review"|"refunded";
 export async function reconcileOrder(env:ApiEnv,orderId:string,paymentHint?:string):Promise<{status:VerifiedStatus;orderId:string;orderNumber?:string;total?:number;currency?:string}|null>{
  // Each invocation reads canonical Square state, so delayed events cannot assert stale payment status.
  for(let retry=0;retry<3;retry++){
-  const {order}=await squareApi<{order:Order}>(env,"/v2/orders/"+encodeURIComponent(orderId));
+  const {order}=await squareApi<{order:Order}>(env,`/v2/orders/${encodeURIComponent(orderId)}`);
   const metadata=order.metadata??{};
   if(!metadata.cc_expected || !metadata.cc_signature)return null; // An unrelated order.
   if(!await validSignature(env,metadata.cc_expected,metadata.cc_signature))return {status:"review",orderId,orderNumber:order.reference_id};
@@ -35,7 +30,7 @@ export async function reconcileOrder(env:ApiEnv,orderId:string,paymentHint?:stri
    const ids=[...new Set([...(order.tenders??[]).map(t=>t.payment_id??t.id),paymentHint].filter((id):id is string=>!!id))];
    let completed=0,invalid=false,failed=false,refunded=false;
    for(const id of ids){
-    const {payment}=await squareApi<{payment:Payment}>(env,"/v2/payments/"+encodeURIComponent(id));
+    const {payment}=await squareApi<{payment:Payment}>(env,`/v2/payments/${encodeURIComponent(id)}`);
     if(payment.order_id!==orderId || payment.location_id!==location){invalid=true;continue;}
     if(payment.status==="COMPLETED"){
      if(payment.amount_money?.amount!==total || payment.amount_money.currency!==currency){invalid=true;continue;}
@@ -48,7 +43,7 @@ export async function reconcileOrder(env:ApiEnv,orderId:string,paymentHint?:stri
   // Persist on the Square order itself, not in process memory.
   if(metadata.cc_status!==status || (verifiedId && metadata.cc_payment!==verifiedId)){
    try{
-    await squareApi(env,"/v2/orders/"+encodeURIComponent(orderId),{idempotency_key:crypto.randomUUID(),order:{version:order.version,location_id:order.location_id,metadata:{...metadata,cc_status:status,...(verifiedId?{cc_payment:verifiedId}:{}),cc_checked:new Date().toISOString()}}});
+    await squareApi(env,`/v2/orders/${encodeURIComponent(orderId)}`,{idempotency_key:crypto.randomUUID(),order:{version:order.version,location_id:order.location_id,metadata:{...metadata,cc_status:status,...(verifiedId?{cc_payment:verifiedId}:{}),cc_checked:new Date().toISOString()}}});
    }catch(error){if(retry<2)continue;throw error;}
   }
   return {status,orderId,orderNumber:reference,total,currency};
@@ -56,7 +51,7 @@ export async function reconcileOrder(env:ApiEnv,orderId:string,paymentHint?:stri
  throw new Error("Verification unavailable");
 }
 export async function reconcilePayment(env:ApiEnv,paymentId:string){
- const {payment}=await squareApi<{payment:Payment}>(env,"/v2/payments/"+encodeURIComponent(paymentId));
+ const {payment}=await squareApi<{payment:Payment}>(env,`/v2/payments/${encodeURIComponent(paymentId)}`);
  if(!payment.order_id)return null;
  return reconcileOrder(env,payment.order_id,payment.id);
 }

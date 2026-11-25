@@ -137,9 +137,10 @@ export function priceCake(cake: Cake, designs: CakeDesign[]): PricedCake {
 export async function getPricedCake(
   env: ApiEnv,
   value: unknown,
+  loadDesigns = getCachedCakeDesigns,
 ): Promise<PricedCake> {
   const cake = parseCake(value);
-  const designs = await getCachedCakeDesigns(env);
+  const designs = await loadDesigns(env);
   return priceCake(cake, designs);
 }
 
