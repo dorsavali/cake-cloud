@@ -314,7 +314,10 @@ async function getInventoryByVariation(
     } while (cursor);
 
     return quantities;
-  } catch {
+  } catch (error) {
+    console.error("[square] Inventory request threw", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }

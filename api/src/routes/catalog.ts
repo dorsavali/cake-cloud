@@ -69,7 +69,16 @@ export async function getCachedCatalogItems(
     try {
       return await existingRequest;
     } catch (error) {
-      if (cached) return cached.items;
+      if (cached) {
+        console.error("[catalog] Refresh failed, serving stale cache", {
+          variant: options.variant ?? "full",
+          cacheAgeSeconds: Math.round(
+            (Date.now() - (cached.expiresAt - catalogCacheDurationMs)) / 1000,
+          ),
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return cached.items;
+      }
       throw error;
     }
   }
@@ -88,7 +97,16 @@ export async function getCachedCatalogItems(
     // An expired response is safer than taking the storefront offline while
     // Square is temporarily unavailable. Scheduled/webhook refreshes will
     // replace it atomically as soon as a fresh request succeeds.
-    if (cached) return cached.items;
+    if (cached) {
+      console.error("[catalog] Refresh failed, serving stale cache", {
+        variant: options.variant ?? "full",
+        cacheAgeSeconds: Math.round(
+          (Date.now() - (cached.expiresAt - catalogCacheDurationMs)) / 1000,
+        ),
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return cached.items;
+    }
     throw error;
   }
 }
