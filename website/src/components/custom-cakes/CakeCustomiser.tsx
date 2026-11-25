@@ -45,6 +45,33 @@ const fieldLabelClassName =
 const fieldControlClassName =
   "min-h-10 w-full min-w-0 rounded-lg border border-[#ddd0b9] bg-[#f5f0e7] px-3 py-2 text-[13px] text-accent-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:text-sm";
 
+function useDismissDropdown(
+  open: boolean,
+  onOpenChange: (open: boolean) => void,
+) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        onOpenChange(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onOpenChange(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onOpenChange, open]);
+
+  return containerRef;
+}
+
 const sizePrice = (amount: number, currency: string) => {
   if (amount === 0) return "Free";
   if (currency === "AUD") {
@@ -66,9 +93,10 @@ function ShapeDropdown({
   onChange: (shape: CakeShape) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useDismissDropdown(open, setOpen);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[#ddd0b9] bg-[#f5f0e7]">
+    <div ref={containerRef} className="overflow-hidden rounded-lg border border-[#ddd0b9] bg-[#f5f0e7]">
       <button
         type="button"
         aria-expanded={open}
@@ -127,8 +155,10 @@ function SizePicker({
   onOpenChange: (open: boolean) => void;
   onChoose: (size: CakeSize) => void;
 }) {
+  const containerRef = useDismissDropdown(open, onOpenChange);
+
   return (
-    <div className="flex min-w-0 flex-col gap-[5px]">
+    <div ref={containerRef} className="flex min-w-0 flex-col gap-[5px]">
       <div className={fieldLabelClassName}>Size</div>
       <div className="overflow-hidden rounded-lg border border-[#ddd0b9] bg-[#f5f0e7]">
         <button
@@ -205,6 +235,7 @@ function AnimatedModifierDropdown({
   onChange: (modifierIds: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useDismissDropdown(open, setOpen);
   const multiple = list.selectionType === "MULTIPLE";
   const selected = list.modifiers.filter((modifier) =>
     selectedIds.includes(modifier.id),
@@ -214,7 +245,7 @@ function AnimatedModifierDropdown({
     : `Choose ${modifierListLabel(list.name)}`;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[#ddd0b9] bg-[#f5f0e7]">
+    <div ref={containerRef} className="overflow-hidden rounded-lg border border-[#ddd0b9] bg-[#f5f0e7]">
       <button
         type="button"
         aria-expanded={open}

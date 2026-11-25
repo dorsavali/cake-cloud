@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { DailyMenuProduct } from "../types";
 
@@ -49,6 +49,7 @@ function ModifierDropdown({
   onChange: (modifierIds: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const singleSelection = list.maxSelected === 1;
   const selectedModifiers = list.modifiers.filter((modifier) =>
     selectedModifierIds.includes(modifier.id),
@@ -59,8 +60,26 @@ function ModifierDropdown({
       ? "Default"
       : `Choose ${list.name}`;
 
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
   return (
-    <div className="overflow-hidden rounded-lg border border-[#ddd0b9] bg-[#f5f0e7]">
+    <div ref={containerRef} className="overflow-hidden rounded-lg border border-[#ddd0b9] bg-[#f5f0e7]">
       <button
         type="button"
         aria-expanded={open}
