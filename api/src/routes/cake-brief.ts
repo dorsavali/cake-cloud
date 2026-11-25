@@ -1,7 +1,7 @@
 import { json, methodNotAllowed } from "../http/json.js";
 import { sendSubmissionNotifications } from "../email/submission-notifications.js";
 import { emailSendingEnabled } from "../email/smtp.js";
-import { isAustralianPhone } from "../services/square-customer.js";
+import { isInternationalPhone, normalizeSquarePhone } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 
 const maxFiles = 3;
@@ -43,14 +43,14 @@ export async function handleCakeBrief(request: Request, env: ApiEnv): Promise<Re
     const pickupDate = field(form, "pickupDate", 10, true);
     const name = field(form, "name", 100, true);
     const email = field(form, "email", 254, true).toLowerCase();
-    const phone = field(form, "phone", 30, true);
+    const phone = normalizeSquarePhone(field(form, "phone", 30, true));
     const pickup = new Date(pickupDate + "T00:00:00Z");
     const tomorrow = new Date();
     tomorrow.setUTCHours(0, 0, 0, 0);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(pickupDate) || pickup.toISOString().slice(0, 10) !== pickupDate || pickup < tomorrow) throw new Error("Choose a future pickup date");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Invalid email");
-    if (!isAustralianPhone(phone)) throw new Error("Enter a valid Australian phone number.");
+    if (!isInternationalPhone(phone)) throw new Error("Enter a valid phone number with country code.");
 
     const files = form.getAll("images").filter((item): item is File => item instanceof File && item.size > 0);
     if (files.length > maxFiles) throw new Error("Upload up to " + maxFiles + " images");

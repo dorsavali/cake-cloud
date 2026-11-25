@@ -6,9 +6,9 @@ import { useRef, useState, useSyncExternalStore } from "react";
 
 import { apiUrl } from "@/lib/api";
 import {
-  defaultAustralianPhone,
-  formatAustralianPhoneInput,
-  isAustralianPhone,
+  defaultInternationalPhone,
+  formatInternationalPhoneInput,
+  isInternationalPhone,
 } from "@/lib/australian-phone";
 import { useDraftState } from "./useDraftState";
 import { draftText } from "./draft-storage";
@@ -102,7 +102,7 @@ export function CakeBriefForm() {
 
   const [email, setEmail] = useDraftState("briefEmail", "", draftText);
 
-  const [phone, setPhone] = useDraftState("briefPhone", defaultAustralianPhone, draftText);
+  const [phone, setPhone] = useDraftState("briefPhone", defaultInternationalPhone, draftText);
 
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -123,7 +123,7 @@ export function CakeBriefForm() {
     pickupDate >= minimumDate &&
     name.trim().length > 0 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
-    isAustralianPhone(phone);
+    isInternationalPhone(phone);
 
   if (reference) {
     return (
@@ -384,9 +384,8 @@ export function CakeBriefForm() {
                   autoComplete="tel"
                   required
                   maxLength={30}
-                  placeholder="+61 4xx xxx xxx"
-                  value={formatAustralianPhoneInput(phone)}
-                  onChange={(event) => setPhone(formatAustralianPhoneInput(event.target.value))}
+                  value={formatInternationalPhoneInput(phone)}
+                  onChange={(event) => setPhone(formatInternationalPhoneInput(event.target.value))}
                 />
               </label>
 

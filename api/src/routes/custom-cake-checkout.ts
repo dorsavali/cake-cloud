@@ -7,7 +7,7 @@ import { orderNumberFromSeed } from "../services/order-number.js";
 import { getCakeDesigns, isSquareCheckoutEnabled } from "../services/square.js";
 import { squareFetch } from "../services/square-api.js";
 import {
-  isAustralianPhone,
+  isInternationalPhone,
   normalizeSquareAddress,
   normalizeSquarePhone,
   SquareCustomerError,
@@ -30,7 +30,7 @@ export async function handleCustomCakeCheckout(request: Request, env: ApiEnv): P
     const phone = normalizeSquarePhone(typeof body.phone === "string" ? body.phone.trim() : "");
     const address = normalizeSquareAddress(body.address);
     if(!name || name.length>100 || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new CakeError("Enter a valid full name and email.");
-    if(!isAustralianPhone(phone))throw new CakeError("Enter a valid Australian phone number.");
+    if(!isInternationalPhone(phone))throw new CakeError("Enter a valid phone number with country code.");
     if(typeof body.idempotencyKey!=="string" || !/^[a-f0-9-]{36}$/i.test(body.idempotencyKey))throw new CakeError("Invalid checkout request");
     const priced=await getPricedCake(env, body.cake, getCakeDesigns);
     const subtotal=priced.subtotal;

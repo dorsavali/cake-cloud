@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { apiUrl } from "@/lib/api";
 import {
-  defaultAustralianPhone,
-  formatAustralianPhoneInput,
-  isAustralianPhone,
+  defaultInternationalPhone,
+  formatInternationalPhoneInput,
+  isInternationalPhone,
 } from "@/lib/australian-phone";
 
 import { money, type CakeConfig, type CakeQuote } from "./cake-types";
@@ -39,7 +39,7 @@ export function CakePayment({ cake, pickup, quote, onBack }: {
 }) {
   const [name, setName] = useDraftState("name", "", draftText);
   const [email, setEmail] = useDraftState("email", "", draftText);
-  const [phone, setPhone] = useDraftState("phone", defaultAustralianPhone, draftText);
+  const [phone, setPhone] = useDraftState("phone", defaultInternationalPhone, draftText);
   const [address, setAddress] = useDraftState("address", "", draftText);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -73,7 +73,7 @@ export function CakePayment({ cake, pickup, quote, onBack }: {
   const attemptPending = savedAttempt !== null;
   const customerValid = name.trim().length > 0
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-    && isAustralianPhone(phone);
+    && isInternationalPhone(phone);
 
   return (
     <main className={pageShell}>
@@ -143,7 +143,7 @@ export function CakePayment({ cake, pickup, quote, onBack }: {
             </div>
             <div>
               <label htmlFor="payer-phone" className={fieldLabel}>Phone <span className={requiredMark}>*</span></label>
-              <input className={inputClass} id="payer-phone" type="tel" inputMode="tel" autoComplete="tel-national" required maxLength={15} placeholder="+61 4xx xxx xxx" value={formatAustralianPhoneInput(phone)} disabled={busy || attemptPending} onChange={(event) => setPhone(formatAustralianPhoneInput(event.target.value))} />
+              <input className={inputClass} id="payer-phone" type="tel" inputMode="tel" autoComplete="tel" required maxLength={30} value={formatInternationalPhoneInput(phone)} disabled={busy || attemptPending} onChange={(event) => setPhone(formatInternationalPhoneInput(event.target.value))} />
               <p className="mt-1 text-[11px] text-accent-dark/50">Saved to your Square customer profile for order management.</p>
             </div>
             <div>

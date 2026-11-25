@@ -24,14 +24,17 @@ export class SquareCustomerError extends Error {}
 export class ClubAlreadyMemberError extends Error {}
 
 export function normalizeSquarePhone(value: string): string {
-  const compact = value.trim().replace(/[\s()-]/g, "");
-  if (/^[1-9]\d{8}$/.test(compact)) return `+61${compact}`;
-  if (/^0\d{9}$/.test(compact)) return `+61${compact.slice(1)}`;
-  return compact;
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  if (trimmed.startsWith("+")) return `+${digits}`;
+  if (digits.startsWith("00")) return `+${digits.slice(2)}`;
+  if (/^[1-9]\d{8}$/.test(digits)) return `+61${digits}`;
+  if (/^0\d{9}$/.test(digits)) return `+61${digits.slice(1)}`;
+  return "";
 }
 
-export function isAustralianPhone(value: string): boolean {
-  return /^\+61\d{9}$/.test(normalizeSquarePhone(value));
+export function isInternationalPhone(value: string): boolean {
+  return /^\+[1-9]\d{6,14}$/.test(normalizeSquarePhone(value));
 }
 
 export function normalizeSquareAddress(value: unknown): string {

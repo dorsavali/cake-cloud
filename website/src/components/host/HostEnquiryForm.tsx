@@ -4,7 +4,7 @@ import Link from "next/link";
 import { type FormEvent, useMemo, useRef, useState } from "react";
 
 import { apiUrl } from "@/lib/api";
-import { defaultAustralianPhone, formatAustralianPhoneInput } from "@/lib/australian-phone";
+import { defaultInternationalPhone, formatInternationalPhoneInput } from "@/lib/australian-phone";
 
 const control = "mt-2 min-h-12 w-full min-w-0 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary";
 
@@ -68,7 +68,7 @@ export function HostEnquiryForm() {
             <input className={control} name="email" type="email" required maxLength={254} autoComplete="email" />
           </label>
           <label className="block text-sm font-medium">Phone <span className="text-[#a83831]">*</span>
-            <input className={control} name="phone" type="tel" inputMode="tel" required maxLength={15} defaultValue={defaultAustralianPhone} placeholder="+61 4xx xxx xxx" autoComplete="tel-national" onInput={(event) => { event.currentTarget.value = formatAustralianPhoneInput(event.currentTarget.value); }} />
+            <input className={control} name="phone" type="tel" inputMode="tel" required maxLength={30} defaultValue={defaultInternationalPhone} autoComplete="tel" onInput={(event) => { event.currentTarget.value = formatInternationalPhoneInput(event.currentTarget.value); }} />
           </label>
           <label className="block text-sm font-medium">Address <span className="font-normal text-accent-dark/55">(optional)</span>
             <input className={control} name="address" type="text" maxLength={500} autoComplete="street-address" />

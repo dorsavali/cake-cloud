@@ -13,7 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { apiUrl } from "@/lib/api";
-import { isAustralianPhone } from "@/lib/australian-phone";
+import { isInternationalPhone } from "@/lib/australian-phone";
 import {
   clearCheckoutAttempt,
   getSavedCheckoutAttempt,
@@ -41,6 +41,7 @@ type CheckoutCustomer = {
   email: string;
   phone: string;
   address: string;
+  notes: string;
 };
 
 type CartContextValue = {
@@ -327,7 +328,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   ) => {
     const customerValid = customer.name.trim().length > 0
       && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim())
-      && isAustralianPhone(customer.phone);
+      && isInternationalPhone(customer.phone);
     if (!items.length || checkoutBusy || !customerValid || !termsAccepted || !allergenAccepted) return;
     setCheckoutBusy(true); setCheckoutError("");
     try {

@@ -224,7 +224,7 @@ export function Footer() {
                 <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-3 lg:gap-5">
                   <span>
                     <span className="block">Mon - Fri</span>
-                    <span className="block whitespace-nowrap">6:30 Am - 5 PM</span>
+                    <span className="block whitespace-nowrap">6:30 am - 5 pm</span>
                   </span>
 
                   <span aria-hidden="true" className="text-accent/70">
@@ -233,7 +233,7 @@ export function Footer() {
 
                   <span>
                     <span className="block">Sat - Sun</span>
-                    <span className="block whitespace-nowrap">8 Am - 4 PM</span>
+                    <span className="block whitespace-nowrap">8 am - 4 pm</span>
                   </span>
                 </div>
               </div>

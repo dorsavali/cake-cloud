@@ -10,7 +10,7 @@ import {
   type DailyInventoryHoldLine,
 } from "../services/daily-inventory-reservations.js";
 import {
-  isAustralianPhone,
+  isInternationalPhone,
   normalizeSquareAddress,
   normalizeSquarePhone,
   upsertSquareCustomer,
@@ -50,7 +50,7 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
   try {
     const raw = await request.text();
     if (raw.length > 20_000) return json({ error: "Request too large" }, 413);
-    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown; orderNumber?: unknown; name?: unknown; email?: unknown; phone?: unknown; address?: unknown; termsAccepted?: unknown; allergenAccepted?: unknown };
+    const body = JSON.parse(raw) as { items?: unknown; idempotencyKey?: unknown; orderNumber?: unknown; name?: unknown; email?: unknown; phone?: unknown; address?: unknown; notes?: unknown; termsAccepted?: unknown; allergenAccepted?: unknown };
     if (body.termsAccepted !== true) throw new Error("Accept the terms and conditions.");
     if (body.allergenAccepted !== true) throw new Error("Accept the allergen and food safety information.");
     if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 30) throw new Error("Your cart is empty or too large.");
@@ -60,9 +60,11 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const phone = normalizeSquarePhone(typeof body.phone === "string" ? body.phone.trim() : "");
     const address = normalizeSquareAddress(body.address);
+    const notes = typeof body.notes === "string" ? body.notes.trim() : "";
     if (!name || name.length > 100) throw new Error("Enter your full name.");
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
-    if (!isAustralianPhone(phone)) throw new Error("Enter a valid Australian phone number.");
+    if (!isInternationalPhone(phone)) throw new Error("Enter a valid phone number with country code.");
+    if (notes.length > 500) throw new Error("Notes must be 500 characters or fewer.");
 
     // Always load authoritative products, prices, and current inventory from Square.
     const products = await getCatalogItems(env, {
@@ -205,7 +207,11 @@ export async function handleCartCheckout(request: Request, env: ApiEnv): Promise
     const firstLineNote = typeof firstLineItem.note === "string" ? firstLineItem.note : "";
     lineItems[0] = {
       ...firstLineItem,
-      note: [`Order: ${body.orderNumber}`, firstLineNote].filter(Boolean).join("\n"),
+      note: [
+        `Order: ${body.orderNumber}`,
+        notes ? `Customer notes: ${notes}` : "",
+        firstLineNote,
+      ].filter(Boolean).join("\n"),
     };
 
     const customerId = await upsertSquareCustomer(

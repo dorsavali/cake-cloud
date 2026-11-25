@@ -1,7 +1,8 @@
 import { json, methodNotAllowed } from "../http/json.js";
 import {
   ClubAlreadyMemberError,
-  isAustralianPhone,
+  isInternationalPhone,
+  normalizeSquarePhone,
   SquareCustomerError,
   upsertClubMember,
 } from "../services/square-customer.js";
@@ -63,7 +64,7 @@ export async function handleClubJoin(
     const firstName = text(body.firstName, "first name", 100);
     const lastName = text(body.lastName, "last name", 100);
     const email = text(body.email, "email address", 254).toLowerCase();
-    const phone = text(body.phone, "phone number", 30);
+    const phone = normalizeSquarePhone(text(body.phone, "phone number", 30));
     const birthday = text(body.birthday, "date of birth", 10);
     const address = text(body.address, "address", 500);
     const idempotencyKey = text(body.idempotencyKey, "submission reference", 64);
@@ -71,8 +72,8 @@ export async function handleClubJoin(
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       throw new Error("Enter a valid email address.");
     }
-    if (!isAustralianPhone(phone)) {
-      throw new Error("Enter a valid Australian phone number.");
+    if (!isInternationalPhone(phone)) {
+      throw new Error("Enter a valid phone number with country code.");
     }
     if (!validBirthday(birthday)) throw new Error("Enter a valid date of birth.");
     if (!/^[0-9a-f-]{36}$/i.test(idempotencyKey)) {

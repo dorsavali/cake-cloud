@@ -4,9 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import {
-  defaultAustralianPhone,
-  formatAustralianPhoneInput,
-  isAustralianPhone,
+  defaultInternationalPhone,
+  formatInternationalPhoneInput,
+  isInternationalPhone,
 } from "@/lib/australian-phone";
 import { useCart } from "./CartProvider";
 import {
@@ -59,8 +59,9 @@ export function CheckoutReview() {
   const orderNumber = identity?.orderNumber ?? "";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState(defaultAustralianPhone);
+  const [phone, setPhone] = useState(defaultInternationalPhone);
   const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [allergenAccepted, setAllergenAccepted] = useState(false);
   const subtotal = items.reduce(
@@ -71,7 +72,7 @@ export function CheckoutReview() {
   const currency = items[0]?.currency ?? "AUD";
   const customerValid = name.trim().length > 0
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-    && isAustralianPhone(phone);
+    && isInternationalPhone(phone);
 
   return (
     <main className="min-h-[calc(100dvh-4rem)] px-4 pb-16 pt-5 text-accent-dark md:px-6 md:pt-6">
@@ -231,9 +232,8 @@ export function CheckoutReview() {
                     autoComplete="tel"
                     required
                     maxLength={30}
-                    placeholder="+61 4xx xxx xxx"
-                    value={formatAustralianPhoneInput(phone)}
-                    onChange={(event) => setPhone(formatAustralianPhoneInput(event.target.value))}
+                    value={formatInternationalPhoneInput(phone)}
+                    onChange={(event) => setPhone(formatInternationalPhoneInput(event.target.value))}
                     className="min-h-11 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 text-base font-normal outline-none focus:border-primary"
                   />
                 </label>
@@ -249,6 +249,20 @@ export function CheckoutReview() {
                     value={address}
                     onChange={(event) => setAddress(event.target.value)}
                     className="min-h-11 rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 text-base font-normal outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="grid gap-1.5 text-sm font-medium">
+                  <span>
+                    Notes{" "}
+                    <span className="font-normal text-accent-dark/55">(optional)</span>
+                  </span>
+                  <textarea
+                    rows={3}
+                    maxLength={500}
+                    placeholder="Preferred pickup time or any other requests..."
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    className="min-h-24 resize-y rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-3 py-2.5 text-base font-normal outline-none placeholder:text-accent-dark/40 focus:border-primary"
                   />
                 </label>
               </div>
@@ -334,6 +348,7 @@ export function CheckoutReview() {
                     email: email.trim(),
                     phone: phone.trim(),
                     address: address.trim(),
+                    notes: notes.trim(),
                   },
                   termsAccepted,
                   allergenAccepted,

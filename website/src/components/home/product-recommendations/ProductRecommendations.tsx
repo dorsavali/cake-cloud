@@ -58,7 +58,6 @@ export function ProductRecommendations() {
         );
         setState("ready");
       } catch (error) {
-        console.error("[recommendations] failed", { status, error });
         if (cancelled) return;
 
         if (attempt === 0) {
@@ -67,9 +66,11 @@ export function ProductRecommendations() {
         }
 
         if (process.env.NODE_ENV === "development") {
+          console.warn("[recommendations] using fallback products", { status, error });
           setProducts(recommendedProducts);
           setState(recommendedProducts.length > 0 ? "ready" : "empty");
         } else {
+          console.error("[recommendations] failed", { status, error });
           setState("error");
         }
       }
@@ -96,7 +97,7 @@ export function ProductRecommendations() {
             id="recommendations-heading"
             className="font-kalnia text-[18px] font-medium leading-6 text-accent-dark lg:text-[24px] lg:leading-8"
           >
-            Our Recommends
+            Our Recommedations
           </h2>
           <Link
             href="/DailyMenu"

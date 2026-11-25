@@ -5,9 +5,9 @@ import { type FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 
 import { apiUrl } from "@/lib/api";
 import {
-  defaultAustralianPhone,
-  formatAustralianPhoneInput,
-  isAustralianPhone,
+  defaultInternationalPhone,
+  formatInternationalPhoneInput,
+  isInternationalPhone,
 } from "@/lib/australian-phone";
 import {
   getHostRequestServerSnapshot,
@@ -24,7 +24,7 @@ function validCheckoutForm(form: HTMLFormElement) {
   return form.checkValidity()
     && String(data.get("fullName") ?? "").trim().length > 0
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(data.get("email") ?? "").trim())
-    && isAustralianPhone(String(data.get("phone") ?? ""));
+    && isInternationalPhone(String(data.get("phone") ?? ""));
 }
 
 export function HostCheckout() {
@@ -111,7 +111,7 @@ export function HostCheckout() {
               <input name="email" type="email" required maxLength={254} autoComplete="email" className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />
             </label>
             <label className="block text-sm font-medium">Phone <span className="text-[#a83831]">*</span>
-              <input name="phone" type="tel" inputMode="tel" required maxLength={15} defaultValue={defaultAustralianPhone} placeholder="+61 4xx xxx xxx" autoComplete="tel-national" onInput={(event) => { event.currentTarget.value = formatAustralianPhoneInput(event.currentTarget.value); }} className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />
+              <input name="phone" type="tel" inputMode="tel" required maxLength={30} defaultValue={defaultInternationalPhone} autoComplete="tel" onInput={(event) => { event.currentTarget.value = formatInternationalPhoneInput(event.currentTarget.value); }} className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />
             </label>
             <label className="block text-sm font-medium">Address <span className="font-normal text-accent-dark/55">(optional)</span>
               <input name="address" type="text" maxLength={500} autoComplete="street-address" className="mt-2 min-h-12 w-full rounded-lg border border-[#d8c49e] bg-[#f8f4ec] px-4 text-base outline-none focus:border-primary" />

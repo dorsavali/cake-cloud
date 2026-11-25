@@ -10,7 +10,7 @@ import {
   parseHostModifierSelections,
 } from "../services/host-package.js";
 import {
-  isAustralianPhone,
+  isInternationalPhone,
   normalizeSquareAddress,
   normalizeSquarePhone,
   upsertSquareCustomer,
@@ -48,7 +48,7 @@ export async function handleHostCheckout(request: Request, env: ApiEnv): Promise
     const idempotencyKey = text(form, "idempotencyKey", 36, true);
     if (!/^[a-f0-9-]{36}$/i.test(idempotencyKey)) throw new Error("Invalid checkout request.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email.");
-    if (!isAustralianPhone(phone)) throw new Error("Enter a valid Australian phone number.");
+    if (!isInternationalPhone(phone)) throw new Error("Enter a valid phone number with country code.");
     if (form.get("termsAccepted") !== "true") throw new Error("Accept the terms and conditions.");
     if (form.get("allergenAccepted") !== "true") throw new Error("Accept the allergen and food safety information.");
     const parsedDate = new Date(`${eventDate}T00:00:00Z`);

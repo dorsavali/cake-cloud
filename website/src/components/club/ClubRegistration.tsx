@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 import { apiUrl } from "@/lib/api";
-import { defaultAustralianPhone, formatAustralianPhoneInput } from "@/lib/australian-phone";
+import { defaultInternationalPhone, formatInternationalPhoneInput } from "@/lib/australian-phone";
 
 type JoinResult = { joined?: boolean; memberCode?: string; error?: string };
 
@@ -62,7 +62,7 @@ export function ClubRegistration() {
         </h1>
         <p className="mt-3 max-w-xl font-signika text-base leading-7 text-accent-dark/68">
           Your details have been saved and you&apos;re now a Cake Cloud Club member.
-          Keep your member number handy.
+          Keep your member number handy. Rewards are coming soon!
         </p>
         <div className="mt-8 min-w-[min(100%,21rem)] rounded-2xl border border-luxury-accent/45 bg-accent/88 px-9 py-7 shadow-[0_12px_34px_rgb(70_66_72_/_7%)]">
           <p className="font-signika text-xs uppercase tracking-[0.22em] text-accent-dark/60">
@@ -88,7 +88,7 @@ export function ClubRegistration() {
         Cake Cloud Club
       </h1>
       <p className="mt-3 max-w-2xl font-signika text-base leading-7 text-accent-dark/68">
-        Join the Cake Cloud Club — it&apos;s free. Fill in your details below and
+        Join the Cake Cloud Club — it&apos;s free! Fill in your details below and
         we&apos;ll give you your personal member number.
       </p>
 
@@ -111,7 +111,7 @@ export function ClubRegistration() {
           </label>
           <label className="block font-signika text-sm font-medium text-accent-dark">
             Phone <span className="text-[#9b4d46]">*</span>
-            <input name="phone" type="tel" inputMode="tel" autoComplete="tel-national" maxLength={15} defaultValue={defaultAustralianPhone} placeholder="+61 4xx xxx xxx" required onInput={(event) => { event.currentTarget.value = formatAustralianPhoneInput(event.currentTarget.value); }} className={`${inputClass} mt-2`} />
+            <input name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={30} defaultValue={defaultInternationalPhone} required onInput={(event) => { event.currentTarget.value = formatInternationalPhoneInput(event.currentTarget.value); }} className={`${inputClass} mt-2`} />
           </label>
         </div>
 

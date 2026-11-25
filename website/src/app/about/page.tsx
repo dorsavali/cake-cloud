@@ -17,7 +17,7 @@ const steps = [
   { icon: "🛒", title: "1. Browse", text: "Explore our fresh bakes or custom cake options." },
   { icon: "✏️", title: "2. Customise", text: "Pick your size, flavours, and decorations." },
   { icon: "💳", title: "3. Pay", text: "Secure online payment — no surprises." },
-  { icon: "🎂", title: "4. Collect", text: "Pickup at our East Perth boutique or via Uber Eats." },
+  { icon: "🎂", title: "4. Collect", text: "Pickup from our East Perth boutique or via Uber Eats." },
 ];
 
 const policyLabels = [
@@ -92,7 +92,7 @@ export default function AboutPage() {
 
           <section className="mt-14 md:mt-16">
             <p className="font-signika text-[9px] uppercase tracking-[0.22em] text-accent-dark/50">How It Works</p>
-            <h2 className="mt-4 font-kalnia text-[25px] font-medium md:text-[27px]">Ordering is Simple</h2>
+            <h2 className="mt-4 font-kalnia text-[25px] font-medium md:text-[27px]">Ordering is simple</h2>
             <ol className="mt-6 grid gap-4 md:grid-cols-4">
               {steps.map((step) => <li key={step.title} className="min-h-[126px] rounded-xl border border-[#ddd2bf] bg-[#f8f3e9]/80 p-5 shadow-[0_4px_16px_rgb(70_66_72_/_3%)] md:min-h-[132px] md:p-4">
                 <span className="text-lg" aria-hidden="true">{step.icon}</span>
@@ -127,7 +127,7 @@ export default function AboutPage() {
             <div className="mt-5 rounded-xl border border-[#ddd2bf] bg-[#faf7f0] p-5 font-signika text-xs text-accent-dark/65 md:p-6">
               <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-primary">
                 <a href="https://www.google.com/maps/search/?api=1&query=181+Adelaide+Terrace+Perth+WA+6004" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 whitespace-nowrap"><LocationIcon /><span className="font-medium">181 Adelaide Terrace, Perth WA 6004</span></a>
-                <a href="https://wa.me/61413681344" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 whitespace-nowrap"><ChatIcon /> WhatsApp Us</a>
+                <a href="https://wa.me/61413681344" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 whitespace-nowrap"><ChatIcon /> Contact us on WhatsApp</a>
               </div>
             </div>
           </section>
