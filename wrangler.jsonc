@@ -11,8 +11,8 @@
     "SQUARE_TIMEZONE": "Australia/Perth",
     "EMAIL_ENABLED": "true",
     "SMTP_HOST": "mail.cake-cloud.com.au",
-    "SMTP_PORT": "465",
-    "SMTP_SECURITY": "tls",
+    "SMTP_PORT": "587",
+    "SMTP_SECURITY": "starttls",
     "SMTP_HELLO_USERNAME": "hello-noreply@cake-cloud.com.au"
   },
   "secrets": {
