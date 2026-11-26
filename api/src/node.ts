@@ -40,6 +40,7 @@ const env: ApiEnv = {
   SMTP_HELLO_PASSWORD: process.env.SMTP_HELLO_PASSWORD,
   SMTP_ORDERS_USERNAME: process.env.SMTP_ORDERS_USERNAME,
   SMTP_ORDERS_PASSWORD: process.env.SMTP_ORDERS_PASSWORD,
+  EMAIL_TEST_TOKEN: process.env.EMAIL_TEST_TOKEN,
 };
 
 async function toRequest(request: IncomingMessage): Promise<Request> {

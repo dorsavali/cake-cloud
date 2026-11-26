@@ -24,7 +24,8 @@
       "SQUARE_WEBHOOK_NOTIFICATION_URL",
       "SMTP_HELLO_PASSWORD",
       "SMTP_ORDERS_USERNAME",
-      "SMTP_ORDERS_PASSWORD"
+      "SMTP_ORDERS_PASSWORD",
+      "EMAIL_TEST_TOKEN"
     ]
   },
   "triggers": {

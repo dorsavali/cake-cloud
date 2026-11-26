@@ -16,6 +16,7 @@ export interface ApiEnv {
   SMTP_HELLO_PASSWORD?: string;
   SMTP_ORDERS_USERNAME?: string;
   SMTP_ORDERS_PASSWORD?: string;
+  EMAIL_TEST_TOKEN?: string;
   CF_VERSION_METADATA?: { id: string };
   STOREFRONT_CACHE?: {
     get(key: string): Promise<{ etag: string; json<T>(): Promise<T> } | null>;
