@@ -75,7 +75,7 @@ export function SpecialDemand() {
             Up for something special?
           </h2>
           <p className="mt-2 font-signika text-xs text-accent-dark lg:text-base">
-            Let&apos;s bring your dream cake to life. Making every Celebration and Event unique!
+            Let&apos;s bring your dream cake to life, making every Celebration and Event unique!
           </p>
 
           <div className="absolute left-0 top-[193px] flex flex-col gap-4 min-[480px]:top-[calc(216px+2vw)] lg:static lg:mt-16 lg:flex-row lg:gap-8">

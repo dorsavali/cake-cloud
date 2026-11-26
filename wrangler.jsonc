@@ -10,7 +10,7 @@
     // - Cloudflare Workers use their own Variables and Secrets
     "SQUARE_TIMEZONE": "Australia/Perth",
     "EMAIL_ENABLED": "true",
-    "SMTP_HOST": "mail.cake-cloud.com.au",
+    "SMTP_HOST": "omega.serv.com.au",
     "SMTP_PORT": "465",
     "SMTP_SECURITY": "tls",
     "SMTP_HELLO_USERNAME": "hello-noreply@cake-cloud.com.au"

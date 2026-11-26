@@ -269,22 +269,6 @@ function AnimatedModifierDropdown({
             aria-multiselectable={multiple}
             className="max-h-[300px] overflow-y-auto border-t border-[#ddd0b9] py-1.5"
           >
-            {list.minSelected === 0 ? (
-              <button
-                type="button"
-                tabIndex={open ? 0 : -1}
-                role="option"
-                aria-selected={selected.length === 0}
-                className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] transition-colors hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary focus-visible:outline-none md:text-sm ${selected.length === 0 ? "font-medium text-primary" : "text-accent-dark"}`}
-                onClick={() => {
-                  onChange([]);
-                  if (!multiple) setOpen(false);
-                }}
-              >
-                <span aria-hidden="true" className="w-4 shrink-0 text-primary">{selected.length === 0 ? "✓" : ""}</span>
-                <span>None · Free</span>
-              </button>
-            ) : null}
             {list.modifiers.map((modifier) => {
               const checked = selectedIds.includes(modifier.id);
               const disabled =
