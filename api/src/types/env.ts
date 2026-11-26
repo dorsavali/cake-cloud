@@ -17,6 +17,13 @@ export interface ApiEnv {
   SMTP_ORDERS_USERNAME?: string;
   SMTP_ORDERS_PASSWORD?: string;
   EMAIL_TEST_TOKEN?: string;
+  EMAIL_TEST_SMTP_HOST?: string;
+  EMAIL_TEST_SMTP_PORT?: string;
+  EMAIL_TEST_SMTP_SECURITY?: "starttls" | "tls";
+  EMAIL_TEST_SMTP_USERNAME?: string;
+  EMAIL_TEST_SMTP_PASSWORD?: string;
+  EMAIL_TEST_SMTP_FROM?: string;
+  EMAIL_TEST_SMTP_RECIPIENT?: string;
   CF_VERSION_METADATA?: { id: string };
   STOREFRONT_CACHE?: {
     get(key: string): Promise<{ etag: string; json<T>(): Promise<T> } | null>;

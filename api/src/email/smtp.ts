@@ -161,31 +161,30 @@ class SmtpSession {
   }
 }
 
-export async function sendEmailWithSmtp(
-  env: ApiEnv,
-  email: RenderedEmail,
-): Promise<void> {
-  if (!emailSendingEnabled(env)) return;
+export type SmtpConnectionConfig = {
+  hostname: string;
+  port: number;
+  security: "starttls" | "tls";
+  username: string;
+  password: string;
+  ehloHostname?: string;
+};
 
-  const hostname = required(env.SMTP_HOST, "SMTP_HOST");
-  const port = Number(env.SMTP_PORT ?? "587");
-  const security = env.SMTP_SECURITY === "tls" ? "tls" : "starttls";
+export async function sendEmailWithSmtpConnection(
+  email: RenderedEmail,
+  config: SmtpConnectionConfig,
+): Promise<void> {
+  const hostname = required(config.hostname, "SMTP hostname");
+  const port = config.port;
+  const security = config.security;
   if (!Number.isInteger(port) || port < 1 || port > 65535 || port === 25) {
     throw new Error("SMTP_PORT must be a valid non-25 port");
   }
 
   const from = mailbox(email.from);
   const to = mailbox(email.to);
-  const helloUsername = required(env.SMTP_HELLO_USERNAME, "SMTP_HELLO_USERNAME");
-  const isCustomerEmail = from.address.toLowerCase() === helloUsername.toLowerCase();
-  const username = required(
-    isCustomerEmail ? helloUsername : env.SMTP_ORDERS_USERNAME,
-    isCustomerEmail ? "SMTP_HELLO_USERNAME" : "SMTP_ORDERS_USERNAME",
-  );
-  const password = required(
-    isCustomerEmail ? env.SMTP_HELLO_PASSWORD : env.SMTP_ORDERS_PASSWORD,
-    isCustomerEmail ? "SMTP_HELLO_PASSWORD" : "SMTP_ORDERS_PASSWORD",
-  );
+  const username = required(config.username, "SMTP username");
+  const password = required(config.password, "SMTP password");
   const { connect } = await import("cloudflare:sockets");
   const socket = connect(
     { hostname, port },
@@ -196,11 +195,11 @@ export async function sendEmailWithSmtp(
 
   try {
     await session.response([220]);
-    await session.command("EHLO cake-cloud.com.au", [250]);
+    await session.command(`EHLO ${config.ehloHostname ?? "cake-cloud.com.au"}`, [250]);
     if (security === "starttls") {
       await session.command("STARTTLS", [220]);
       await session.startTls();
-      await session.command("EHLO cake-cloud.com.au", [250]);
+      await session.command(`EHLO ${config.ehloHostname ?? "cake-cloud.com.au"}`, [250]);
     }
     await session.command("AUTH LOGIN", [334]);
     await session.command(base64(username), [334]);
@@ -217,4 +216,31 @@ export async function sendEmailWithSmtp(
   } finally {
     await session.close().catch(() => undefined);
   }
+}
+
+export async function sendEmailWithSmtp(
+  env: ApiEnv,
+  email: RenderedEmail,
+): Promise<void> {
+  if (!emailSendingEnabled(env)) return;
+
+  const helloUsername = required(env.SMTP_HELLO_USERNAME, "SMTP_HELLO_USERNAME");
+  const from = mailbox(email.from);
+  const isCustomerEmail = from.address.toLowerCase() === helloUsername.toLowerCase();
+  const username = required(
+    isCustomerEmail ? helloUsername : env.SMTP_ORDERS_USERNAME,
+    isCustomerEmail ? "SMTP_HELLO_USERNAME" : "SMTP_ORDERS_USERNAME",
+  );
+  const password = required(
+    isCustomerEmail ? env.SMTP_HELLO_PASSWORD : env.SMTP_ORDERS_PASSWORD,
+    isCustomerEmail ? "SMTP_HELLO_PASSWORD" : "SMTP_ORDERS_PASSWORD",
+  );
+
+  await sendEmailWithSmtpConnection(email, {
+    hostname: required(env.SMTP_HOST, "SMTP_HOST"),
+    port: Number(env.SMTP_PORT ?? "587"),
+    security: env.SMTP_SECURITY === "tls" ? "tls" : "starttls",
+    username,
+    password,
+  });
 }

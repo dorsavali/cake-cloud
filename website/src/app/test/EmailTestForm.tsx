@@ -10,7 +10,6 @@ type TestResult = {
 };
 
 export function EmailTestForm() {
-  const [recipient, setRecipient] = useState("");
   const [token, setToken] = useState("");
   const [result, setResult] = useState<TestResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -27,7 +26,7 @@ export function EmailTestForm() {
           authorization: `Bearer ${token}`,
           "content-type": "application/json",
         },
-        body: JSON.stringify({ recipient }),
+        body: JSON.stringify({}),
       });
       const data = await response.json() as TestResult;
       setResult(response.ok ? data : { ...data, ok: false });
@@ -40,23 +39,6 @@ export function EmailTestForm() {
 
   return (
     <form onSubmit={submit} className="mt-8 space-y-6">
-      <div>
-        <label htmlFor="recipient" className="block text-sm font-semibold text-[#464248]">
-          Customer test recipient
-        </label>
-        <input
-          id="recipient"
-          name="recipient"
-          type="email"
-          required
-          autoComplete="email"
-          value={recipient}
-          onChange={(event) => setRecipient(event.target.value)}
-          placeholder="you@example.com"
-          className="mt-2 min-h-12 w-full rounded-xl border border-[#d8c9aa] bg-white px-4 text-base text-[#464248] outline-none transition focus:border-[#718d7f] focus:ring-2 focus:ring-[#718d7f]/20"
-        />
-      </div>
-
       <div>
         <label htmlFor="token" className="block text-sm font-semibold text-[#464248]">
           Test token

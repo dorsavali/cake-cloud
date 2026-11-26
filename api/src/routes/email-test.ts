@@ -5,7 +5,10 @@ import {
   type RenderedEmail,
   type SubmissionEmailData,
 } from "../email/order-templates.js";
-import { emailSendingEnabled, sendEmailWithSmtp } from "../email/smtp.js";
+import {
+  emailSendingEnabled,
+  sendEmailWithSmtpConnection,
+} from "../email/smtp.js";
 import { json, methodNotAllowed } from "../http/json.js";
 import type { ApiEnv } from "../types/env.js";
 
@@ -33,11 +36,35 @@ async function tokensMatch(received: string, expected: string): Promise<boolean>
   return difference === 0;
 }
 
-function emailAddresses(env: ApiEnv): OrderEmailAddresses {
-  const hello = env.SMTP_HELLO_USERNAME?.trim().toLowerCase();
-  const orders = env.SMTP_ORDERS_USERNAME?.trim().toLowerCase();
-  if (!hello || !orders) throw new Error("Test email addresses are not configured");
-  return { hello, orders };
+function required(value: string | undefined, name: string): string {
+  if (!value?.trim()) throw new Error(`${name} is not configured`);
+  return value.trim();
+}
+
+function testAddresses(env: ApiEnv): OrderEmailAddresses {
+  const from = required(env.EMAIL_TEST_SMTP_FROM, "EMAIL_TEST_SMTP_FROM").toLowerCase();
+  if (!validEmail(from)) throw new Error("EMAIL_TEST_SMTP_FROM is invalid");
+  return { hello: from, orders: from };
+}
+
+function testRecipient(env: ApiEnv): string {
+  const recipient = required(
+    env.EMAIL_TEST_SMTP_RECIPIENT,
+    "EMAIL_TEST_SMTP_RECIPIENT",
+  ).toLowerCase();
+  if (!validEmail(recipient)) throw new Error("EMAIL_TEST_SMTP_RECIPIENT is invalid");
+  return recipient;
+}
+
+async function sendTestEmailWithSmtp(env: ApiEnv, email: RenderedEmail): Promise<void> {
+  await sendEmailWithSmtpConnection(email, {
+    hostname: required(env.EMAIL_TEST_SMTP_HOST, "EMAIL_TEST_SMTP_HOST"),
+    port: Number(env.EMAIL_TEST_SMTP_PORT ?? "465"),
+    security: env.EMAIL_TEST_SMTP_SECURITY === "starttls" ? "starttls" : "tls",
+    username: required(env.EMAIL_TEST_SMTP_USERNAME, "EMAIL_TEST_SMTP_USERNAME"),
+    password: required(env.EMAIL_TEST_SMTP_PASSWORD, "EMAIL_TEST_SMTP_PASSWORD"),
+    ehloHostname: "libremobileos.com",
+  });
 }
 
 function testData(recipient: string, reference: string): SubmissionEmailData {
@@ -65,7 +92,7 @@ function testData(recipient: string, reference: string): SubmissionEmailData {
 export async function handleEmailTest(
   request: Request,
   env: ApiEnv,
-  send: EmailSender = sendEmailWithSmtp,
+  send: EmailSender = sendTestEmailWithSmtp,
 ): Promise<Response> {
   if (request.method !== "POST") return methodNotAllowed();
 
@@ -86,23 +113,19 @@ export async function handleEmailTest(
     return json({ error: "Email sending is disabled" }, 409);
   }
 
-  let body: unknown;
+  let recipient: string;
+  let addresses: OrderEmailAddresses;
   try {
-    body = await request.json();
-  } catch {
-    return json({ error: "Invalid JSON body" }, 400);
-  }
-
-  const recipient = body && typeof body === "object" && "recipient" in body
-    ? String(body.recipient).trim().toLowerCase()
-    : "";
-  if (!validEmail(recipient)) {
-    return json({ error: "Enter a valid recipient email address" }, 400);
+    recipient = testRecipient(env);
+    addresses = testAddresses(env);
+  } catch (error) {
+    return json({
+      error: error instanceof Error ? error.message : "Test SMTP is not configured",
+    }, 503);
   }
 
   const reference = `EMAIL-TEST-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
   const data = testData(recipient, reference);
-  const addresses = emailAddresses(env);
   const deliveries = [
     { name: "internal", message: renderInternalSubmissionEmail(data, addresses) },
     { name: "customer", message: renderCustomerSubmissionEmail(data, addresses) },

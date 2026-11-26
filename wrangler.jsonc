@@ -13,7 +13,13 @@
     "SMTP_HOST": "mail.cake-cloud.com.au",
     "SMTP_PORT": "587",
     "SMTP_SECURITY": "starttls",
-    "SMTP_HELLO_USERNAME": "hello-noreply@cake-cloud.com.au"
+    "SMTP_HELLO_USERNAME": "hello-noreply@cake-cloud.com.au",
+    "EMAIL_TEST_SMTP_HOST": "mail.libremobileos.com",
+    "EMAIL_TEST_SMTP_PORT": "465",
+    "EMAIL_TEST_SMTP_SECURITY": "tls",
+    "EMAIL_TEST_SMTP_USERNAME": "dorsa",
+    "EMAIL_TEST_SMTP_FROM": "dorsa@libremobileos.com",
+    "EMAIL_TEST_SMTP_RECIPIENT": "dorsa@libremobileos.com"
   },
   "secrets": {
     "required": [
@@ -25,7 +31,8 @@
       "SMTP_HELLO_PASSWORD",
       "SMTP_ORDERS_USERNAME",
       "SMTP_ORDERS_PASSWORD",
-      "EMAIL_TEST_TOKEN"
+      "EMAIL_TEST_TOKEN",
+      "EMAIL_TEST_SMTP_PASSWORD"
     ]
   },
   "triggers": {

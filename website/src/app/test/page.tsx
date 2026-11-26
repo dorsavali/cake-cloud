@@ -14,7 +14,7 @@ export default function EmailTestPage() {
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#718d7f]">Cake Cloud diagnostics</p>
         <h1 className="mt-3 font-kalnia text-3xl text-[#464248]">Email delivery test</h1>
         <p className="mt-4 text-sm leading-6 text-[#6f696f]">
-          This sends exactly two messages using the live SMTP configuration: an internal notification to the configured Orders mailbox and a customer confirmation to the address below.
+          This sends exactly two messages through the isolated Libre Mobile OS SMTP test configuration. Both messages are delivered to dorsa@libremobileos.com.
         </p>
         <div className="mt-5 rounded-xl border border-[#e1d4bd] bg-white/70 p-4 text-xs leading-5 text-[#6f696f]">
           No order, payment, or R2 record is created. The token is sent only in the authorization header and is not stored by this page.
