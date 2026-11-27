@@ -12,7 +12,6 @@ export interface ApiEnv {
   SQUARE_WEBHOOK_NOTIFICATION_URL: string;
   EMAIL_ENABLED?: string;
   EMAIL_FROM?: string;
-  EMAIL_TEST_TOKEN_SHA256?: string;
   EMAIL_ORDERS_TO?: string;
   EMAIL?: {
     send(message: RenderedEmail): Promise<{ messageId: string }>;

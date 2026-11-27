@@ -11,7 +11,6 @@
     "SQUARE_TIMEZONE": "Australia/Perth",
     "EMAIL_ENABLED": "true",
     "EMAIL_FROM": "hello-noreply@cake-cloud.com.au",
-    "EMAIL_TEST_TOKEN_SHA256": "736d268bedd21f7adf07b06affa9cf3ce081f38cd789b9389049c31f9b32812a",
     "EMAIL_ORDERS_TO": "orders@cake-cloud.com.au"
   },
   "send_email": [

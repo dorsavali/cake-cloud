@@ -12,8 +12,8 @@ export function emailAddresses(env: ApiEnv): OrderEmailAddresses {
   return { sender, orders };
 }
 
-export async function sendEmail(env: ApiEnv, email: RenderedEmail): Promise<{ messageId: string } | undefined> {
+export async function sendEmail(env: ApiEnv, email: RenderedEmail): Promise<void> {
   if (!emailSendingEnabled(env)) return;
   if (!env.EMAIL) throw new Error("Cloudflare EMAIL binding is not configured");
-  return env.EMAIL.send(email);
+  await env.EMAIL.send(email);
 }
