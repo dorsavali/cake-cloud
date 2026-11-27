@@ -89,11 +89,7 @@ function testData(recipient: string, reference: string): SubmissionEmailData {
   };
 }
 
-export async function handleEmailTest(
-  request: Request,
-  env: ApiEnv,
-  send: EmailSender = sendTestEmailWithSmtp,
-): Promise<Response> {
+export async function checkEmailTestAccess(request: Request, env: ApiEnv): Promise<Response | null> {
   if (request.method !== "POST") return methodNotAllowed();
 
   const configuredToken = env.EMAIL_TEST_TOKEN?.trim();
@@ -108,6 +104,17 @@ export async function handleEmailTest(
   if (!receivedToken || !(await tokensMatch(receivedToken, configuredToken))) {
     return json({ error: "Invalid test token" }, 401);
   }
+
+  return null;
+}
+
+export async function handleEmailTest(
+  request: Request,
+  env: ApiEnv,
+  send: EmailSender = sendTestEmailWithSmtp,
+): Promise<Response> {
+  const denied = await checkEmailTestAccess(request, env);
+  if (denied) return denied;
 
   if (!emailSendingEnabled(env)) {
     return json({ error: "Email sending is disabled" }, 409);

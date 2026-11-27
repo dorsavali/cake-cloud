@@ -15,6 +15,7 @@ import { handleHostCheckout } from "./routes/host-checkout.js";
 import { handleHostEnquiry } from "./routes/host-enquiry.js";
 import { handleClubJoin } from "./routes/club.js";
 import { handleEmailTest } from "./routes/email-test.js";
+import { handleSmtpDiagnostics } from "./routes/smtp-diagnostics.js";
 import {
   handleCategories,
   handleInventorySnapshot,
@@ -55,6 +56,9 @@ export async function handleApiRequest(
   }
   if (url.pathname === "/api/test/email") {
     return applyPublicApiRateLimit(request) ?? handleEmailTest(request, env);
+  }
+  if (url.pathname === "/api/test/smtp-diagnostics") {
+    return applyPublicApiRateLimit(request) ?? handleSmtpDiagnostics(request, env);
   }
   if (url.pathname === "/api/cake/quote") {
     const limited = applyPublicApiRateLimit(request);

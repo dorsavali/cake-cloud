@@ -79,7 +79,7 @@ export function buildMimeMessage(email: RenderedEmail): string {
   ].join("\r\n");
 }
 
-class SmtpSession {
+export class SmtpSession {
   private socket: WorkerSocket;
   private reader: ReadableStreamDefaultReader<Uint8Array>;
   private writer: WritableStreamDefaultWriter<Uint8Array>;
@@ -147,6 +147,7 @@ class SmtpSession {
     this.reader.releaseLock();
     this.writer.releaseLock();
     this.socket = this.socket.startTls();
+    void this.socket.closed.catch(() => undefined);
     await this.timeout(this.socket.opened);
     this.reader = this.socket.readable.getReader();
     this.writer = this.socket.writable.getWriter();

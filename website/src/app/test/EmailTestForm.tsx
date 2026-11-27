@@ -7,20 +7,34 @@ type TestResult = {
   reference?: string;
   sent?: string[];
   error?: string;
+  results?: {
+    hostname: string;
+    port: number;
+    mode: string;
+    steps: { name: string; status: string; elapsedMs: number; detail: string }[];
+  }[];
+  startedAt?: string;
+  rayId?: string;
+  ingressColo?: string;
+  workerVersion?: string;
 };
 
 export function EmailTestForm() {
   const [token, setToken] = useState("");
   const [result, setResult] = useState<TestResult | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState<"email" | "smtp-diagnostics" | null>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitting(true);
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const action = submitter instanceof HTMLButtonElement && submitter.value === "smtp-diagnostics"
+      ? "smtp-diagnostics"
+      : "email";
+    setSubmitting(action);
     setResult(null);
 
     try {
-      const response = await fetch("/api/test/email", {
+      const response = await fetch(`/api/test/${action}`, {
         method: "POST",
         headers: {
           authorization: `Bearer ${token}`,
@@ -33,7 +47,7 @@ export function EmailTestForm() {
     } catch {
       setResult({ ok: false, error: "Could not reach the email test endpoint." });
     } finally {
-      setSubmitting(false);
+      setSubmitting(null);
     }
   }
 
@@ -58,13 +72,40 @@ export function EmailTestForm() {
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting !== null}
         className="min-h-12 w-full rounded-xl bg-[#718d7f] px-5 font-semibold text-white transition hover:bg-[#5e796c] disabled:cursor-wait disabled:opacity-60"
       >
-        {submitting ? "Sending…" : "Send both test emails"}
+        {submitting === "email" ? "Sending…" : "Send both test emails"}
       </button>
 
-      {result ? (
+      <button
+        type="submit"
+        value="smtp-diagnostics"
+        disabled={submitting !== null}
+        className="min-h-12 w-full rounded-xl border border-[#718d7f] px-5 font-semibold text-[#365247] disabled:opacity-60"
+      >
+        {submitting === "smtp-diagnostics" ? "Checking connections…" : "Run SMTP connection diagnostics"}
+      </button>
+
+      {result?.results ? (
+        <div role="status" className="space-y-4 rounded-xl border border-[#d8c9aa] p-4 text-sm">
+          <p className="break-all">Reference: {result.reference}</p>
+          <p className="break-all">UTC: {result.startedAt} · Ingress: {result.ingressColo ?? "unknown"}</p>
+          <p className="break-all">Ray ID: {result.rayId ?? "unavailable"} · Worker: {result.workerVersion ?? "unavailable"}</p>
+          {result.results.map(({ hostname, port, mode, steps }) => (
+            <section key={`${hostname}:${port}`}>
+              <h2 className="font-semibold">{hostname}:{port} ({mode})</h2>
+              <ul className="mt-1 space-y-1">
+                {steps.map((step) => (
+                  <li key={step.name} className={step.status === "failed" ? "text-[#8a342c]" : ""}>
+                    {step.name} · {step.status} · {step.elapsedMs} ms — {step.detail}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      ) : result ? (
         <div
           role="status"
           className={`rounded-xl border p-4 text-sm leading-6 ${
