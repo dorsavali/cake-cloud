@@ -38,6 +38,42 @@ const reviews = [
     text: "The pastries were beautiful and delicious, and the coffee made a perfect pairing. A lovely place for quality pastries and a cosy experience.",
     color: "#8f778e",
   },
+  {
+    name: "k w g c PANA",
+    initials: "KP",
+    text: "O M G!! Really great job. This shop is new, and all the cake is so amazing! I bought five cakes for my bestie's birthday; all of them were delicious and fabulous. The gentleman was helpful and friendly, with great hospitality. Definitely coming back!",
+    color: "#8a765d",
+  },
+  {
+    name: "F P",
+    initials: "FP",
+    text: "My experience was hands down the absolute best at Cake Cloud. Cas and chef Parisa listened to exactly what I wanted for our wedding cake. The result was stunning: a gorgeous vanilla cake with a cacao cream giant rose. They went above and beyond and made our day extremely special!",
+    color: "#a2647c",
+  },
+  {
+    name: "Alaa Alshibi",
+    initials: "AA",
+    text: "What a lovely experience with Cake Cloud. The customer service was warm and welcoming, the cake was beautiful and delicious, and the price was very reasonable. Everything felt professional, friendly and well organised. I highly recommend Cake Cloud.",
+    color: "#5c8fa6",
+  },
+  {
+    name: "Alexiea Lulue",
+    initials: "AL",
+    text: "We were looking for a last-minute birthday cake and the owner was so accommodating. He offered different solutions, helped with the text we wanted and gave us a discount on a bigger cake. I would not buy my cake anywhere else now!",
+    color: "#7d756c",
+  },
+  {
+    name: "JIM L",
+    initials: "JL",
+    text: "Cake Cloud Boutique Pastries in East Perth is the best place to have coffee, cake or pastries. Everything is made fresh daily on the premises. I recommend this place to everyone; you will not be disappointed.",
+    color: "#6f8391",
+  },
+  {
+    name: "Sophia",
+    initials: "S",
+    text: "Great Dubai Chocolate brownie. Cold, fudgey, rich, dense and oh so good! Great coffees too.",
+    color: "#92745f",
+  },
 ] as const;
 
 export function Reviews() {
@@ -132,7 +168,9 @@ export function Reviews() {
                   </div>
                 </div>
 
-                <p className="mx-auto mt-5 max-w-[540px] font-signika text-lg font-light leading-[1.5] lg:max-w-[680px] lg:text-xl lg:leading-[1.6]">
+                <p
+                  className={`${styles.reviewText} mx-auto mt-5 max-w-[540px] font-signika text-lg font-light leading-[1.5] lg:max-w-[680px] lg:text-xl lg:leading-[1.6]`}
+                >
                   {review.text}
                 </p>
               </article>
