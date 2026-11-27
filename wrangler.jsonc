@@ -10,29 +10,23 @@
     // - Cloudflare Workers use their own Variables and Secrets
     "SQUARE_TIMEZONE": "Australia/Perth",
     "EMAIL_ENABLED": "true",
-    "SMTP_HOST": "mail.cake-cloud.com.au",
-    "SMTP_PORT": "587",
-    "SMTP_SECURITY": "starttls",
-    "SMTP_HELLO_USERNAME": "hello-noreply@cake-cloud.com.au",
-    "EMAIL_TEST_SMTP_HOST": "mail.libremobileos.com",
-    "EMAIL_TEST_SMTP_PORT": "465",
-    "EMAIL_TEST_SMTP_SECURITY": "tls",
-    "EMAIL_TEST_SMTP_USERNAME": "dorsa",
-    "EMAIL_TEST_SMTP_FROM": "dorsa@libremobileos.com",
-    "EMAIL_TEST_SMTP_RECIPIENT": "dorsa@libremobileos.com"
+    "EMAIL_FROM": "hello-noreply@cake-cloud.com.au",
+    "EMAIL_TEST_TOKEN_SHA256": "736d268bedd21f7adf07b06affa9cf3ce081f38cd789b9389049c31f9b32812a",
+    "EMAIL_ORDERS_TO": "orders@cake-cloud.com.au"
   },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["hello-noreply@cake-cloud.com.au"]
+    }
+  ],
   "secrets": {
     "required": [
       "SQUARE_ACCESS_TOKEN",
       "SQUARE_LOCATION_ID",
       "SQUARE_APPLICATION_ID",
       "SQUARE_WEBHOOK_SIGNATURE_KEY",
-      "SQUARE_WEBHOOK_NOTIFICATION_URL",
-      "SMTP_HELLO_PASSWORD",
-      "SMTP_ORDERS_USERNAME",
-      "SMTP_ORDERS_PASSWORD",
-      "EMAIL_TEST_TOKEN",
-      "EMAIL_TEST_SMTP_PASSWORD"
+      "SQUARE_WEBHOOK_NOTIFICATION_URL"
     ]
   },
   "triggers": {
@@ -42,7 +36,8 @@
     "binding": "CF_VERSION_METADATA"
   },
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "traces": { "enabled": false }
   },
   "placement": {
     "mode": "smart"

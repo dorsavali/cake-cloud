@@ -7,8 +7,9 @@ import {
   renderInternalOrderEmail,
   renderInternalSubmissionEmail,
 } from "../dist/email/order-templates.js";
-import { buildMimeMessage } from "../dist/email/smtp.js";
+import { sendEmail } from "../dist/email/delivery.js";
 import { formatPickup, sendPaidOrderNotifications } from "../dist/email/order-notifications.js";
+import { sendSubmissionNotifications } from "../dist/email/submission-notifications.js";
 
 const order = {
   orderNumber: "CC-TEST",
@@ -23,7 +24,7 @@ const order = {
   items: [{ name: "Cloud Cake", quantity: 1, total: 1250 }],
 };
 const addresses = {
-  hello: "customer-orders@example.test",
+  sender: "welcome@example.test",
   orders: "internal-orders@example.test",
 };
 
@@ -33,11 +34,11 @@ test("customer and internal order emails use the configured mailboxes", () => {
 
   assert.equal(customer.to, "buyer@example.com");
   assert.match(customer.subject, /CC-TEST/);
-  assert.match(customer.from, /customer-orders@example\.test/);
+  assert.deepEqual(customer.from, { email: addresses.sender, name: "Cake Cloud" });
   assert.equal(customer.replyTo, "info@cake-cloud.com.au");
   assert.equal(internal.to, "internal-orders@example.test");
   assert.match(internal.subject, /CC-TEST/);
-  assert.match(internal.from, /internal-orders@example\.test/);
+  assert.deepEqual(internal.from, { email: addresses.sender, name: "Cake Cloud Orders" });
   assert.equal(internal.replyTo, "buyer@example.com");
   assert.match(internal.html, /Address/);
   assert.match(internal.html, /1 &lt;Cloud&gt; Street &amp; East Perth/);
@@ -57,15 +58,23 @@ test("customer and internal order emails use the configured mailboxes", () => {
   assert.doesNotMatch(internal.html, /Rate us on Google/);
 });
 
-test("email MIME contains both text and HTML alternatives", () => {
-  const mime = buildMimeMessage(renderCustomerOrderEmail(order, addresses));
-  assert.match(mime, /Content-Type: multipart\/alternative/);
-  assert.match(mime, /Content-Type: text\/plain; charset=UTF-8/);
-  assert.match(mime, /Content-Type: text\/html; charset=UTF-8/);
-  assert.match(mime, /To: buyer@example\.com/);
+test("Cloudflare EMAIL receives the rendered order message", async () => {
+  const messages = [];
+  const message = renderCustomerOrderEmail(order, addresses);
+  await sendEmail({
+    EMAIL_ENABLED: "true",
+    EMAIL: { async send(payload) {
+      messages.push(payload);
+      return { messageId: "test-id" };
+    } },
+  }, message);
+  assert.deepEqual(messages, [message]);
+  assert.match(messages[0].html, /Order number/);
+  assert.match(messages[0].text, /payment was successful/i);
+  assert.equal(messages[0].to, order.customerEmail);
 });
 
-test("form submissions email Orders and confirm the customer from Hello", () => {
+test("form submissions send to Orders and the customer through the same binding", async () => {
   const submission = {
     reference: "FC-12AB34CD",
     submissionType: "Custom cake brief",
@@ -79,15 +88,27 @@ test("form submissions email Orders and confirm the customer from Hello", () => 
   const customer = renderCustomerSubmissionEmail(submission, addresses);
   const internal = renderInternalSubmissionEmail(submission, addresses);
 
-  assert.equal(customer.from, "Cake Cloud <customer-orders@example.test>");
+  assert.deepEqual(customer.from, { name: "Cake Cloud", email: addresses.sender });
   assert.equal(customer.to, "customer@example.com");
   assert.match(customer.subject, /FC-12AB34CD/);
   assert.match(customer.text, /contact you within 24 hours/i);
-  assert.equal(internal.from, "Cake Cloud Orders <internal-orders@example.test>");
+  assert.deepEqual(internal.from, { name: "Cake Cloud Orders", email: addresses.sender });
   assert.equal(internal.to, "internal-orders@example.test");
   assert.equal(internal.replyTo, "customer@example.com");
   assert.match(internal.subject, /FC-12AB34CD/);
   assert.match(internal.text, /briefs\/test-id\//);
+
+  const messages = [];
+  await sendSubmissionNotifications({
+    EMAIL_ENABLED: "true",
+    EMAIL_FROM: addresses.sender,
+    EMAIL_ORDERS_TO: addresses.orders,
+    EMAIL: { async send(payload) {
+      messages.push(payload);
+      return { messageId: "test-id" };
+    } },
+  }, submission);
+  assert.deepEqual(messages, [internal, customer]);
 });
 
 test("paid-order notifications do nothing until email is enabled", async (t) => {

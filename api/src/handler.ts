@@ -15,7 +15,6 @@ import { handleHostCheckout } from "./routes/host-checkout.js";
 import { handleHostEnquiry } from "./routes/host-enquiry.js";
 import { handleClubJoin } from "./routes/club.js";
 import { handleEmailTest } from "./routes/email-test.js";
-import { handleSmtpDiagnostics } from "./routes/smtp-diagnostics.js";
 import {
   handleCategories,
   handleInventorySnapshot,
@@ -30,6 +29,9 @@ export async function handleApiRequest(
   env: ApiEnv,
 ): Promise<Response | null> {
   const url = new URL(request.url);
+  if (url.pathname === "/api/test/email") {
+    return applyPublicApiRateLimit(request) ?? handleEmailTest(request, env);
+  }
   if (url.pathname === "/api/cake/brief") {
     return applyPublicApiRateLimit(request) ?? handleCakeBrief(request, env);
   }
@@ -53,12 +55,6 @@ export async function handleApiRequest(
   }
   if (url.pathname === "/api/club/join") {
     return applyPublicApiRateLimit(request) ?? handleClubJoin(request, env);
-  }
-  if (url.pathname === "/api/test/email") {
-    return applyPublicApiRateLimit(request) ?? handleEmailTest(request, env);
-  }
-  if (url.pathname === "/api/test/smtp-diagnostics") {
-    return applyPublicApiRateLimit(request) ?? handleSmtpDiagnostics(request, env);
   }
   if (url.pathname === "/api/cake/quote") {
     const limited = applyPublicApiRateLimit(request);

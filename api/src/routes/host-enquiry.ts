@@ -1,6 +1,6 @@
 import { json, methodNotAllowed } from "../http/json.js";
 import { sendSubmissionNotifications } from "../email/submission-notifications.js";
-import { emailSendingEnabled } from "../email/smtp.js";
+import { emailSendingEnabled } from "../email/delivery.js";
 import { isInternationalPhone, normalizeSquareAddress, normalizeSquarePhone } from "../services/square-customer.js";
 import type { ApiEnv } from "../types/env.js";
 

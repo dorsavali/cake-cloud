@@ -1,3 +1,5 @@
+import type { RenderedEmail } from "../email/order-templates.js";
+
 export interface ApiEnv {
   WEBSITE_ORIGIN?: string;
   SQUARE_LOCATION_ID?: string;
@@ -9,21 +11,12 @@ export interface ApiEnv {
   SQUARE_WEBHOOK_SIGNATURE_KEY: string;
   SQUARE_WEBHOOK_NOTIFICATION_URL: string;
   EMAIL_ENABLED?: string;
-  SMTP_HOST?: string;
-  SMTP_PORT?: string;
-  SMTP_SECURITY?: "starttls" | "tls";
-  SMTP_HELLO_USERNAME?: string;
-  SMTP_HELLO_PASSWORD?: string;
-  SMTP_ORDERS_USERNAME?: string;
-  SMTP_ORDERS_PASSWORD?: string;
-  EMAIL_TEST_TOKEN?: string;
-  EMAIL_TEST_SMTP_HOST?: string;
-  EMAIL_TEST_SMTP_PORT?: string;
-  EMAIL_TEST_SMTP_SECURITY?: "starttls" | "tls";
-  EMAIL_TEST_SMTP_USERNAME?: string;
-  EMAIL_TEST_SMTP_PASSWORD?: string;
-  EMAIL_TEST_SMTP_FROM?: string;
-  EMAIL_TEST_SMTP_RECIPIENT?: string;
+  EMAIL_FROM?: string;
+  EMAIL_TEST_TOKEN_SHA256?: string;
+  EMAIL_ORDERS_TO?: string;
+  EMAIL?: {
+    send(message: RenderedEmail): Promise<{ messageId: string }>;
+  };
   CF_VERSION_METADATA?: { id: string };
   STOREFRONT_CACHE?: {
     get(key: string): Promise<{ etag: string; json<T>(): Promise<T> } | null>;

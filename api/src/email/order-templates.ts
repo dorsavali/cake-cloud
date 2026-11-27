@@ -21,7 +21,7 @@ export type OrderEmailData = {
 
 export type RenderedEmail = {
   subject: string;
-  from: string;
+  from: { email: string; name: string };
   replyTo: string;
   to: string;
   html: string;
@@ -29,7 +29,7 @@ export type RenderedEmail = {
 };
 
 export type OrderEmailAddresses = {
-  hello: string;
+  sender: string;
   orders: string;
 };
 
@@ -240,7 +240,7 @@ export function renderCustomerSubmissionEmail(
   ].join("\n");
   return {
     subject,
-    from: `Cake Cloud <${addresses.hello}>`,
+    from: { email: addresses.sender, name: "Cake Cloud" },
     replyTo: publicContactEmail,
     to: data.customerEmail,
     html,
@@ -273,7 +273,7 @@ export function renderInternalSubmissionEmail(
   ].join("\n");
   return {
     subject,
-    from: `Cake Cloud Orders <${addresses.orders}>`,
+    from: { email: addresses.sender, name: "Cake Cloud Orders" },
     replyTo: data.customerEmail,
     to: addresses.orders,
     html,
@@ -335,7 +335,7 @@ export function renderCustomerOrderEmail(
 
   return {
     subject,
-    from: `Cake Cloud <${addresses.hello}>`,
+    from: { email: addresses.sender, name: "Cake Cloud" },
     replyTo: publicContactEmail,
     to: data.customerEmail,
     html,
@@ -384,7 +384,7 @@ export function renderInternalOrderEmail(
 
   return {
     subject,
-    from: `Cake Cloud Orders <${addresses.orders}>`,
+    from: { email: addresses.sender, name: "Cake Cloud Orders" },
     replyTo: data.customerEmail,
     to: addresses.orders,
     html,

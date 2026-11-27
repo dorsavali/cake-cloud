@@ -75,8 +75,12 @@ The customer's email is included in the Square order's pickup recipient details.
 The backend trims and validates the submitted email before sending it to Square.
 Square prepopulates the checkout contact details from `pickup_details.recipient`;
 the buyer can change their contact details on Square's hosted page.
-No separate email provider is required. The signed Square webhook verifies and
-records payment status; it does not send a second email.
+The signed Square webhook verifies and records payment status. After a confirmed
+payment, Cake Cloud sends its own order emails through the Cloudflare Workers
+`EMAIL` binding. Website enquiries use the same binding. The configured sender
+is `hello-noreply@cake-cloud.com.au`; staff notifications go to
+`orders@cake-cloud.com.au`. Cloudflare Email Sending must be configured for the
+domain, with a plan that allows unverified recipients for live customer emails.
 Square Sandbox does not generate receipts or send real emails. Delivery must be
 verified separately in production; the current integration remains Sandbox-only.
 References:

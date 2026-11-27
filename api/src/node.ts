@@ -31,24 +31,8 @@ const env: ApiEnv = {
   SQUARE_WEBHOOK_NOTIFICATION_URL:
     process.env.SQUARE_WEBHOOK_NOTIFICATION_URL ??
     `http://${hostname}:${port}/api/webhooks/square`,
-  EMAIL_ENABLED: process.env.EMAIL_ENABLED ?? "false",
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: process.env.SMTP_PORT,
-  SMTP_SECURITY:
-    process.env.SMTP_SECURITY === "tls" ? "tls" : "starttls",
-  SMTP_HELLO_USERNAME: process.env.SMTP_HELLO_USERNAME,
-  SMTP_HELLO_PASSWORD: process.env.SMTP_HELLO_PASSWORD,
-  SMTP_ORDERS_USERNAME: process.env.SMTP_ORDERS_USERNAME,
-  SMTP_ORDERS_PASSWORD: process.env.SMTP_ORDERS_PASSWORD,
-  EMAIL_TEST_TOKEN: process.env.EMAIL_TEST_TOKEN,
-  EMAIL_TEST_SMTP_HOST: process.env.EMAIL_TEST_SMTP_HOST,
-  EMAIL_TEST_SMTP_PORT: process.env.EMAIL_TEST_SMTP_PORT,
-  EMAIL_TEST_SMTP_SECURITY:
-    process.env.EMAIL_TEST_SMTP_SECURITY === "tls" ? "tls" : "starttls",
-  EMAIL_TEST_SMTP_USERNAME: process.env.EMAIL_TEST_SMTP_USERNAME,
-  EMAIL_TEST_SMTP_PASSWORD: process.env.EMAIL_TEST_SMTP_PASSWORD,
-  EMAIL_TEST_SMTP_FROM: process.env.EMAIL_TEST_SMTP_FROM,
-  EMAIL_TEST_SMTP_RECIPIENT: process.env.EMAIL_TEST_SMTP_RECIPIENT,
+  // The standalone Node API has no Cloudflare email binding. Use Wrangler for email development.
+  EMAIL_ENABLED: "false",
 };
 
 async function toRequest(request: IncomingMessage): Promise<Request> {

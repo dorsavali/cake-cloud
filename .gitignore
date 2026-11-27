@@ -40,9 +40,6 @@ yarn-error.log*
 **/.cache/
 .eslintcache
 
-# local manual SMTP testing
-/api/src/email/send-test-node.ts
-
 # local environment files
 .env*
 !.env.example

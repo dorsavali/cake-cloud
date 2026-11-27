@@ -4,9 +4,8 @@ import {
   renderCustomerOrderEmail,
   renderInternalOrderEmail,
   type OrderEmailData,
-  type OrderEmailAddresses,
 } from "./order-templates.js";
-import { emailSendingEnabled, sendEmailWithSmtp } from "./smtp.js";
+import { emailAddresses, emailSendingEnabled, sendEmail } from "./delivery.js";
 
 type SquareMoney = { amount?: number; currency?: string };
 type SquareRecipient = {
@@ -61,13 +60,6 @@ type EmailState = {
 };
 
 const claimDurationMs = 10 * 60 * 1000;
-
-function emailAddresses(env: ApiEnv): OrderEmailAddresses {
-  const hello = env.SMTP_HELLO_USERNAME?.trim().toLowerCase();
-  const orders = env.SMTP_ORDERS_USERNAME?.trim().toLowerCase();
-  if (!hello || !orders) throw new Error("Order email addresses are not configured");
-  return { hello, orders };
-}
 
 function parseState(value: string | undefined): EmailState {
   if (!value) return {};
@@ -267,14 +259,14 @@ export async function sendPaidOrderNotifications(
 
     if (!state.customer) {
       if (data.customerEmail) {
-        await sendEmailWithSmtp(env, renderCustomerOrderEmail(data, addresses));
+        await sendEmail(env, renderCustomerOrderEmail(data, addresses));
       }
       order = await updateClaimState(env, orderId, claim, { customer: true });
       state = parseState(order.metadata?.cc_email_state);
     }
 
     if (!state.internal) {
-      await sendEmailWithSmtp(env, renderInternalOrderEmail(data, addresses));
+      await sendEmail(env, renderInternalOrderEmail(data, addresses));
       await updateClaimState(env, orderId, claim, { internal: true });
     }
   } catch (error) {
